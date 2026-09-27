@@ -7,6 +7,9 @@ import {
   type FormWindows,
   type PlayedGame,
 } from "./form.ts";
+import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
+import { cutLineFor, type CutLine } from "./cutLines.ts";
+import { simulateSeason, type CutLineProbabilities } from "./seasonSimulation.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -22,24 +25,61 @@ export interface CurrentTableRow {
   points: number;
 }
 
+/** Everything a Projection Model may predict from: the Season as it stood at the As-Of Date. */
 export interface ProjectionModelInput {
   currentTable: CurrentTableRow[];
   formWindows: Map<TeamId, FormWindows>;
+  /** Played Games, oldest first. */
+  playedGames: PlayedGame[];
   remainingGames: Game[];
+  /** The OT/SO Rate over the Played Games. */
+  otsoRate: number;
 }
 
-/** Turns the Current Table, Form Windows and Remaining Games into each team's projected Points. */
-export interface ProjectionModel {
-  projectPoints(input: ProjectionModelInput): Map<TeamId, number>;
+/**
+ * Predicts each Remaining Game; a team's projected Points are its current Points plus its expected Points over them.
+ * Models give Outcome Probabilities per Game, except Points-only models such as Split Form Rate, which predict each
+ * side's Points independently and so cannot give coherent probabilities (ADR 0002).
+ */
+export type ProjectionModel =
+  | {
+      /** Stable identifier, e.g. for seeding the Season Simulation. */
+      id: string;
+      name: string;
+      kind: "outcomes";
+      /** Outcome Probabilities for every Remaining Game, by Game id. */
+      predictOutcomes(input: ProjectionModelInput): Map<string, OutcomeProbabilities>;
+    }
+  | {
+      /** Stable identifier, e.g. for seeding the Season Simulation. */
+      id: string;
+      name: string;
+      kind: "points";
+      /** Expected Points of each side for every Remaining Game, by Game id. */
+      predictPoints(input: ProjectionModelInput): Map<string, ExpectedPoints>;
+    };
+
+/** A Projection Model's prediction for one Game; `outcomes` is null for Points-only models. */
+export interface GamePrediction {
+  points: ExpectedPoints;
+  outcomes: OutcomeProbabilities | null;
 }
 
-/** Where a rank falls against the Cut Lines. */
-export type CutLine = "playoffs" | "play-in" | "eliminated";
-
-export function cutLineFor(rank: number): CutLine {
-  if (rank <= 6) return "playoffs";
-  if (rank <= 10) return "play-in";
-  return "eliminated";
+/** Runs a Projection Model over the Remaining Games, failing loudly if it skips any. */
+export function predictGames(model: ProjectionModel, input: ProjectionModelInput): Map<string, GamePrediction> {
+  const predictions = new Map<string, GamePrediction>();
+  if (model.kind === "outcomes") {
+    const outcomes = model.predictOutcomes(input);
+    for (const [gameId, probabilities] of outcomes) {
+      predictions.set(gameId, { points: expectedPointsOf(probabilities), outcomes: probabilities });
+    }
+  } else {
+    for (const [gameId, points] of model.predictPoints(input)) predictions.set(gameId, { points, outcomes: null });
+  }
+  for (const game of input.remainingGames) {
+    if (!predictions.has(game.id)) throw new Error(`${model.name} gave no prediction for Game ${game.id}`);
+  }
+  return predictions;
 }
 
 export interface ProjectedTableRow {
@@ -61,9 +101,14 @@ export interface ProjectedTableRow {
   remainingHomeGames: number;
   remainingAwayGames: number;
   projectedPoints: number;
-  /** Either Form Window holds fewer than five Games. */
+  /** The team has fewer than LOW_SAMPLE_GAMES Played Games. */
   lowSample: boolean;
+  /** Cut Line zone and 1st-place chances from the Season Simulation; null for Points-only models. */
+  probabilities: CutLineProbabilities | null;
 }
+
+/** A team with fewer Played Games than this is Low Sample, under every Projection Model. */
+export const LOW_SAMPLE_GAMES = 10;
 
 /** Games in a team's Regular Season: Played + Remaining must add up to this. */
 export const REGULAR_SEASON_GAMES = 52;
@@ -116,7 +161,8 @@ function isPlayed(game: Game, asOf: Date): game is PlayedGame {
   return game.result !== undefined && new Date(game.startsAt) < asOf;
 }
 
-export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
+/** The Season as it stood at the As-Of Date, in the shape a Projection Model predicts from. */
+export function projectionModelInput(games: Game[], asOf: Date): ProjectionModelInput {
   const rows = new Map<TeamId, UnrankedRow>();
   const rowFor = (teamId: TeamId) => {
     let row = rows.get(teamId);
@@ -179,16 +225,36 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
     ]),
   );
 
-  const projectedPoints = model.projectPoints({ currentTable, formWindows, remainingGames });
-  const projectedFor = (teamId: TeamId) => {
-    const points = projectedPoints.get(teamId);
-    if (points === undefined) throw new Error(`Projection Model returned no projected Points for team ${teamId}`);
-    return points;
-  };
+  const chronological = [...playedGames].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  return { currentTable, formWindows, playedGames: chronological, remainingGames, otsoRate: otsoRate(playedGames) };
+}
+
+/** `seed` drives the Season Simulation, which runs for models with Outcome Probabilities (see simulationSeed). */
+export function project(games: Game[], asOf: Date, model: ProjectionModel, seed = 0): Projection {
+  const input = projectionModelInput(games, asOf);
+  const { currentTable, formWindows, playedGames, remainingGames } = input;
+
+  const predictions = predictGames(model, input);
+  const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
+  for (const game of remainingGames) {
+    const { points } = predictions.get(game.id)!;
+    projectedPoints.set(game.homeTeamId, projectedPoints.get(game.homeTeamId)! + points.home);
+    projectedPoints.set(game.awayTeamId, projectedPoints.get(game.awayTeamId)! + points.away);
+  }
+
+  const probabilities =
+    model.kind === "outcomes"
+      ? simulateSeason(
+          new Map(currentTable.map((row) => [row.teamId, row.points])),
+          remainingGames,
+          new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
+          seed,
+        )
+      : null;
 
   // Current Table order is the tie-break: the sort is stable.
   const projectedTable = currentTable
-    .map((row) => ({ row, projected: projectedFor(row.teamId) }))
+    .map((row) => ({ row, projected: projectedPoints.get(row.teamId)! }))
     .sort((a, b) =>
       Math.abs(b.projected - a.projected) < PROJECTED_TIE_TOLERANCE ? 0 : b.projected - a.projected,
     )
@@ -208,7 +274,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
       remainingHomeGames: remainingGames.filter((game) => game.homeTeamId === row.teamId).length,
       remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
       projectedPoints: projected,
-      lowSample: windows.home.length < FORM_WINDOW_SIZE || windows.away.length < FORM_WINDOW_SIZE,
+      lowSample: row.gamesPlayed < LOW_SAMPLE_GAMES,
+      probabilities: probabilities?.get(row.teamId) ?? null,
     };
   });
 

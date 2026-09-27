@@ -1,17 +1,22 @@
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import {
+  LOW_SAMPLE_GAMES,
   project,
   REGULAR_SEASON_GAMES,
-  type CutLine,
   type IntegrityIssue,
   type ProjectedTableRow,
+  type ProjectionModel,
 } from "../domain/project.ts";
-import { splitFormRate } from "../domain/splitFormRate.ts";
+import { simulationSeed, SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
+import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
+import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
+import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
+import { PROJECTION_MODELS } from "./modelUrl.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
 
@@ -57,6 +62,20 @@ const DECISION_LABELS: Record<Decision, string> = {
 };
 
 const PROJECTED_COLUMNS = 9;
+
+const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; short: string; title: string }[] = [
+  { key: "playoffs", label: "Playoffs", short: "PO", title: "Chance of finishing 1–6: straight to the playoffs" },
+  { key: "playIn", label: "Play-in", short: "PI", title: "Chance of finishing 7–10: the play-in" },
+  { key: "eliminated", label: "Eliminated", short: "Out", title: "Chance of finishing 11–14: eliminated" },
+  { key: "first", label: "1st", short: "1st", title: "Chance of finishing first" },
+];
+
+/** A probability as a whole percent; "<1" and ">99" keep a remote chance from reading as impossible or certain. */
+function formatPercent(probability: number) {
+  if (probability > 0 && probability < 0.005) return "<1";
+  if (probability < 1 && probability > 0.995) return ">99";
+  return String(Math.round(probability * 100));
+}
 
 const CUT_LINE_LABELS: Record<CutLine, string> = {
   playoffs: "Playoffs",
@@ -155,11 +174,19 @@ function GainBar({ row, scale }: { row: ProjectedTableRow; scale: number }) {
   );
 }
 
-function HeadlineSentence({ headline, teamName }: { headline: Headline; teamName: (teamId: TeamId) => string }) {
+function HeadlineSentence({
+  headline,
+  modelName,
+  teamName,
+}: {
+  headline: Headline;
+  modelName: string;
+  teamName: (teamId: TeamId) => string;
+}) {
   const { first, last, riser } = headline;
   return (
     <>
-      If every team keeps its current form, <strong>{teamName(first)}</strong> finish top,{" "}
+      {modelName} projection: <strong>{teamName(first)}</strong> finish top,{" "}
       <strong>{teamName(last)}</strong> finish last
       {riser && (
         <>
@@ -216,6 +243,7 @@ function FormWindowDetail({
   remaining,
   games,
   teamName,
+  showProjectedRate,
 }: {
   side: "home" | "away";
   form: number | null;
@@ -223,6 +251,8 @@ function FormWindowDetail({
   remaining: number;
   games: FormWindowGame[];
   teamName: (teamId: TeamId) => string;
+  /** Show the Form as the rate a Points-only model (Split Form Rate) projects each Remaining Game at. */
+  showProjectedRate: boolean;
 }) {
   const labels = SIDES[side];
   // Mirrors Split Form Rate: an empty Form Window borrows the other Form, or earns nothing without either.
@@ -235,7 +265,9 @@ function FormWindowDetail({
   return (
     <section class="form-window">
       <h3>
-        {labels.form}: {rate} × {remaining} Remaining
+        {showProjectedRate
+          ? `${labels.form}: ${rate} × ${remaining} Remaining`
+          : `${labels.form}: ${formatForm(form)} · ${remaining} Remaining`}
       </h3>
       {games.length === 0 ? (
         <p class="meta">No Played {side} Games yet.</p>
@@ -301,12 +333,109 @@ function IntegrityWarning({
   );
 }
 
-export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
-  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = project(
-    snapshot.games,
-    now,
-    splitFormRate,
+function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
+  return (
+    <fieldset class="model-picker">
+      <legend class="visually-hidden">Projection Model</legend>
+      <span class="model-picker-label" aria-hidden="true">
+        Model
+      </span>
+      <div class="model-options">
+        {PROJECTION_MODELS.map((option) => (
+          <label key={option.id}>
+            <input
+              type="radio"
+              name="model"
+              value={option.id}
+              checked={option.id === model.id}
+              onChange={() => onChange(option)}
+            />
+            <span>{option.name}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
+}
+
+const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
+
+/** How a Projection Model turns Played Games into projected Points, by model id. */
+function ModelExplanation({ model }: { model: ProjectionModel }) {
+  switch (model.id) {
+    case "split-form-rate":
+      return (
+        <>
+          <p>
+            Each team keeps the Points it has today and earns its Home Form on every Remaining home Game and its Away Form
+            on every Remaining away Game. Home Form is the Points per Game over the team's home Form Window, its up to{" "}
+            {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the same over its away Form Window. Projected
+            Points = current Points + Remaining home Games × Home Form + Remaining away Games × Away Form.
+          </p>
+          <p>
+            Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
+            home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
+            current Points.
+          </p>
+          <p>
+            <strong>No percentages.</strong> Split Form Rate predicts each side of a Game on its own, so a Game's two
+            predictions need not add up to its 3 Points and there are no Outcome Probabilities to play the Season out from.
+            Pick another model to see each team's Playoffs, Play-in, Eliminated and 1st chances.
+          </p>
+        </>
+      );
+    case "season-rate":
+      return (
+        <p>
+          Each team keeps earning its Points per Game over all its Played Games this Season, whatever the venue or
+          opponent; a team with no Played Games counts as {LEAGUE_AVERAGE_POINTS_PER_GAME}, half of a Game's 3 Points. A
+          Remaining Game's 3 Points can't honour both teams' rates at once, so the home team expects the mean of its own
+          rate and what the away team's rate leaves it: (home rate + 3 − away rate) ÷ 2.
+        </p>
+      );
+    case "matchup":
+      return (
+        <p>
+          Each Remaining Game weighs the home team's Home Form against the away team's Away Form. Home Form is the Points
+          per Game over a team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is
+          the same over its away Form Window. The home team expects (Home Form + 3 − the away team's Away Form) ÷ 2 of the
+          Game's 3 Points. A team with no Played Games at one venue uses its Form from the other; with neither, it counts
+          as {LEAGUE_AVERAGE_POINTS_PER_GAME}.
+        </p>
+      );
+    case "elo":
+      return (
+        <p>
+          Every team starts the Season on a Rating of {INITIAL_RATING}. After each Played Game, the home team's Rating rises by{" "}
+          {ELO_K} × (the share of the 3 Points it took − the share the Ratings expected) and the away team's falls by the
+          same, so beating a strong team counts for more than beating a weak one. The home team gets a Home Advantage of {ELO_HOME_ADVANTAGE} Rating
+          points. For each Remaining Game, the two current Ratings plus Home Advantage give the home team its expected
+          share of the 3 Points. K and Home Advantage were tuned by Back-Testing the 2024/25 and 2025/26 Regular Seasons.
+        </p>
+      );
+    default:
+      return null;
+  }
+}
+
+export function App({
+  snapshot,
+  now,
+  model,
+  onModelChange,
+}: {
+  snapshot: Snapshot;
+  now: Date;
+  model: ProjectionModel;
+  onModelChange: (model: ProjectionModel) => void;
+}) {
+  // The Season Simulation is too slow to rerun on every render, such as expanding a team.
+  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = useMemo(
+    () => project(snapshot.games, now, model, simulationSeed(snapshot.snapshotAt, model.id)),
+    [snapshot, now, model],
+  );
+  const showProbabilities = model.kind === "outcomes";
+  const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
   const snapshotAt = new Date(snapshot.snapshotAt);
@@ -354,11 +483,12 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
           <>
             {headline && (
               <Ticker>
-                <HeadlineSentence headline={headline} teamName={teamName} />
+                <HeadlineSentence headline={headline} modelName={model.name} teamName={teamName} />
               </Ticker>
             )}
             <section class="panel">
               <h2>Projected Table</h2>
+              <ModelPicker model={model} onChange={onModelChange} />
               <div class="table-scroll">
                 <table class="projected">
                   <thead>
@@ -380,6 +510,13 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                         + Projected Gain
                       </th>
                       <th class="num" scope="col" title="Projected Points">Proj</th>
+                      {showProbabilities &&
+                        PROBABILITY_COLUMNS.map((column) => (
+                          <th key={column.key} class="num pct" scope="col" title={column.title}>
+                            <span aria-hidden="true">{column.short}</span>
+                            <span class="visually-hidden">{column.label} %</span>
+                          </th>
+                        ))}
                     </tr>
                   </thead>
                   {projectedTable.map((row, index) => {
@@ -410,7 +547,7 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                               {teamCell(row.teamId)}
                             </button>
                             {row.lowSample && (
-                              <abbr class="low-sample" title={`Low Sample: a Form Window holds fewer than ${FORM_WINDOW_SIZE} Games`}>
+                              <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
                                 LS
                               </abbr>
                             )}
@@ -430,10 +567,19 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                             <GainBar row={row} scale={barScale} />
                           </td>
                           <td class="num projected-points">{Math.round(row.projectedPoints)}</td>
+                          {row.probabilities &&
+                            PROBABILITY_COLUMNS.map(({ key }) => {
+                              const probability = row.probabilities![key];
+                              return (
+                                <td key={key} class={probability === 0 ? "num pct none" : "num pct"}>
+                                  {formatPercent(probability)}
+                                </td>
+                              );
+                            })}
                         </tr>
                         {isExpanded && (
                           <tr class="detail" id={detailId}>
-                            <td colSpan={PROJECTED_COLUMNS}>
+                            <td colSpan={columns}>
                               <div class="form-windows">
                                 <FormWindowDetail
                                   side="home"
@@ -442,6 +588,7 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                                   remaining={row.remainingHomeGames}
                                   games={row.homeFormWindow}
                                   teamName={teamName}
+                                  showProjectedRate={!showProbabilities}
                                 />
                                 <FormWindowDetail
                                   side="away"
@@ -450,6 +597,7 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                                   remaining={row.remainingAwayGames}
                                   games={row.awayFormWindow}
                                   teamName={teamName}
+                                  showProjectedRate={!showProbabilities}
                                 />
                               </div>
                             </td>
@@ -476,27 +624,41 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                   Points + Projected Gain
                 </li>
                 <li>
-                  <abbr class="low-sample">LS</abbr> Low Sample: fewer than {FORM_WINDOW_SIZE} Games in a Form Window
+                  <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
                 </li>
                 <li>Left: Remaining home · away Games</li>
+                {showProbabilities ? (
+                  <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated Seasons</li>
+                ) : (
+                  <li>No % columns: {model.name} gives no Outcome Probabilities (see below)</li>
+                )}
               </ul>
             </section>
 
             <section class="panel explanation">
-              <h2>How the projection works</h2>
+              <h2>How the projection works: {model.name}</h2>
               <div class="panel-body">
+                <ModelExplanation model={model} />
+                {showProbabilities && (
+                  <>
+                    <p>
+                      That expectation becomes Outcome Probabilities (regulation win, OT/SO win, OT/SO loss, regulation
+                      loss), with Games going to overtime or a shootout at the OT/SO Rate: the league-wide share of Played
+                      Games decided that way. A team's projected Points are its current Points plus its expected Points over
+                      its Remaining Games.
+                    </p>
+                    <p>
+                      The percentages come from a Season Simulation: every Remaining Game is played out {SIMULATION_RUNS_LABEL}{" "}
+                      times by drawing its result from the model's Outcome Probabilities, and each simulated Season's final
+                      table is ranked by Points, with ties broken at random. Playoffs, Play-in and Eliminated are the share of
+                      Seasons a team finishes 1–6, 7–10 and 11–14; 1st is the share it finishes top. The table itself stays
+                      ranked by expected Points. The same data always gives the same numbers.
+                    </p>
+                  </>
+                )}
                 <p>
-                  This is the Split Form Rate model. Each team keeps the Points it has today and earns its Home Form on every
-                  Remaining home Game and its Away Form on every Remaining away Game. Home Form is the Points per Game over
-                  the team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the
-                  same over its away Form Window. Projected Points = current Points + Remaining home Games × Home Form +
-                  Remaining away Games × Away Form.
-                </p>
-                <p>
-                  Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
-                  home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
-                  current Points. Teams level on projected Points keep their Current Table order. Select a team to see the
-                  Games in its Form Windows.
+                  Teams level on projected Points keep their Current Table order. Select a team to see the Games in its Form
+                  Windows.
                 </p>
               </div>
             </section>

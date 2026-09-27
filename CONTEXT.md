@@ -29,7 +29,7 @@ How a played Game ended: in regulation, in overtime (OT), or in a shootout (SO).
 _Avoid_: Result type
 
 **Points**:
-Table points earned from a Game: 3 for a regulation win, 2 for an OT/SO win, 1 for an OT/SO loss, 0 for a regulation loss.
+Table points earned from a Game: 3 for a regulation win, 2 for an OT/SO win, 1 for an OT/SO loss, 0 for a regulation loss. Every Game hands out exactly 3 Points between its two teams.
 
 ### Form
 
@@ -44,7 +44,7 @@ A team's Points per Game over its home Form Window.
 A team's Points per Game over its away Form Window.
 
 **Low Sample**:
-A Form Window holding fewer than five Games; projections still run but are flagged.
+A team with fewer than ten Played Games; its projection still runs under every Projection Model but is flagged.
 
 ### Projection
 
@@ -64,16 +64,41 @@ The Points a Projection Model expects a team to add over its Remaining Games: pr
 _Avoid_: Remaining Points (that suggests the Points still available to win)
 
 **Projection Model**:
-A method for turning Home Form, Away Form and the remaining Games into a Projected Table.
+A method for predicting each Remaining Game's outcome from Played Games; summing those predictions over a team's Remaining Games gives its projected Points.
 
 **Split Form Rate**:
-The Projection Model that adds remaining home Games × Home Form plus remaining away Games × Away Form to current Points, ignoring opponents.
+The Projection Model that expects each team to earn its Home Form in every remaining home Game and its Away Form in every remaining away Game, ignoring opponents. Because the two sides are predicted independently, a Game's predicted Points need not add up to 3. It yields no Outcome Probabilities, so it cannot drive a Season Simulation.
 
 **Matchup Model**:
-A (future) Projection Model predicting each remaining Game from the home team's Home Form against the away team's Away Form.
+A Projection Model predicting each Remaining Game from the home team's Home Form against the away team's Away Form: the home side expects (Home Form + 3 − Away Form) / 2, turned into Outcome Probabilities with the OT/SO Rate. An empty Form Window falls back to the team's other-venue Form; with neither, 1.5.
 
-**Monte Carlo Model**:
-A (future) Projection Model that simulates each remaining Game many times to yield finishing-position probabilities.
+**Season Rate**:
+The baseline Projection Model: each team keeps earning its Points per Game over all its Played Games of the Season, ignoring venue and opponent strength. A Game's home side expects the mean of its own rate and what the away side's rate leaves it, (home rate + 3 − away rate) / 2, turned into Outcome Probabilities with the OT/SO Rate; a team with no Played Games counts as 1.5.
+
+**Elo Model**:
+A Projection Model that keeps a Rating per team, updated after every Played Game by the share of its 3 Points each team took against the share its Rating and Home Advantage expected, and predicts each Game's expected Points share from the two Ratings plus Home Advantage, turned into Outcome Probabilities with the OT/SO Rate.
+
+**Rating**:
+An Elo Model's running estimate of a team's strength; every team starts the Season level.
+
+**Home Advantage**:
+The Rating bonus an Elo Model gives the home team when predicting a Game, and when judging a Played Game to update Ratings.
+
+**Outcome Probabilities**:
+A Projection Model's prediction for one Game: the probability of each of the four outcomes from the home team's side (regulation win, OT/SO win, OT/SO loss, regulation loss).
+
+**OT/SO Rate**:
+The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
+
+**Season Simulation**:
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Cut Line and first-place chances.
+_Avoid_: Monte Carlo Model
+
+**Default Model**:
+The Projection Model a visitor sees unless they pick another.
+
+**Back-Test**:
+Scoring a Projection Model by predicting every Played Game from only the Games played before it and comparing with the actual result.
 
 **Cut Lines**:
 The Regular Season boundaries: ranks 1–6 go straight to the playoffs, 7–10 to the play-in, 11–14 are eliminated.

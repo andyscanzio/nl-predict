@@ -98,6 +98,71 @@ body {
   margin-bottom: 0;
 }
 
+/* ───────── Model picker: a scoreboard switch, the lit segment in amber ───────── */
+
+.model-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.model-picker-label {
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.model-options {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 2px;
+  padding: 2px;
+  background: var(--led-screen);
+  border-radius: 5px;
+}
+
+.model-options label {
+  position: relative;
+  cursor: pointer;
+}
+
+.model-options input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.model-options span {
+  display: block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 3px;
+  font: 600 0.72rem var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8593a2;
+}
+
+.model-options label:hover span {
+  color: #ffb000;
+}
+
+.model-options input:checked + span {
+  color: #000;
+  background: #ffb000;
+  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+}
+
+.model-options input:focus-visible + span {
+  outline: 2px solid #ffb000;
+  outline-offset: 1px;
+}
+
 /* ───────── Header ───────── */
 
 .scoreboard {
@@ -320,6 +385,16 @@ tbody th {
   color: var(--amber);
 }
 
+/* Season Simulation percentages: short labels (PO, PI, Out, 1st), spelled out in the legend. */
+.projected .pct {
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+.pct.none {
+  color: var(--muted);
+}
+
 .current .points {
   font: 700 1.05rem var(--display);
   color: var(--amber);
@@ -452,9 +527,13 @@ tbody th {
 
 /* ───────── Points + Projected Gain bar ───────── */
 
+/* The bar takes what the other columns leave; its header wraps so the percentages fit beside it. */
 .bar-col {
-  width: 22%;
-  min-width: 7rem;
+  min-width: 5rem;
+}
+
+thead th.bar-col {
+  white-space: normal;
 }
 
 .gain-bar {
@@ -665,6 +744,15 @@ footer a {
 
   .team-acronym {
     display: inline;
+  }
+
+  .model-options {
+    flex: 1;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .model-options span {
+    text-align: center;
   }
 
   .rank {
