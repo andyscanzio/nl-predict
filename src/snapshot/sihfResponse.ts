@@ -46,6 +46,11 @@ export function readRegularSeasonPhase(response: unknown): string {
   return phase.alias;
 }
 
+/** A match day as DD.MM.YYYY, turned into a key that sorts in date order. */
+export function matchDaySortKey(date: string): string {
+  return date.split(".").reverse().join("");
+}
+
 /** Every match day in the response's Date filter tree (year → month → day), as DD.MM.YYYY, in date order. */
 export function readMatchDays(response: unknown): string[] {
   const { entries: years } = readFilter(response, "Date");
@@ -59,8 +64,7 @@ export function readMatchDays(response: unknown): string[] {
       }
     }
   }
-  const sortKey = (date: string) => date.split(".").reverse().join("");
-  return dates.sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  return dates.sort((a, b) => matchDaySortKey(a).localeCompare(matchDaySortKey(b)));
 }
 
 const COLUMNS = ["homeTeam", "awayTeam", "score", "decision", "status", "details"] as const;
