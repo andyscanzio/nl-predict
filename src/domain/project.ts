@@ -1,4 +1,12 @@
-import { FORM_WINDOW_SIZE, formOf, pointsFor, type FormWindows, type PlayedGame } from "./form.ts";
+import {
+  FORM_WINDOW_SIZE,
+  formOf,
+  formWindowGame,
+  pointsFor,
+  type FormWindowGame,
+  type FormWindows,
+  type PlayedGame,
+} from "./form.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -46,6 +54,10 @@ export interface ProjectedTableRow {
   homeForm: number | null;
   /** Points per Game over the away Form Window, or null when it is empty. */
   awayForm: number | null;
+  /** The Games of the home Form Window, newest first. */
+  homeFormWindow: FormWindowGame[];
+  /** The Games of the away Form Window, newest first. */
+  awayFormWindow: FormWindowGame[];
   remainingHomeGames: number;
   remainingAwayGames: number;
   projectedPoints: number;
@@ -177,6 +189,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
       currentPoints: row.points,
       homeForm: formOf(windows.home, row.teamId),
       awayForm: formOf(windows.away, row.teamId),
+      homeFormWindow: windows.home.map((game) => formWindowGame(game, row.teamId)),
+      awayFormWindow: windows.away.map((game) => formWindowGame(game, row.teamId)),
       remainingHomeGames: remainingGames.filter((game) => game.homeTeamId === row.teamId).length,
       remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
       projectedPoints: projected,

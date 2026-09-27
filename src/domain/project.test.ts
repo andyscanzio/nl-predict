@@ -338,3 +338,65 @@ describe("project: Split Form Rate", () => {
     expect(projectedRow(games, 1)).toMatchObject({ currentRank: 1, rank: 1, movement: 0 });
   });
 });
+
+describe("project: Form Window detail", () => {
+  it("lists the home Form Window Games newest first, from the team's side, with Decision and Points earned", () => {
+    const games = [
+      played(1, 2, 4, 2, "regulation", "2026-09-20T19:45:00+02:00"),
+      played(1, 3, 2, 3, "SO", "2026-09-24T19:45:00+02:00"),
+      played(2, 1, 1, 2, "OT", "2026-09-22T19:45:00+02:00"), // away: not in the home Form Window
+    ];
+    const [olderHome, newerHome, away] = games;
+    expect(projectedRow(games, 1).homeFormWindow).toEqual([
+      {
+        gameId: newerHome!.id,
+        startsAt: "2026-09-24T19:45:00+02:00",
+        opponentId: 3,
+        goalsFor: 2,
+        goalsAgainst: 3,
+        decision: "SO",
+        points: 1,
+      },
+      {
+        gameId: olderHome!.id,
+        startsAt: "2026-09-20T19:45:00+02:00",
+        opponentId: 2,
+        goalsFor: 4,
+        goalsAgainst: 2,
+        decision: "regulation",
+        points: 3,
+      },
+    ]);
+    expect(projectedRow(games, 1).awayFormWindow).toEqual([
+      {
+        gameId: away!.id,
+        startsAt: "2026-09-22T19:45:00+02:00",
+        opponentId: 2,
+        goalsFor: 2,
+        goalsAgainst: 1,
+        decision: "OT",
+        points: 2,
+      },
+    ]);
+  });
+
+  it("caps each Form Window at five Games and leaves out Games after the As-Of Date", () => {
+    const games = [
+      ...Array.from({ length: 6 }, (_, day) => played(1, 2, 3, 1, "regulation", `2026-09-1${day}T19:45:00+02:00`)),
+      played(1, 2, 3, 1, "regulation", "2026-10-02T19:45:00+02:00"),
+    ];
+    const window = projectedRow(games, 1).homeFormWindow;
+    expect(window.map((game) => game.startsAt.slice(0, 10))).toEqual([
+      "2026-09-15",
+      "2026-09-14",
+      "2026-09-13",
+      "2026-09-12",
+      "2026-09-11",
+    ]);
+  });
+
+  it("gives empty Form Windows to a team with no Played Games", () => {
+    const games = [scheduled(1, 2, later)];
+    expect(projectedRow(games, 1)).toMatchObject({ homeFormWindow: [], awayFormWindow: [] });
+  });
+});

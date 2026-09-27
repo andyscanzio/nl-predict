@@ -1,4 +1,4 @@
-import type { Game, GameResult, TeamId } from "./types.ts";
+import type { Decision, Game, GameResult, TeamId } from "./types.ts";
 
 export type PlayedGame = Game & { result: GameResult };
 
@@ -22,4 +22,30 @@ export function pointsFor(game: PlayedGame, teamId: TeamId): number {
 export function formOf(window: PlayedGame[], teamId: TeamId): number | null {
   if (window.length === 0) return null;
   return window.reduce((sum, game) => sum + pointsFor(game, teamId), 0) / window.length;
+}
+
+/** A Form Window Game seen from one team's side. */
+export interface FormWindowGame {
+  gameId: string;
+  startsAt: string;
+  opponentId: TeamId;
+  goalsFor: number;
+  goalsAgainst: number;
+  decision: Decision;
+  /** Points the team earned from the Game. */
+  points: number;
+}
+
+export function formWindowGame(game: PlayedGame, teamId: TeamId): FormWindowGame {
+  const isHome = teamId === game.homeTeamId;
+  const { homeGoals, awayGoals, decision } = game.result;
+  return {
+    gameId: game.id,
+    startsAt: game.startsAt,
+    opponentId: isHome ? game.awayTeamId : game.homeTeamId,
+    goalsFor: isHome ? homeGoals : awayGoals,
+    goalsAgainst: isHome ? awayGoals : homeGoals,
+    decision,
+    points: pointsFor(game, teamId),
+  };
 }

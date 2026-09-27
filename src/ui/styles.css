@@ -171,22 +171,31 @@ footer a {
   cursor: help;
 }
 
-.projected tbody tr > :first-child,
+.projected > tbody > tr > :first-child,
 .legend li[class^="cut-"] {
   border-left: 4px solid transparent;
 }
 
-.projected .cut-playoffs > :first-child,
+/* Each team is its own tbody (row + optional detail), so stripe by team, not by row. */
+.projected tbody tr:nth-child(even) {
+  background: none;
+}
+
+.projected tbody:nth-of-type(even) {
+  background: var(--stripe);
+}
+
+.projected .cut-playoffs > tr > :first-child,
 .legend .cut-playoffs {
   border-left-color: var(--playoffs);
 }
 
-.projected .cut-play-in > :first-child,
+.projected .cut-play-in > tr > :first-child,
 .legend .cut-play-in {
   border-left-color: var(--play-in);
 }
 
-.projected .cut-eliminated > :first-child,
+.projected .cut-eliminated > tr > :first-child,
 .legend .cut-eliminated {
   border-left-color: var(--eliminated);
 }
@@ -217,4 +226,83 @@ footer a {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.25rem;
+}
+
+.expand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.expand:hover .team-name,
+.expand:hover .team-acronym {
+  text-decoration: underline;
+}
+
+.chevron {
+  width: 0.8rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.projected tr.detail > td {
+  padding: 0.25rem 0.5rem 0.75rem 1.5rem;
+  white-space: normal;
+}
+
+.form-windows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.form-window {
+  flex: 1 1 16rem;
+}
+
+.form-window h3 {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-window p {
+  margin: 0;
+}
+
+.form-window table {
+  font-size: 0.85rem;
+}
+
+.form-window th,
+.form-window td {
+  padding: 0.2rem 0.4rem;
+}
+
+.form-window tbody tr:nth-child(even) {
+  background: none;
+}
+
+.decision {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.explanation p {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.9rem;
 }

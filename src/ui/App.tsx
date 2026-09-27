@@ -1,7 +1,8 @@
+import { useState } from "preact/hooks";
 import { project, type CutLine, type ProjectedTableRow } from "../domain/project.ts";
 import { splitFormRate } from "../domain/splitFormRate.ts";
-import { FORM_WINDOW_SIZE } from "../domain/form.ts";
-import type { Snapshot, TeamId } from "../domain/types.ts";
+import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
+import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -11,6 +12,20 @@ const snapshotTime = new Intl.DateTimeFormat("en-GB", {
   timeStyle: "short",
   timeZone: "Europe/Zurich",
 });
+
+const gameDate = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "Europe/Zurich",
+});
+
+const DECISION_LABELS: Record<Decision, string> = {
+  regulation: "",
+  OT: "OT",
+  SO: "SO",
+};
+
+const PROJECTED_COLUMNS = 9;
 
 const CUT_LINE_LABELS: Record<CutLine, string> = {
   playoffs: "Playoffs",
@@ -44,6 +59,78 @@ function Movement({ movement }: { movement: number }) {
   );
 }
 
+const SIDES = {
+  home: { form: "Home Form", other: "Away Form" },
+  away: { form: "Away Form", other: "Home Form" },
+} as const;
+
+function FormWindowDetail({
+  side,
+  form,
+  otherForm,
+  remaining,
+  games,
+  teamName,
+}: {
+  side: "home" | "away";
+  form: number | null;
+  otherForm: number | null;
+  remaining: number;
+  games: FormWindowGame[];
+  teamName: (teamId: TeamId) => string;
+}) {
+  const labels = SIDES[side];
+  // Mirrors Split Form Rate: an empty Form Window borrows the other Form, or earns nothing without either.
+  const rate =
+    form !== null
+      ? `${formatForm(form)} per Game`
+      : otherForm !== null
+        ? `${formatForm(otherForm)} per Game (${labels.other})`
+        : "0 per Game";
+  return (
+    <section class="form-window">
+      <h3>
+        {labels.form}: {rate} × {remaining} Remaining
+      </h3>
+      {games.length === 0 ? (
+        <p class="meta">No Played {side} Games yet.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Opponent</th>
+              <th class="num" scope="col" title="Goals for : goals against">Score</th>
+              <th scope="col" title="Decision: blank for regulation, OT for overtime, SO for shootout">
+                <span class="visually-hidden">Decision</span>
+              </th>
+              <th class="num" scope="col" title="Points earned">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {games.map((game) => (
+              <tr key={game.gameId}>
+                <td>
+                  <time dateTime={game.startsAt}>{gameDate.format(new Date(game.startsAt))}</time>
+                </td>
+                <td>
+                  {side === "home" ? "vs " : "@ "}
+                  {teamName(game.opponentId)}
+                </td>
+                <td class="num">
+                  {game.goalsFor}:{game.goalsAgainst}
+                </td>
+                <td class="decision">{DECISION_LABELS[game.decision]}</td>
+                <td class="num points">{game.points}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
 export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
   const { currentTable, projectedTable } = project(snapshot.games, now, splitFormRate);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
@@ -57,6 +144,14 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
       </>
     );
   };
+  const teamName = (teamId: TeamId) => teams.get(teamId)?.name ?? String(teamId);
+  const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
+  const toggle = (teamId: TeamId) =>
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (!next.delete(teamId)) next.add(teamId);
+      return next;
+    });
   const isFirstOfCutLine = (row: ProjectedTableRow, index: number) =>
     index > 0 && projectedTable[index - 1]?.cutLine !== row.cutLine;
 
@@ -85,36 +180,81 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                 <th class="num" scope="col" title={`Away Form: Points per Game over the last ≤${FORM_WINDOW_SIZE} away Games`}>
                   Away
                 </th>
+                <th class="num" scope="col" title="Remaining Games: home · away">
+                  Left
+                </th>
                 <th class="num" scope="col" title="Projected Points">Proj</th>
               </tr>
             </thead>
-            <tbody>
-              {projectedTable.map((row, index) => (
-                <tr
-                  key={row.teamId}
-                  class={`cut-${row.cutLine}${isFirstOfCutLine(row, index) ? " cut-line" : ""}`}
-                  title={CUT_LINE_LABELS[row.cutLine]}
-                >
-                  <td class="num">{row.rank}</td>
-                  <td>
-                    <Movement movement={row.movement} />
-                  </td>
-                  <th scope="row" class="team">
-                    {teamCell(row.teamId)}
-                    {row.lowSample && (
-                      <abbr class="low-sample" title={`Low Sample: a Form Window holds fewer than ${FORM_WINDOW_SIZE} Games`}>
-                        LS
-                      </abbr>
-                    )}
-                  </th>
-                  <td class="num">{row.currentRank}</td>
-                  <td class="num">{row.currentPoints}</td>
-                  <td class="num">{formatForm(row.homeForm)}</td>
-                  <td class="num">{formatForm(row.awayForm)}</td>
-                  <td class="num points">{Math.round(row.projectedPoints)}</td>
-                </tr>
-              ))}
-            </tbody>
+            {projectedTable.map((row, index) => {
+              const isExpanded = expanded.has(row.teamId);
+              const detailId = `form-windows-${row.teamId}`;
+              return (
+                <tbody key={row.teamId} class={`cut-${row.cutLine}`}>
+                  <tr
+                    class={isFirstOfCutLine(row, index) ? "cut-line" : undefined}
+                    title={CUT_LINE_LABELS[row.cutLine]}
+                  >
+                    <td class="num">{row.rank}</td>
+                    <td>
+                      <Movement movement={row.movement} />
+                    </td>
+                    <th scope="row" class="team">
+                      <button
+                        type="button"
+                        class="expand"
+                        aria-expanded={isExpanded}
+                        aria-controls={detailId}
+                        title={isExpanded ? "Hide Form Window Games" : "Show Form Window Games"}
+                        onClick={() => toggle(row.teamId)}
+                      >
+                        <span class="chevron" aria-hidden="true">
+                          {isExpanded ? "▾" : "▸"}
+                        </span>
+                        {teamCell(row.teamId)}
+                      </button>
+                      {row.lowSample && (
+                        <abbr class="low-sample" title={`Low Sample: a Form Window holds fewer than ${FORM_WINDOW_SIZE} Games`}>
+                          LS
+                        </abbr>
+                      )}
+                    </th>
+                    <td class="num">{row.currentRank}</td>
+                    <td class="num">{row.currentPoints}</td>
+                    <td class="num">{formatForm(row.homeForm)}</td>
+                    <td class="num">{formatForm(row.awayForm)}</td>
+                    <td class="num" title={`${row.remainingHomeGames} home, ${row.remainingAwayGames} away`}>
+                      {row.remainingHomeGames}·{row.remainingAwayGames}
+                    </td>
+                    <td class="num points">{Math.round(row.projectedPoints)}</td>
+                  </tr>
+                  {isExpanded && (
+                    <tr class="detail" id={detailId}>
+                      <td colSpan={PROJECTED_COLUMNS}>
+                        <div class="form-windows">
+                          <FormWindowDetail
+                            side="home"
+                            form={row.homeForm}
+                            otherForm={row.awayForm}
+                            remaining={row.remainingHomeGames}
+                            games={row.homeFormWindow}
+                            teamName={teamName}
+                          />
+                          <FormWindowDetail
+                            side="away"
+                            form={row.awayForm}
+                            otherForm={row.homeForm}
+                            remaining={row.remainingAwayGames}
+                            games={row.awayFormWindow}
+                            teamName={teamName}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              );
+            })}
           </table>
         </div>
         <ul class="legend">
@@ -124,7 +264,25 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
           <li>
             <abbr class="low-sample">LS</abbr> Low Sample: fewer than {FORM_WINDOW_SIZE} Games in a Form Window
           </li>
+          <li>Left: Remaining home · away Games</li>
         </ul>
+
+        <section class="explanation">
+          <h3>How the projection works</h3>
+          <p>
+            This is the Split Form Rate model. Each team keeps the Points it has today and earns its Home Form on every
+            Remaining home Game and its Away Form on every Remaining away Game. Home Form is the Points per Game over
+            the team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the
+            same over its away Form Window. Projected Points = current Points + Remaining home Games × Home Form +
+            Remaining away Games × Away Form.
+          </p>
+          <p>
+            Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
+            home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
+            current Points. Teams level on projected Points keep their Current Table order. Select a team to see the
+            Games in its Form Windows.
+          </p>
+        </section>
 
         <h2>Current Table</h2>
         <div class="table-scroll">
