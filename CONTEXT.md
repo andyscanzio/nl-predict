@@ -76,13 +76,13 @@ A Projection Model predicting each Remaining Game from the home team's Home Form
 The baseline Projection Model: each team keeps earning its Points per Game over all its Played Games of the Season, ignoring venue and opponent strength. A Game's home side expects the mean of its own rate and what the away side's rate leaves it, (home rate + 3 − away rate) / 2, turned into Outcome Probabilities with the OT/SO Rate; a team with no Played Games counts as 1.5.
 
 **Elo Model**:
-A (future) Projection Model that keeps a Rating per team, updated after every Played Game by the share of its 3 Points each team took, and predicts each Game from the two Ratings plus Home Advantage.
+A Projection Model that keeps a Rating per team, updated after every Played Game by the share of its 3 Points each team took against the share its Rating and Home Advantage expected, and predicts each Game's expected Points share from the two Ratings plus Home Advantage, turned into Outcome Probabilities with the OT/SO Rate.
 
 **Rating**:
 An Elo Model's running estimate of a team's strength; every team starts the Season level.
 
 **Home Advantage**:
-The Rating bonus an Elo Model gives the home team when predicting a Game.
+The Rating bonus an Elo Model gives the home team when predicting a Game, and when judging a Played Game to update Ratings.
 
 **Outcome Probabilities**:
 A Projection Model's prediction for one Game: the probability of each of the four outcomes from the home team's side (regulation win, OT/SO win, OT/SO loss, regulation loss).
