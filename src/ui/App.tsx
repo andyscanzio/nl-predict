@@ -166,6 +166,11 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
           </table>
         </div>
         <p class="meta">
+          Teams level on Points are ordered by Points per Game, then goal difference, goals for and regulation wins.
+          This approximates the official SIHF rule, which also uses head-to-head results, so the order can differ
+          slightly from the official table.
+        </p>
+        <p class="meta">
           Data as of <time dateTime={snapshot.snapshotAt}>{snapshotTime.format(new Date(snapshot.snapshotAt))}</time>{" "}
           (Swiss time).
         </p>

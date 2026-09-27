@@ -33,6 +33,10 @@ function pointsByTeam(games: Game[]) {
   );
 }
 
+function currentTableOrder(games: Game[]) {
+  return project(games, asOf, splitFormRate).currentTable.map((row) => row.teamId);
+}
+
 describe("project: Current Table", () => {
   it("awards 3 Points for a regulation win and 0 for a regulation loss", () => {
     expect(pointsByTeam([played(1, 2, 4, 2)])).toEqual({ 1: 3, 2: 0 });
@@ -63,6 +67,38 @@ describe("project: Current Table", () => {
       [2, 3, 2],
       [3, 1, 1],
     ]);
+  });
+
+  it("breaks Current Table ties on Points by Points per Game", () => {
+    const games = [
+      played(3, 4, 2, 1, "OT"), // 3: +2, 4: +1
+      played(4, 3, 2, 1, "OT"), // 3: +1, 4: +2 → both 3 Points in 2 Games
+      played(1, 2, 4, 2), // 1: 3 Points in 1 Game
+    ];
+    // 3 and 4 are level on every tie-break, so only team 1 leading is asserted.
+    expect(currentTableOrder(games)[0]).toBe(1);
+  });
+
+  it("breaks Current Table ties on Points per Game by goal difference", () => {
+    const games = [played(1, 2, 1, 0), played(3, 4, 5, 0)];
+    expect(currentTableOrder(games)).toEqual([3, 1, 2, 4]);
+  });
+
+  it("breaks Current Table ties on goal difference by goals for", () => {
+    const games = [played(1, 2, 1, 0), played(3, 4, 4, 3)];
+    expect(currentTableOrder(games)).toEqual([3, 1, 4, 2]);
+  });
+
+  it("breaks Current Table ties on goals for by regulation wins", () => {
+    const games = [
+      // team 2: OT win + OT loss = 3 Points, 3:3 goals, no regulation win
+      played(2, 5, 2, 1, "OT"),
+      played(6, 2, 2, 1, "OT"),
+      // team 1: regulation win + regulation loss = 3 Points, 3:3 goals, one regulation win
+      played(1, 7, 2, 1),
+      played(8, 1, 2, 1),
+    ];
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
   });
 
   it("counts Games with a result as Played only if they started before the As-Of Date", () => {

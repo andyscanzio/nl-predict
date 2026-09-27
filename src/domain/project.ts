@@ -61,13 +61,37 @@ export interface Projection {
 /** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
 const PROJECTED_TIE_TOLERANCE = 1e-9;
 
+type UnrankedRow = Omit<CurrentTableRow, "rank">;
+
+function pointsPerGame(row: UnrankedRow): number {
+  return row.gamesPlayed === 0 ? 0 : row.points / row.gamesPlayed;
+}
+
+function goalDifference(row: UnrankedRow): number {
+  return row.goalsFor - row.goalsAgainst;
+}
+
+/**
+ * Current Table order: Points, then Points per Game, goal difference, goals for and regulation wins.
+ * An approximation of the official SIHF order, which also uses head-to-head.
+ */
+function byCurrentTableOrder(a: UnrankedRow, b: UnrankedRow): number {
+  return (
+    b.points - a.points ||
+    pointsPerGame(b) - pointsPerGame(a) ||
+    goalDifference(b) - goalDifference(a) ||
+    b.goalsFor - a.goalsFor ||
+    b.regulationWins - a.regulationWins
+  );
+}
+
 /** A Game is Played once it has a final result and started before the As-Of Date. */
 function isPlayed(game: Game, asOf: Date): game is PlayedGame {
   return game.result !== undefined && new Date(game.startsAt) < asOf;
 }
 
 export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
-  const rows = new Map<TeamId, Omit<CurrentTableRow, "rank">>();
+  const rows = new Map<TeamId, UnrankedRow>();
   const rowFor = (teamId: TeamId) => {
     let row = rows.get(teamId);
     if (!row) {
@@ -113,7 +137,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
   }
 
   const currentTable = [...rows.values()]
-    .sort((a, b) => b.points - a.points)
+    .sort(byCurrentTableOrder)
     .map((row, index) => ({ rank: index + 1, ...row }));
 
   const playedGames = games.filter((game) => isPlayed(game, asOf));
