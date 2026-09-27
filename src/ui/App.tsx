@@ -336,7 +336,10 @@ function IntegrityWarning({
 function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
   return (
     <fieldset class="model-picker">
-      <legend>Model</legend>
+      <legend class="visually-hidden">Projection Model</legend>
+      <span class="model-picker-label" aria-hidden="true">
+        Model
+      </span>
       <div class="model-options">
         {PROJECTION_MODELS.map((option) => (
           <label key={option.id}>
@@ -510,8 +513,8 @@ export function App({
                       {showProbabilities &&
                         PROBABILITY_COLUMNS.map((column) => (
                           <th key={column.key} class="num pct" scope="col" title={column.title}>
-                            <span class="pct-label">{column.label} %</span>
-                            <span class="pct-short">{column.short}</span>
+                            <span aria-hidden="true">{column.short}</span>
+                            <span class="visually-hidden">{column.label} %</span>
                           </th>
                         ))}
                     </tr>

@@ -111,9 +111,7 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
-.model-picker legend {
-  float: left;
-  padding: 0;
+.model-picker-label {
   font: 600 0.62rem var(--display);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -121,8 +119,8 @@ body {
 }
 
 .model-options {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
   gap: 2px;
   padding: 2px;
   background: var(--led-screen);
@@ -387,13 +385,14 @@ tbody th {
   color: var(--amber);
 }
 
-/* Season Simulation percentages: full labels, or short ones on narrow screens. */
-.pct.none {
-  color: var(--muted);
+/* Season Simulation percentages: short labels (PO, PI, Out, 1st), spelled out in the legend. */
+.projected .pct {
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
 }
 
-.pct-short {
-  display: none;
+.pct.none {
+  color: var(--muted);
 }
 
 .current .points {
@@ -528,9 +527,13 @@ tbody th {
 
 /* ───────── Points + Projected Gain bar ───────── */
 
+/* The bar takes what the other columns leave; its header wraps so the percentages fit beside it. */
 .bar-col {
-  width: 22%;
-  min-width: 7rem;
+  min-width: 5rem;
+}
+
+thead th.bar-col {
+  white-space: normal;
 }
 
 .gain-bar {
@@ -739,13 +742,17 @@ footer a {
     display: none;
   }
 
-  .team-acronym,
-  .pct-short {
+  .team-acronym {
     display: inline;
   }
 
-  .pct-label {
-    display: none;
+  .model-options {
+    flex: 1;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .model-options span {
+    text-align: center;
   }
 
   .rank {
