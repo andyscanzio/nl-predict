@@ -13,6 +13,9 @@ export function otsoRate(playedGames: readonly PlayedGame[]): number {
   return decidedLate / playedGames.length;
 }
 
+/** Points per Game assumed for a team with nothing to measure it from: half of every Game's 3 Points. */
+export const LEAGUE_AVERAGE_POINTS_PER_GAME = 1.5;
+
 /** Outcome Probabilities for one Game, from the home team's side; they sum to 1. */
 export interface OutcomeProbabilities {
   regulationWin: number;
@@ -49,4 +52,13 @@ export function outcomesFromExpectedPoints(expectedHomePoints: number, o: number
     overtimeOrShootoutLoss: (1 - p) * o,
     regulationLoss: (1 - p) * (1 - o),
   };
+}
+
+/**
+ * The Outcome Probabilities of a Game between a home side expected to earn `homeRate` Points and an away side expected to
+ * earn `awayRate`. A Game's 3 Points can only honour both rates on average, so the home side expects the mean of its own
+ * rate and what the away side's rate leaves it: (home rate + (3 − away rate)) / 2.
+ */
+export function outcomesFromRates(homeRate: number, awayRate: number, o: number): OutcomeProbabilities {
+  return outcomesFromExpectedPoints((homeRate + 3 - awayRate) / 2, o);
 }

@@ -24,6 +24,19 @@ export function formOf(window: PlayedGame[], teamId: TeamId): number | null {
   return window.reduce((sum, game) => sum + pointsFor(game, teamId), 0) / window.length;
 }
 
+/** The Form a team is expected to show at each venue. */
+export interface VenueForms {
+  home: number;
+  away: number;
+}
+
+/** A team's Home and Away Form, an empty Form Window taking the other venue's Form, and `fallback` with neither. */
+export function venueFormsOf(windows: FormWindows, teamId: TeamId, fallback: number): VenueForms {
+  const homeForm = formOf(windows.home, teamId);
+  const awayForm = formOf(windows.away, teamId);
+  return { home: homeForm ?? awayForm ?? fallback, away: awayForm ?? homeForm ?? fallback };
+}
+
 /** A Form Window Game seen from one team's side. */
 export interface FormWindowGame {
   gameId: string;

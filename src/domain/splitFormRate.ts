@@ -1,4 +1,4 @@
-import { formOf } from "./form.ts";
+import { venueFormsOf, type VenueForms } from "./form.ts";
 import type { ExpectedPoints } from "./outcomes.ts";
 import type { ProjectionModel } from "./project.ts";
 import type { TeamId } from "./types.ts";
@@ -12,16 +12,13 @@ export const splitFormRate: ProjectionModel = {
   name: "Split Form Rate",
   kind: "points",
   predictPoints({ formWindows, remainingGames }) {
-    const rates = new Map<TeamId, { home: number; away: number }>();
-    for (const [teamId, windows] of formWindows) {
-      const homeForm = formOf(windows.home, teamId);
-      const awayForm = formOf(windows.away, teamId);
-      rates.set(teamId, { home: homeForm ?? awayForm ?? 0, away: awayForm ?? homeForm ?? 0 });
-    }
+    const forms = new Map<TeamId, VenueForms>(
+      [...formWindows].map(([teamId, windows]) => [teamId, venueFormsOf(windows, teamId, 0)]),
+    );
     return new Map<string, ExpectedPoints>(
       remainingGames.map((game) => [
         game.id,
-        { home: rates.get(game.homeTeamId)!.home, away: rates.get(game.awayTeamId)!.away },
+        { home: forms.get(game.homeTeamId)!.home, away: forms.get(game.awayTeamId)!.away },
       ]),
     );
   },
