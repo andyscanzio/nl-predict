@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import {
+  LOW_SAMPLE_GAMES,
   project,
   REGULAR_SEASON_GAMES,
   type CutLine,
@@ -410,7 +411,7 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                               {teamCell(row.teamId)}
                             </button>
                             {row.lowSample && (
-                              <abbr class="low-sample" title={`Low Sample: a Form Window holds fewer than ${FORM_WINDOW_SIZE} Games`}>
+                              <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
                                 LS
                               </abbr>
                             )}
@@ -476,7 +477,7 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                   Points + Projected Gain
                 </li>
                 <li>
-                  <abbr class="low-sample">LS</abbr> Low Sample: fewer than {FORM_WINDOW_SIZE} Games in a Form Window
+                  <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
                 </li>
                 <li>Left: Remaining home · away Games</li>
               </ul>

@@ -217,12 +217,11 @@ describe("project: Split Form Rate", () => {
     expect(projectedRow(games, 1)).toMatchObject({ remainingHomeGames: 1, projectedPoints: 6 });
   });
 
-  it("flags Low Sample when either Form Window holds fewer than five Games", () => {
-    const fiveHome = Array.from({ length: 5 }, () => played(1, 2, 3, 1));
-    const fiveAway = Array.from({ length: 5 }, () => played(2, 1, 1, 3));
-    expect(projectedRow([...fiveHome, ...fiveAway], 1).lowSample).toBe(false);
-    expect(projectedRow([...fiveHome, ...fiveAway.slice(1)], 1).lowSample).toBe(true);
-    expect(projectedRow([...fiveHome.slice(1), ...fiveAway], 1).lowSample).toBe(true);
+  it("flags Low Sample when the team has fewer than ten Played Games, whatever its Form Windows hold", () => {
+    const nineHome = Array.from({ length: 9 }, () => played(1, 2, 3, 1));
+    expect(projectedRow(nineHome, 1).lowSample).toBe(true);
+    expect(projectedRow([...nineHome, played(3, 1, 1, 3)], 1).lowSample).toBe(false);
+    expect(projectedRow([...nineHome, played(3, 1, 1, 3)], 3).lowSample).toBe(true);
   });
 
   it("uses Home Form for away Games too when the away Form Window is empty", () => {
