@@ -1,0 +1,2447 @@
+{
+ "season": 2026,
+ "snapshotAt": "2026-09-27T11:33:16.673Z",
+ "teams": [
+  {
+   "id": 102128,
+   "name": "EHC Biel-Bienne",
+   "acronym": "EHCB"
+  },
+  {
+   "id": 101149,
+   "name": "EHC Kloten",
+   "acronym": "EHCK"
+  },
+  {
+   "id": 101144,
+   "name": "EV Zug",
+   "acronym": "EVZ"
+  },
+  {
+   "id": 103138,
+   "name": "Fribourg-Gottéron",
+   "acronym": "FRI"
+  },
+  {
+   "id": 103140,
+   "name": "Genève-Servette HC",
+   "acronym": "GSHC"
+  },
+  {
+   "id": 103144,
+   "name": "HC Ajoie",
+   "acronym": "HCA"
+  },
+  {
+   "id": 101152,
+   "name": "HC Ambri-Piotta",
+   "acronym": "HCAP"
+  },
+  {
+   "id": 101151,
+   "name": "HC Davos",
+   "acronym": "HCD"
+  },
+  {
+   "id": 101150,
+   "name": "HC Lugano",
+   "acronym": "HCL"
+  },
+  {
+   "id": 103141,
+   "name": "Lausanne HC",
+   "acronym": "LHC"
+  },
+  {
+   "id": 102126,
+   "name": "SC Bern",
+   "acronym": "SCB"
+  },
+  {
+   "id": 101060,
+   "name": "SC Rapperswil-Jona Lakers",
+   "acronym": "SCRJ"
+  },
+  {
+   "id": 102127,
+   "name": "SCL Tigers",
+   "acronym": "SCL"
+  },
+  {
+   "id": 101139,
+   "name": "ZSC Lions",
+   "acronym": "ZSC"
+  }
+ ],
+ "games": [
+  {
+   "id": "20271105000001",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101152,
+   "result": {
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "decision": "SO"
+   }
+  },
+  {
+   "id": "20271105000002",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103138,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000003",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102127,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000004",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101149,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000005",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101144,
+   "result": {
+    "homeGoals": 0,
+    "awayGoals": 5,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000006",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103140,
+   "result": {
+    "homeGoals": 6,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000007",
+   "startsAt": "2026-09-15T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102126,
+   "result": {
+    "homeGoals": 5,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000008",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101060,
+   "result": {
+    "homeGoals": 6,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000009",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101151,
+   "result": {
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000010",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103141,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000011",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103144,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "decision": "SO"
+   }
+  },
+  {
+   "id": "20271105000012",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101150,
+   "result": {
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000013",
+   "startsAt": "2026-09-18T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101139,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000015",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101149,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000016",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 102127,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "decision": "SO"
+   }
+  },
+  {
+   "id": "20271105000017",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101144,
+   "result": {
+    "homeGoals": 2,
+    "awayGoals": 6,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000018",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103138,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000019",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101152,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000021",
+   "startsAt": "2026-09-19T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103140,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000022",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101139,
+   "result": {
+    "homeGoals": 2,
+    "awayGoals": 4,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000023",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101152,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000025",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101060,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000026",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102126,
+   "result": {
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000027",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101144,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000028",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103141,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 5,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000115",
+   "startsAt": "2026-09-22T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103138,
+   "result": {
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "decision": "SO"
+   }
+  },
+  {
+   "id": "20271105000032",
+   "startsAt": "2026-09-24T20:00:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102128,
+   "result": {
+    "homeGoals": 0,
+    "awayGoals": 6,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000029",
+   "startsAt": "2026-09-25T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101139,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 6,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000030",
+   "startsAt": "2026-09-25T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103144,
+   "result": {
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000031",
+   "startsAt": "2026-09-25T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103138,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "decision": "SO"
+   }
+  },
+  {
+   "id": "20271105000033",
+   "startsAt": "2026-09-25T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101151,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000035",
+   "startsAt": "2026-09-25T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101144,
+   "result": {
+    "homeGoals": 5,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000036",
+   "startsAt": "2026-09-26T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101060,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 5,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000038",
+   "startsAt": "2026-09-26T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103141,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000039",
+   "startsAt": "2026-09-26T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102127,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "decision": "OT"
+   }
+  },
+  {
+   "id": "20271105000040",
+   "startsAt": "2026-09-26T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101152,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 5,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000041",
+   "startsAt": "2026-09-26T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101149,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
+  },
+  {
+   "id": "20271105000037",
+   "startsAt": "2026-09-27T14:00:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000043",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000044",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000045",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000046",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000047",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000048",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000049",
+   "startsAt": "2026-09-29T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000067",
+   "startsAt": "2026-09-30T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000050",
+   "startsAt": "2026-10-01T20:00:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000051",
+   "startsAt": "2026-10-02T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000052",
+   "startsAt": "2026-10-02T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000053",
+   "startsAt": "2026-10-02T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000054",
+   "startsAt": "2026-10-02T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000055",
+   "startsAt": "2026-10-02T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000058",
+   "startsAt": "2026-10-03T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000059",
+   "startsAt": "2026-10-03T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000061",
+   "startsAt": "2026-10-03T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000062",
+   "startsAt": "2026-10-03T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000063",
+   "startsAt": "2026-10-03T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000057",
+   "startsAt": "2026-10-04T14:00:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000060",
+   "startsAt": "2026-10-04T14:00:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000034",
+   "startsAt": "2026-10-07T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000066",
+   "startsAt": "2026-10-08T20:00:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000064",
+   "startsAt": "2026-10-09T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000065",
+   "startsAt": "2026-10-09T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000068",
+   "startsAt": "2026-10-09T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000069",
+   "startsAt": "2026-10-09T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000071",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000072",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000073",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000074",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000076",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000077",
+   "startsAt": "2026-10-10T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000075",
+   "startsAt": "2026-10-11T14:00:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000138",
+   "startsAt": "2026-10-14T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000078",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000079",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000080",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000081",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000082",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000083",
+   "startsAt": "2026-10-16T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000085",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000086",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000087",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000088",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000089",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000090",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000091",
+   "startsAt": "2026-10-17T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000092",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000093",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000094",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000095",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000096",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000097",
+   "startsAt": "2026-10-20T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000099",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000100",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000101",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000102",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000103",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000104",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000105",
+   "startsAt": "2026-10-23T19:45:00+02:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000106",
+   "startsAt": "2026-10-24T19:45:00+02:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000108",
+   "startsAt": "2026-10-24T19:45:00+02:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000110",
+   "startsAt": "2026-10-24T19:45:00+02:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000111",
+   "startsAt": "2026-10-24T19:45:00+02:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000112",
+   "startsAt": "2026-10-24T19:45:00+02:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000107",
+   "startsAt": "2026-10-25T14:00:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000109",
+   "startsAt": "2026-10-25T14:00:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000024",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000113",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000114",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000116",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000117",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000118",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000119",
+   "startsAt": "2026-10-27T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000133",
+   "startsAt": "2026-10-28T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000124",
+   "startsAt": "2026-10-29T20:00:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000120",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000121",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000122",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000123",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000125",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000126",
+   "startsAt": "2026-10-30T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000127",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000128",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000129",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000130",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000131",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000132",
+   "startsAt": "2026-10-31T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000020",
+   "startsAt": "2026-11-11T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000070",
+   "startsAt": "2026-11-11T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000135",
+   "startsAt": "2026-11-12T20:00:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000134",
+   "startsAt": "2026-11-13T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000136",
+   "startsAt": "2026-11-13T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000139",
+   "startsAt": "2026-11-13T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000140",
+   "startsAt": "2026-11-13T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000141",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000143",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000144",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000145",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000146",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000147",
+   "startsAt": "2026-11-14T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000137",
+   "startsAt": "2026-11-15T15:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000142",
+   "startsAt": "2026-11-15T15:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000098",
+   "startsAt": "2026-11-18T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000151",
+   "startsAt": "2026-11-19T20:00:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000148",
+   "startsAt": "2026-11-20T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000150",
+   "startsAt": "2026-11-20T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000152",
+   "startsAt": "2026-11-20T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000153",
+   "startsAt": "2026-11-20T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000154",
+   "startsAt": "2026-11-20T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000155",
+   "startsAt": "2026-11-21T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000156",
+   "startsAt": "2026-11-21T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000157",
+   "startsAt": "2026-11-21T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000159",
+   "startsAt": "2026-11-21T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000161",
+   "startsAt": "2026-11-21T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000158",
+   "startsAt": "2026-11-22T14:00:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000160",
+   "startsAt": "2026-11-22T14:00:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000162",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000163",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000164",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000165",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000166",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000167",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000168",
+   "startsAt": "2026-11-24T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000169",
+   "startsAt": "2026-11-26T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000172",
+   "startsAt": "2026-11-26T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000170",
+   "startsAt": "2026-11-27T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000173",
+   "startsAt": "2026-11-27T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000174",
+   "startsAt": "2026-11-27T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000175",
+   "startsAt": "2026-11-27T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000180",
+   "startsAt": "2026-11-27T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000176",
+   "startsAt": "2026-11-28T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000177",
+   "startsAt": "2026-11-28T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000178",
+   "startsAt": "2026-11-28T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000179",
+   "startsAt": "2026-11-28T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000182",
+   "startsAt": "2026-11-28T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000181",
+   "startsAt": "2026-11-29T14:00:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000171",
+   "startsAt": "2026-11-29T15:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000300",
+   "startsAt": "2026-12-02T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000189",
+   "startsAt": "2026-12-03T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000185",
+   "startsAt": "2026-12-04T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000186",
+   "startsAt": "2026-12-04T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000187",
+   "startsAt": "2026-12-04T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000188",
+   "startsAt": "2026-12-04T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000190",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000191",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000192",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000193",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000194",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000196",
+   "startsAt": "2026-12-05T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000183",
+   "startsAt": "2026-12-06T15:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000184",
+   "startsAt": "2026-12-06T15:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000195",
+   "startsAt": "2026-12-06T15:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000197",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000198",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000199",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000200",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000201",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000202",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000203",
+   "startsAt": "2026-12-16T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000204",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000205",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000206",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000207",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000208",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000209",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000210",
+   "startsAt": "2026-12-18T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000211",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000212",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000213",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000214",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000215",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000216",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000217",
+   "startsAt": "2026-12-19T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000221",
+   "startsAt": "2026-12-21T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000149",
+   "startsAt": "2026-12-22T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000218",
+   "startsAt": "2026-12-22T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000222",
+   "startsAt": "2026-12-22T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000223",
+   "startsAt": "2026-12-22T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000224",
+   "startsAt": "2026-12-22T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000225",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000226",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000227",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000228",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000229",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000230",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000231",
+   "startsAt": "2026-12-23T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000235",
+   "startsAt": "2027-01-02T14:00:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000232",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000233",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000234",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000236",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000237",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000238",
+   "startsAt": "2027-01-02T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000239",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000240",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000241",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000243",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000244",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000245",
+   "startsAt": "2027-01-03T15:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000242",
+   "startsAt": "2027-01-04T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000084",
+   "startsAt": "2027-01-05T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000219",
+   "startsAt": "2027-01-05T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000261",
+   "startsAt": "2027-01-05T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000278",
+   "startsAt": "2027-01-06T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000249",
+   "startsAt": "2027-01-07T20:00:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000246",
+   "startsAt": "2027-01-08T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000247",
+   "startsAt": "2027-01-08T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000248",
+   "startsAt": "2027-01-08T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000251",
+   "startsAt": "2027-01-08T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000252",
+   "startsAt": "2027-01-08T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000253",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000254",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000255",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000257",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000258",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000259",
+   "startsAt": "2027-01-09T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000256",
+   "startsAt": "2027-01-10T14:00:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000250",
+   "startsAt": "2027-01-10T15:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000014",
+   "startsAt": "2027-01-13T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000265",
+   "startsAt": "2027-01-14T20:00:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000260",
+   "startsAt": "2027-01-15T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000262",
+   "startsAt": "2027-01-15T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000263",
+   "startsAt": "2027-01-15T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000264",
+   "startsAt": "2027-01-15T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000266",
+   "startsAt": "2027-01-15T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000267",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000268",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000269",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000270",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000271",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000273",
+   "startsAt": "2027-01-16T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000272",
+   "startsAt": "2027-01-17T15:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000042",
+   "startsAt": "2027-01-20T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000274",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000275",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000276",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000277",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000279",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000280",
+   "startsAt": "2027-01-22T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000282",
+   "startsAt": "2027-01-23T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000284",
+   "startsAt": "2027-01-23T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000285",
+   "startsAt": "2027-01-23T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000286",
+   "startsAt": "2027-01-23T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000287",
+   "startsAt": "2027-01-23T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000283",
+   "startsAt": "2027-01-24T14:00:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000056",
+   "startsAt": "2027-01-26T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000281",
+   "startsAt": "2027-01-26T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000298",
+   "startsAt": "2027-01-28T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000288",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000289",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000290",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000291",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000292",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000293",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000294",
+   "startsAt": "2027-01-29T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000295",
+   "startsAt": "2027-01-30T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000296",
+   "startsAt": "2027-01-30T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000297",
+   "startsAt": "2027-01-30T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000299",
+   "startsAt": "2027-01-30T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000301",
+   "startsAt": "2027-01-30T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000302",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000303",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000304",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000305",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000306",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000307",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000308",
+   "startsAt": "2027-02-02T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000220",
+   "startsAt": "2027-02-03T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000319",
+   "startsAt": "2027-02-04T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000309",
+   "startsAt": "2027-02-05T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000310",
+   "startsAt": "2027-02-05T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000311",
+   "startsAt": "2027-02-05T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000314",
+   "startsAt": "2027-02-05T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000315",
+   "startsAt": "2027-02-05T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000316",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000317",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000318",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000320",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000321",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000322",
+   "startsAt": "2027-02-06T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000312",
+   "startsAt": "2027-02-07T15:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000313",
+   "startsAt": "2027-02-07T15:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000323",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000324",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000325",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000326",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000327",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000328",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000329",
+   "startsAt": "2027-02-16T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000330",
+   "startsAt": "2027-02-18T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000333",
+   "startsAt": "2027-02-18T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000331",
+   "startsAt": "2027-02-19T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000332",
+   "startsAt": "2027-02-19T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000334",
+   "startsAt": "2027-02-19T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000335",
+   "startsAt": "2027-02-19T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000336",
+   "startsAt": "2027-02-19T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000337",
+   "startsAt": "2027-02-20T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 102128
+  },
+  {
+   "id": "20271105000338",
+   "startsAt": "2027-02-20T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000339",
+   "startsAt": "2027-02-20T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000341",
+   "startsAt": "2027-02-20T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000342",
+   "startsAt": "2027-02-20T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000343",
+   "startsAt": "2027-02-21T14:00:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000340",
+   "startsAt": "2027-02-21T15:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000344",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000345",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000346",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000347",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000348",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000349",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000350",
+   "startsAt": "2027-02-25T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000351",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 101152,
+   "awayTeamId": 101149
+  },
+  {
+   "id": "20271105000352",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 102126,
+   "awayTeamId": 103141
+  },
+  {
+   "id": "20271105000353",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 102128,
+   "awayTeamId": 103144
+  },
+  {
+   "id": "20271105000354",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 101150,
+   "awayTeamId": 101151
+  },
+  {
+   "id": "20271105000355",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 102127,
+   "awayTeamId": 103140
+  },
+  {
+   "id": "20271105000356",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 101139,
+   "awayTeamId": 101060
+  },
+  {
+   "id": "20271105000357",
+   "startsAt": "2027-02-27T19:45:00+01:00",
+   "homeTeamId": 101144,
+   "awayTeamId": 103138
+  },
+  {
+   "id": "20271105000358",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 103144,
+   "awayTeamId": 101139
+  },
+  {
+   "id": "20271105000359",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 101151,
+   "awayTeamId": 101144
+  },
+  {
+   "id": "20271105000360",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 103138,
+   "awayTeamId": 101150
+  },
+  {
+   "id": "20271105000361",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 103140,
+   "awayTeamId": 101152
+  },
+  {
+   "id": "20271105000362",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 101149,
+   "awayTeamId": 102127
+  },
+  {
+   "id": "20271105000363",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 101060,
+   "awayTeamId": 102126
+  },
+  {
+   "id": "20271105000364",
+   "startsAt": "2027-03-01T19:45:00+01:00",
+   "homeTeamId": 103141,
+   "awayTeamId": 102128
+  }
+ ]
+}
