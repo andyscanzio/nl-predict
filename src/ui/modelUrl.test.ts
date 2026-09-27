@@ -21,6 +21,10 @@ describe("modelFromUrl", () => {
     expect(modelFromUrl(`${PAGE}?model=${id}`)).toBe(model);
   });
 
+  it("defaults to the Elo Model", () => {
+    expect(DEFAULT_MODEL).toBe(eloModel);
+  });
+
   it("uses the Default Model without a model parameter", () => {
     expect(modelFromUrl(PAGE)).toBe(DEFAULT_MODEL);
   });

@@ -7,8 +7,12 @@ import { splitFormRate } from "../domain/splitFormRate.ts";
 /** The Projection Models a visitor can pick, in picker order. */
 export const PROJECTION_MODELS: readonly ProjectionModel[] = [splitFormRate, seasonRate, matchupModel, eloModel];
 
-/** The Default Model: what a visitor sees unless they pick another. Provisional until chosen from the Back-Test (#13). */
-export const DEFAULT_MODEL: ProjectionModel = splitFormRate;
+/**
+ * The Default Model: what a visitor sees unless they pick another.
+ * Chosen from the Back-Test (#13, `npm run backtest`): best Brier score, and best Points MAE incl. Split Form Rate.
+ * Provisional while the Season has few Played Games; revisit as they grow.
+ */
+export const DEFAULT_MODEL: ProjectionModel = eloModel;
 
 /** The query parameter naming the picked model by its id, e.g. `?model=elo`. */
 const MODEL_PARAM = "model";
