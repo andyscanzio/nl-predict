@@ -59,6 +59,10 @@ _Avoid_: Leaderboard, standings (when ambiguous)
 The expected final Regular Season standings produced by a Projection Model, ranked by projected Points with ties broken by Current Table position.
 _Avoid_: Leaderboard, prediction
 
+**Projected Gain**:
+The Points a Projection Model expects a team to add over its Remaining Games: projected Points minus current Points.
+_Avoid_: Remaining Points (that suggests the Points still available to win)
+
 **Projection Model**:
 A method for turning Home Form, Away Form and the remaining Games into a Projected Table.
 
