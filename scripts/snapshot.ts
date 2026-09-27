@@ -8,7 +8,7 @@
 import { readFile, rename, writeFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { setTimeout as sleep } from "node:timers/promises";
-import { buildSnapshot, type FetchDay } from "../src/snapshot/buildSnapshot.ts";
+import { buildSnapshot, snapshotChanged, type FetchDay } from "../src/snapshot/buildSnapshot.ts";
 import type { Snapshot } from "../src/domain/types.ts";
 import { seasonFor, seasonLabel } from "../src/domain/season.ts";
 
@@ -67,8 +67,15 @@ const season = values.season ? Number(values.season) : seasonFor(now);
 if (!Number.isInteger(season)) throw new Error(`--season must be the Season's starting year, got ${values.season}`);
 
 console.log(`Fetching Season ${seasonLabel(season)}…`);
-const snapshot = await buildSnapshot(sihfFetchDay(season), await readPreviousSnapshot(values.out), now);
+const previous = await readPreviousSnapshot(values.out);
+const snapshot = await buildSnapshot(sihfFetchDay(season), previous, now);
 if (snapshot.season !== season) throw new Error(`asked SIHF for Season ${season} but got ${snapshot.season}`);
+
+// Leave the file untouched when only the snapshot time would change, so a scheduled run with no news commits nothing.
+if (previous && !snapshotChanged(previous, snapshot)) {
+  console.log(`No changes since ${previous.snapshotAt}; left ${values.out} as it was.`);
+  process.exit(0);
+}
 
 // Write to a temporary file first so a failed run never leaves a half-written snapshot.
 const temporary = `${values.out}.tmp`;

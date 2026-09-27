@@ -79,3 +79,10 @@ export async function buildSnapshot(
     ),
   };
 }
+
+/** Whether a new snapshot holds anything the previous one doesn't, ignoring when each was taken. */
+export function snapshotChanged(previous: Snapshot | null, next: Snapshot): boolean {
+  if (!previous) return true;
+  const withoutTime = ({ snapshotAt: _, ...rest }: Snapshot) => JSON.stringify(rest);
+  return withoutTime(previous) !== withoutTime(next);
+}

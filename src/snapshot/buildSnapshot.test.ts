@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSnapshot, type SihfQuery } from "./buildSnapshot.ts";
+import { buildSnapshot, snapshotChanged, type SihfQuery } from "./buildSnapshot.ts";
 import type { Game, Snapshot, Team } from "../domain/types.ts";
 import seasonResponse from "./__fixtures__/season-2027.json";
 import regularSeasonResponse from "./__fixtures__/regular-season-2027.json";
@@ -281,5 +281,23 @@ describe("buildSnapshot: incremental refresh", () => {
     const previous = previousWith([scheduledOn("a", "2026-09-26T19:45:00+02:00")]);
     const { fetchDay } = fakeFetchDay({ "26.09.2026": { header: [], data: [] } });
     await expect(buildSnapshot(fetchDay, previous, now)).rejects.toThrow(/column/);
+  });
+});
+
+describe("snapshotChanged", () => {
+  const game: Game = { id: "a", startsAt: "2026-09-26T19:45:00+02:00", homeTeamId: 101150, awayTeamId: 103140 };
+  const previous: Snapshot = { season: 2026, snapshotAt: "2026-09-26T21:00:00.000Z", teams: [], games: [game] };
+
+  it("is false when only the snapshot time differs", () => {
+    expect(snapshotChanged(previous, { ...previous, snapshotAt: "2026-09-27T05:00:00.000Z" })).toBe(false);
+  });
+
+  it("is true when a Game gains a result", () => {
+    const played = { ...game, result: { homeGoals: 2, awayGoals: 1, decision: "OT" } as const };
+    expect(snapshotChanged(previous, { ...previous, games: [played] })).toBe(true);
+  });
+
+  it("is true when there is no previous snapshot", () => {
+    expect(snapshotChanged(null, previous)).toBe(true);
   });
 });

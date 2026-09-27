@@ -1,5 +1,11 @@
 # NL Predict
 
+## Live site
+
+https://andyscanzio.github.io/nl-predict/ — deployed by `.github/workflows/refresh-and-deploy.yml`, which refreshes `data/games.json` at about 23:00 and 07:00 Swiss time, commits it only when Games changed and redeploys. Pushes to `main` redeploy without refreshing.
+
+Manual refresh: `gh workflow run refresh-and-deploy.yml` (or "Run workflow" on the Actions tab). A manual run always redeploys.
+
 ## Agent skills
 
 ### Issue tracker

@@ -1,0 +1,93 @@
+name: Refresh and deploy
+
+on:
+  schedule:
+    # About 23:00 and 07:00 Europe/Zurich. Cron runs in UTC and ignores daylight saving time, so these match
+    # Swiss winter time (CET, UTC+1), which covers most of the Regular Season; under summer time (CEST, UTC+2,
+    # until late October) they fire an hour later, at 00:00 and 08:00, still after the evening's Games.
+    - cron: "0 22 * * *"
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+  # Code changes on main redeploy without refreshing the snapshot.
+  push:
+    branches: [main]
+
+jobs:
+  refresh:
+    # Only main holds the published snapshot.
+    if: github.event_name != 'push' && github.ref == 'refs/heads/main'
+    # One refresh at a time, so two never race to commit the snapshot.
+    concurrency:
+      group: refresh
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history, so the rebase before pushing works even if main moved meanwhile.
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # A failed fetch fails the job, so nothing below it, nor the deploy, runs.
+      - run: npm run snapshot
+      - id: commit
+        name: Commit the snapshot if it changed
+        run: |
+          if git diff --quiet -- data/games.json; then
+            echo "Snapshot unchanged; nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/games.json
+          git commit -m "Refresh snapshot"
+          git pull --rebase
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: refresh
+    # Deploy on new data, on every manual run and on code pushes (where refresh is skipped), never after a failed refresh.
+    if: >-
+      !cancelled() && (
+        (github.event_name == 'push' && needs.refresh.result == 'skipped') ||
+        (needs.refresh.result == 'success' && (needs.refresh.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'))
+      )
+    # Every deploy builds the tip of main, so a newer queued deploy may replace a pending one.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The refresh job may have just pushed a new snapshot; build from the tip of the branch.
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v5

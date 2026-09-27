@@ -12,3 +12,4 @@ The only usable source for National League results is the unofficial SIHF data A
 - Data is only as fresh as the last scheduled run (~23:00 and ~07:00 Swiss time, plus manual trigger); the page must show when the snapshot was taken.
 - Committing snapshots gives a free history of past states, which a future back-testing feature relies on.
 - Refreshes re-read the Season's date list, re-fetch the last ~7 days and fetch match days the snapshot doesn't have yet; older match days are treated as settled.
+- A refresh that finds nothing new leaves the snapshot file untouched, so scheduled runs only commit when Games changed; `snapshotAt` is therefore the time of the last refresh that changed something, not of the last run.
