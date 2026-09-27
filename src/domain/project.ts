@@ -8,6 +8,8 @@ import {
   type PlayedGame,
 } from "./form.ts";
 import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
+import { cutLineFor, type CutLine } from "./cutLines.ts";
+import { simulateSeason, type CutLineProbabilities } from "./seasonSimulation.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -41,12 +43,16 @@ export interface ProjectionModelInput {
  */
 export type ProjectionModel =
   | {
+      /** Stable identifier, e.g. for seeding the Season Simulation. */
+      id: string;
       name: string;
       kind: "outcomes";
       /** Outcome Probabilities for every Remaining Game, by Game id. */
       predictOutcomes(input: ProjectionModelInput): Map<string, OutcomeProbabilities>;
     }
   | {
+      /** Stable identifier, e.g. for seeding the Season Simulation. */
+      id: string;
       name: string;
       kind: "points";
       /** Expected Points of each side for every Remaining Game, by Game id. */
@@ -76,15 +82,6 @@ export function predictGames(model: ProjectionModel, input: ProjectionModelInput
   return predictions;
 }
 
-/** Where a rank falls against the Cut Lines. */
-export type CutLine = "playoffs" | "play-in" | "eliminated";
-
-export function cutLineFor(rank: number): CutLine {
-  if (rank <= 6) return "playoffs";
-  if (rank <= 10) return "play-in";
-  return "eliminated";
-}
-
 export interface ProjectedTableRow {
   rank: number;
   teamId: TeamId;
@@ -106,6 +103,8 @@ export interface ProjectedTableRow {
   projectedPoints: number;
   /** The team has fewer than LOW_SAMPLE_GAMES Played Games. */
   lowSample: boolean;
+  /** Cut Line zone and 1st-place chances from the Season Simulation; null for Points-only models. */
+  probabilities: CutLineProbabilities | null;
 }
 
 /** A team with fewer Played Games than this is Low Sample, under every Projection Model. */
@@ -230,7 +229,8 @@ export function projectionModelInput(games: Game[], asOf: Date): ProjectionModel
   return { currentTable, formWindows, playedGames: chronological, remainingGames, otsoRate: otsoRate(playedGames) };
 }
 
-export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
+/** `seed` drives the Season Simulation, which runs for models with Outcome Probabilities (see simulationSeed). */
+export function project(games: Game[], asOf: Date, model: ProjectionModel, seed = 0): Projection {
   const input = projectionModelInput(games, asOf);
   const { currentTable, formWindows, playedGames, remainingGames } = input;
 
@@ -241,6 +241,16 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
     projectedPoints.set(game.homeTeamId, projectedPoints.get(game.homeTeamId)! + points.home);
     projectedPoints.set(game.awayTeamId, projectedPoints.get(game.awayTeamId)! + points.away);
   }
+
+  const probabilities =
+    model.kind === "outcomes"
+      ? simulateSeason(
+          new Map(currentTable.map((row) => [row.teamId, row.points])),
+          remainingGames,
+          new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
+          seed,
+        )
+      : null;
 
   // Current Table order is the tie-break: the sort is stable.
   const projectedTable = currentTable
@@ -265,6 +275,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
       remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
       projectedPoints: projected,
       lowSample: row.gamesPlayed < LOW_SAMPLE_GAMES,
+      probabilities: probabilities?.get(row.teamId) ?? null,
     };
   });
 

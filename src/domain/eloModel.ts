@@ -45,6 +45,7 @@ export function eloRatings(
  */
 export function createEloModel(parameters: EloParameters): ProjectionModel {
   return {
+    id: "elo",
     name: "Elo Model",
     kind: "outcomes",
     predictOutcomes({ currentTable, playedGames, remainingGames, otsoRate }) {

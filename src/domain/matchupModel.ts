@@ -9,6 +9,7 @@ import type { TeamId } from "./types.ts";
  * other-venue Form, as under Split Form Rate; with neither, the league-average 1.5.
  */
 export const matchupModel: ProjectionModel = {
+  id: "matchup",
   name: "Matchup Model",
   kind: "outcomes",
   predictOutcomes({ formWindows, remainingGames, otsoRate }) {

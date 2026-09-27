@@ -320,6 +320,15 @@ tbody th {
   color: var(--amber);
 }
 
+/* Season Simulation percentages: full labels, or short ones on narrow screens. */
+.pct.none {
+  color: var(--muted);
+}
+
+.pct-short {
+  display: none;
+}
+
 .current .points {
   font: 700 1.05rem var(--display);
   color: var(--amber);
@@ -663,8 +672,13 @@ footer a {
     display: none;
   }
 
-  .team-acronym {
+  .team-acronym,
+  .pct-short {
     display: inline;
+  }
+
+  .pct-label {
+    display: none;
   }
 
   .rank {

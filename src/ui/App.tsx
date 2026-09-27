@@ -1,14 +1,15 @@
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import {
   LOW_SAMPLE_GAMES,
   project,
   REGULAR_SEASON_GAMES,
-  type CutLine,
   type IntegrityIssue,
   type ProjectedTableRow,
+  type ProjectionModel,
 } from "../domain/project.ts";
-import { splitFormRate } from "../domain/splitFormRate.ts";
+import { simulationSeed, SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
+import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
@@ -58,6 +59,20 @@ const DECISION_LABELS: Record<Decision, string> = {
 };
 
 const PROJECTED_COLUMNS = 9;
+
+const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; short: string; title: string }[] = [
+  { key: "playoffs", label: "Playoffs", short: "PO", title: "Chance of finishing 1–6: straight to the playoffs" },
+  { key: "playIn", label: "Play-in", short: "PI", title: "Chance of finishing 7–10: the play-in" },
+  { key: "eliminated", label: "Eliminated", short: "Out", title: "Chance of finishing 11–14: eliminated" },
+  { key: "first", label: "1st", short: "1st", title: "Chance of finishing first" },
+];
+
+/** A probability as a whole percent; "<1" and ">99" keep a remote chance from reading as impossible or certain. */
+function formatPercent(probability: number) {
+  if (probability > 0 && probability < 0.005) return "<1";
+  if (probability < 1 && probability > 0.995) return ">99";
+  return String(Math.round(probability * 100));
+}
 
 const CUT_LINE_LABELS: Record<CutLine, string> = {
   playoffs: "Playoffs",
@@ -302,12 +317,14 @@ function IntegrityWarning({
   );
 }
 
-export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
-  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = project(
-    snapshot.games,
-    now,
-    splitFormRate,
+export function App({ snapshot, now, model }: { snapshot: Snapshot; now: Date; model: ProjectionModel }) {
+  // The Season Simulation is too slow to rerun on every render, such as expanding a team.
+  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = useMemo(
+    () => project(snapshot.games, now, model, simulationSeed(snapshot.snapshotAt, model.id)),
+    [snapshot, now, model],
   );
+  const showProbabilities = model.kind === "outcomes";
+  const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
   const snapshotAt = new Date(snapshot.snapshotAt);
@@ -381,6 +398,13 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                         + Projected Gain
                       </th>
                       <th class="num" scope="col" title="Projected Points">Proj</th>
+                      {showProbabilities &&
+                        PROBABILITY_COLUMNS.map((column) => (
+                          <th key={column.key} class="num pct" scope="col" title={column.title}>
+                            <span class="pct-label">{column.label} %</span>
+                            <span class="pct-short">{column.short}</span>
+                          </th>
+                        ))}
                     </tr>
                   </thead>
                   {projectedTable.map((row, index) => {
@@ -431,10 +455,19 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                             <GainBar row={row} scale={barScale} />
                           </td>
                           <td class="num projected-points">{Math.round(row.projectedPoints)}</td>
+                          {row.probabilities &&
+                            PROBABILITY_COLUMNS.map(({ key }) => {
+                              const probability = row.probabilities![key];
+                              return (
+                                <td key={key} class={probability === 0 ? "num pct none" : "num pct"}>
+                                  {formatPercent(probability)}
+                                </td>
+                              );
+                            })}
                         </tr>
                         {isExpanded && (
                           <tr class="detail" id={detailId}>
-                            <td colSpan={PROJECTED_COLUMNS}>
+                            <td colSpan={columns}>
                               <div class="form-windows">
                                 <FormWindowDetail
                                   side="home"
@@ -480,6 +513,12 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                   <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
                 </li>
                 <li>Left: Remaining home · away Games</li>
+                {showProbabilities && (
+                  <li>
+                    Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS.toLocaleString("en-GB")} simulated
+                    Seasons
+                  </li>
+                )}
               </ul>
             </section>
 
@@ -499,6 +538,16 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
                   current Points. Teams level on projected Points keep their Current Table order. Select a team to see the
                   Games in its Form Windows.
                 </p>
+                {showProbabilities && (
+                  <p>
+                    The percentages come from a Season Simulation: every Remaining Game is played out{" "}
+                    {SIMULATION_RUNS.toLocaleString("en-GB")} times by drawing its result from the model's Outcome
+                    Probabilities, and each simulated Season's final table is ranked by Points, with ties broken at random.
+                    Playoffs, Play-in and Eliminated are the share of Seasons a team finishes 1–6, 7–10 and 11–14; 1st is the share it
+                    finishes top. The table itself stays ranked by expected Points. The same data always gives the same
+                    numbers.
+                  </p>
+                )}
               </div>
             </section>
 

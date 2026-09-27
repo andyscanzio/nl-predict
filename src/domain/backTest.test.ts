@@ -6,6 +6,7 @@ import type { Game } from "./types.ts";
 
 /** Always a coin flip decided in regulation. */
 const coinFlip: ProjectionModel = {
+  id: "coin-flip",
   name: "Coin Flip",
   kind: "outcomes",
   predictOutcomes: ({ remainingGames }) =>

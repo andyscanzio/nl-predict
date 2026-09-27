@@ -9,6 +9,7 @@ import type { TeamId } from "./types.ts";
  * earns nothing. The two sides are predicted independently, so a Game need not hand out 3 Points: Points-only.
  */
 export const splitFormRate: ProjectionModel = {
+  id: "split-form-rate",
   name: "Split Form Rate",
   kind: "points",
   predictPoints({ formWindows, remainingGames }) {

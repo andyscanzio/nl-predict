@@ -8,6 +8,7 @@ import type { TeamId } from "./types.ts";
  * outcomesFromRates) through the OT/SO Rate.
  */
 export const seasonRate: ProjectionModel = {
+  id: "season-rate",
   name: "Season Rate",
   kind: "outcomes",
   predictOutcomes({ currentTable, remainingGames, otsoRate }) {
