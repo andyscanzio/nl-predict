@@ -1,38 +1,52 @@
+/* Arena scoreboard: dark-first panels, Oxanium for labels and numbers, system-ui for prose. */
 :root {
-  --bg: #ffffff;
-  --fg: #1a1c1f;
-  --muted: #5f6670;
-  --border: #e2e5e9;
-  --stripe: #f5f7f9;
-  --accent: #b3001b;
-  --up: #1a7f37;
-  --down: #b3001b;
-  --playoffs: #1a7f37;
-  --play-in: #bf8700;
-  --eliminated: #8c959f;
-  --warning-bg: #fff8c5;
-  --warning-border: #d4a72c;
+  --display: "Oxanium Variable", system-ui, sans-serif;
+  --bg: #07090c;
+  --panel: #10151c;
+  --panel-strip: #151c25;
+  --inset: #0b0f14;
+  --fg: #eef3f8;
+  --muted: #8593a2;
+  --line: #1f2833;
+  --amber: #ffb000;
+  --led: #ff4545;
+  --led-screen: #000;
+  --up: #32e07a;
+  --down: #ff4545;
+  --win: #32e07a;
+  --loss: #ff4545;
+  --playoffs: #29d3ff;
+  --play-in: #ffb000;
+  --eliminated: #56616d;
+  --bar-now: #eef3f8;
+  --warning-bg: #2a1f05;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--fg);
   background: var(--bg);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --bg: #121417;
-    --fg: #e8eaed;
-    --muted: #9aa1ab;
-    --border: #2b2f35;
-    --stripe: #1a1d21;
-    --accent: #ff5a6e;
-    --up: #4ac26b;
-    --down: #ff5a6e;
-    --playoffs: #4ac26b;
-    --play-in: #d4a72c;
-    --eliminated: #6e7681;
-    --warning-bg: #2e2508;
-    --warning-border: #9e6a03;
+    --bg: #e9edf2;
+    --panel: #ffffff;
+    --panel-strip: #f3f6f9;
+    --inset: #f6f8fa;
+    --fg: #0c1117;
+    --muted: #56636f;
+    --line: #d6dde5;
+    --amber: #a86a00;
+    --led: #d61f1f;
+    --led-screen: #0c1117;
+    --up: #0c8a41;
+    --down: #d61f1f;
+    --win: #0f9a4a;
+    --loss: #d61f1f;
+    --playoffs: #0079a8;
+    --play-in: #a86a00;
+    --eliminated: #9aa6b2;
+    --bar-now: #0c1117;
+    --warning-bg: #fff4d6;
   }
 }
 
@@ -46,35 +60,206 @@ body {
 }
 
 #app {
-  max-width: 48rem;
+  max-width: 60rem;
   margin: 0 auto;
   padding: 1.5rem 1rem 2rem;
 }
 
+/* ───────── Panels ───────── */
+
+.panel {
+  margin: 0 0 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel > h2 {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  font: 600 0.8rem var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel-strip);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-body {
+  padding: 0.75rem 1rem;
+}
+
+.panel-body p {
+  margin: 0 0 0.6rem;
+}
+
+.panel-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ───────── Header ───────── */
+
+.scoreboard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
+}
+
 h1 {
   margin: 0;
-  font-size: 1.75rem;
-  color: var(--accent);
+  font: 700 2rem/1.1 var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-h2 {
-  font-size: 1.15rem;
-  margin: 1.5rem 0 0.5rem;
-}
-
-.subtitle,
-.meta,
-footer {
-  color: var(--muted);
+h1 .dot {
+  color: var(--led);
+  font-size: 0.6em;
+  vertical-align: 0.25em;
 }
 
 .subtitle {
-  margin: 0.25rem 0 0;
+  margin: 0.15rem 0 0;
+  font: 500 0.8rem var(--display);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.meta {
-  font-size: 0.875rem;
+.as-of {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
 }
+
+.as-of-label {
+  font: 600 0.6rem var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.as-of time {
+  font: 700 1.5rem var(--display);
+  font-variant-numeric: tabular-nums;
+  color: #ffb000;
+  background: var(--led-screen);
+  padding: 0.1rem 0.6rem;
+  border-radius: 4px;
+  text-shadow: 0 0 10px rgb(255 176 0 / 0.55);
+}
+
+/* ───────── Ticker ───────── */
+
+.ticker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0 0.5rem 0 0.8rem;
+  background: var(--led-screen);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--display);
+}
+
+.ticker-tag {
+  flex: none;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #000;
+  background: #ffb000;
+  padding: 0.15rem 0.45rem;
+  border-radius: 2px;
+}
+
+.ticker-rail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-crawl 28s linear infinite;
+}
+
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track,
+.ticker.paused .ticker-track {
+  animation-play-state: paused;
+}
+
+.ticker-track p {
+  margin: 0;
+  padding: 0.6rem 5rem 0.6rem 0;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffb000;
+}
+
+.ticker-track strong {
+  color: #fff;
+}
+
+@keyframes ticker-crawl {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-toggle {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: none;
+  color: #ffb000;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.ticker-toggle:hover {
+  border-color: #ffb000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    width: auto;
+    animation: none;
+  }
+
+  .ticker-track p {
+    white-space: normal;
+    padding-right: 0;
+  }
+
+  .ticker-track p + p,
+  .ticker-toggle {
+    display: none;
+  }
+
+  .ticker-rail {
+    mask-image: none;
+  }
+}
+
+/* ───────── Tables ───────── */
 
 .table-scroll {
   overflow-x: auto;
@@ -88,20 +273,18 @@ table {
 
 th,
 td {
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0.5rem;
+  border-top: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
 }
 
 thead th {
-  font-size: 0.8rem;
+  border-top: 0;
+  font: 600 0.68rem var(--display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--muted);
-  font-weight: 600;
-}
-
-tbody tr:nth-child(even) {
-  background: var(--stripe);
 }
 
 tbody th {
@@ -116,39 +299,58 @@ tbody th {
   font-weight: 700;
 }
 
+.rank {
+  width: 2.6rem;
+  font: 700 1.05rem var(--display);
+  text-align: center;
+}
+
+.team {
+  font: 600 0.95rem var(--display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .team-acronym {
   display: none;
 }
 
-footer {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.8rem;
+.projected-points {
+  font: 700 1.45rem/1 var(--display);
+  color: var(--amber);
 }
 
-footer a {
-  color: inherit;
+.current .points {
+  font: 700 1.05rem var(--display);
+  color: var(--amber);
 }
 
-@media (max-width: 36rem) {
-  th,
-  td {
-    padding: 0.4rem 0.3rem;
-    font-size: 0.9rem;
-  }
+/* Zones: the rank cell carries the Cut Line color. */
+.projected .cut-playoffs .rank {
+  color: var(--playoffs);
+  box-shadow: inset 3px 0 0 var(--playoffs);
+}
 
-  .team-name {
-    display: none;
-  }
+.projected .cut-play-in .rank {
+  color: var(--play-in);
+  box-shadow: inset 3px 0 0 var(--play-in);
+}
 
-  .team-acronym {
-    display: inline;
-  }
+.projected .cut-eliminated .rank {
+  color: var(--eliminated);
+  box-shadow: inset 3px 0 0 var(--eliminated);
+}
+
+.projected .cut-eliminated > tr:first-child > :not(.rank) {
+  opacity: 0.72;
+}
+
+.projected tr.cut-line > * {
+  border-top: 2px solid var(--muted);
 }
 
 .movement {
-  font-size: 0.8rem;
+  font: 700 0.8rem var(--display);
 }
 
 .movement.up {
@@ -166,85 +368,26 @@ footer a {
 .low-sample {
   margin-left: 0.4rem;
   padding: 0 0.3rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.05em;
   color: var(--muted);
   text-decoration: none;
+  vertical-align: 0.1em;
   cursor: help;
-}
-
-.projected > tbody > tr > :first-child,
-.legend li[class^="cut-"] {
-  border-left: 4px solid transparent;
-}
-
-/* Each team is its own tbody (row + optional detail), so stripe by team, not by row. */
-.projected tbody tr:nth-child(even) {
-  background: none;
-}
-
-.projected tbody:nth-of-type(even) {
-  background: var(--stripe);
-}
-
-.projected .cut-playoffs > tr > :first-child,
-.legend .cut-playoffs {
-  border-left-color: var(--playoffs);
-}
-
-.projected .cut-play-in > tr > :first-child,
-.legend .cut-play-in {
-  border-left-color: var(--play-in);
-}
-
-.projected .cut-eliminated > tr > :first-child,
-.legend .cut-eliminated {
-  border-left-color: var(--eliminated);
-}
-
-.projected tr.cut-line > * {
-  border-top: 2px solid var(--fg);
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin: 0.5rem 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.legend li[class^="cut-"] {
-  padding-left: 0.4rem;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-h3 {
-  font-size: 1rem;
-  margin: 1.25rem 0 0.25rem;
 }
 
 .expand {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.3rem;
+  gap: 0.35rem;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
   color: inherit;
   cursor: pointer;
   text-align: left;
@@ -252,35 +395,166 @@ h3 {
 
 .expand:hover .team-name,
 .expand:hover .team-acronym {
-  text-decoration: underline;
+  color: var(--amber);
 }
 
 .chevron {
   width: 0.8rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: var(--muted);
 }
 
+/* ───────── Form chips ───────── */
+
+.form-chips {
+  display: inline-flex;
+  gap: 0.7rem;
+}
+
+.chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.chips-side,
+.chips-empty {
+  margin-right: 2px;
+  font: 600 0.6rem var(--display);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.chip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  vertical-align: -0.05em;
+}
+
+.chip-3 {
+  background: var(--win);
+}
+
+.chip-2 {
+  background: color-mix(in srgb, var(--win) 45%, transparent);
+}
+
+.chip-1 {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--loss) 55%, transparent);
+}
+
+.chip-0 {
+  box-shadow: inset 0 0 0 2px var(--loss);
+}
+
+/* ───────── Points + Projected Gain bar ───────── */
+
+.bar-col {
+  width: 22%;
+  min-width: 7rem;
+}
+
+.gain-bar {
+  position: relative;
+  display: block;
+  height: 10px;
+  background: var(--line);
+}
+
+.gain-bar-now,
+.gain-bar-gain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.gain-bar-now {
+  background: var(--bar-now);
+}
+
+.gain-bar-gain {
+  background: repeating-linear-gradient(90deg, var(--amber) 0 3px, transparent 3px 5px);
+}
+
+/* ───────── Legend ───────── */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1.1rem;
+  margin: 0;
+  padding: 0.7rem 1rem;
+  list-style: none;
+  border-top: 1px solid var(--line);
+  font: 500 0.75rem var(--display);
+  color: var(--muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend li[class^="cut-"] {
+  padding-left: 0.4rem;
+  border-left: 4px solid transparent;
+}
+
+.legend .cut-playoffs {
+  border-left-color: var(--playoffs);
+}
+
+.legend .cut-play-in {
+  border-left-color: var(--play-in);
+}
+
+.legend .cut-eliminated {
+  border-left-color: var(--eliminated);
+}
+
+.legend-bar {
+  display: inline-block;
+  width: 2.5rem;
+}
+
+.legend .low-sample {
+  margin-left: 0;
+}
+
+/* ───────── Form Window detail ───────── */
+
 .projected tr.detail > td {
-  padding: 0.25rem 0.5rem 0.75rem 1.5rem;
+  padding: 0.25rem 0.5rem 0.75rem 2.6rem;
+  border-top: 0;
   white-space: normal;
 }
 
 .form-windows {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
+  gap: 0.5rem 1rem;
 }
 
 .form-window {
   flex: 1 1 16rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: 6px;
 }
 
 .form-window h3 {
-  margin: 0.25rem 0;
-  font-size: 0.85rem;
-  font-weight: 600;
+  margin: 0 0 0.25rem;
+  font: 600 0.72rem var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .form-window p {
@@ -296,27 +570,40 @@ h3 {
   padding: 0.2rem 0.4rem;
 }
 
-.form-window tbody tr:nth-child(even) {
-  background: none;
-}
-
 .decision {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font: 600 0.72rem var(--display);
   color: var(--muted);
 }
 
+/* ───────── Explanation, warning, empty state ───────── */
+
 .explanation p {
-  margin: 0.25rem 0 0.5rem;
   font-size: 0.9rem;
 }
 
+.meta,
+footer {
+  color: var(--muted);
+}
+
+.meta {
+  font-size: 0.85rem;
+}
+
 .warning {
-  border: 1px solid var(--warning-border);
+  margin: 0 0 1rem;
+  padding: 0.6rem 1rem;
   background: var(--warning-bg);
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  margin: 1rem 0;
+  border: 1px solid var(--amber);
+  border-left-width: 4px;
+  border-radius: 8px;
+}
+
+.warning strong {
+  font-family: var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--amber);
 }
 
 .warning p,
@@ -324,6 +611,72 @@ h3 {
   margin: 0.25rem 0;
 }
 
-.empty-state {
-  margin: 2rem 0;
+footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+footer a {
+  color: inherit;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ───────── Narrow screens ───────── */
+
+@media (max-width: 44rem) {
+  .wide,
+  .legend .wide {
+    display: none;
+  }
+}
+
+@media (max-width: 36rem) {
+  #app {
+    padding: 1rem 0.5rem 1.5rem;
+  }
+
+  th,
+  td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.9rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .as-of time {
+    font-size: 1.2rem;
+  }
+
+  .team-name {
+    display: none;
+  }
+
+  .team-acronym {
+    display: inline;
+  }
+
+  .rank {
+    width: 2rem;
+    font-size: 0.95rem;
+  }
+
+  .projected-points {
+    font-size: 1.2rem;
+  }
+
+  .projected tr.detail > td {
+    padding-left: 0.5rem;
+  }
 }
