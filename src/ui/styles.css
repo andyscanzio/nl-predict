@@ -10,6 +10,8 @@
   --playoffs: #1a7f37;
   --play-in: #bf8700;
   --eliminated: #8c959f;
+  --warning-bg: #fff8c5;
+  --warning-border: #d4a72c;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--fg);
@@ -29,6 +31,8 @@
     --playoffs: #4ac26b;
     --play-in: #d4a72c;
     --eliminated: #6e7681;
+    --warning-bg: #2e2508;
+    --warning-border: #9e6a03;
   }
 }
 
@@ -305,4 +309,21 @@ h3 {
 .explanation p {
   margin: 0.25rem 0 0.5rem;
   font-size: 0.9rem;
+}
+
+.warning {
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin: 1rem 0;
+}
+
+.warning p,
+.warning ul {
+  margin: 0.25rem 0;
+}
+
+.empty-state {
+  margin: 2rem 0;
 }

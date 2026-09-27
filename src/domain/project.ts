@@ -65,9 +65,23 @@ export interface ProjectedTableRow {
   lowSample: boolean;
 }
 
+/** Games in a team's Regular Season: Played + Remaining must add up to this. */
+export const REGULAR_SEASON_GAMES = 52;
+
+/** A team whose Played + Remaining Games do not add up to a full Regular Season. */
+export interface IntegrityIssue {
+  teamId: TeamId;
+  playedGames: number;
+  remainingGames: number;
+}
+
 export interface Projection {
   currentTable: CurrentTableRow[];
   projectedTable: ProjectedTableRow[];
+  /** Teams whose Games do not add up to REGULAR_SEASON_GAMES, in Current Table order; empty when the data is complete. */
+  integrityIssues: IntegrityIssue[];
+  /** False before the Season's first Game has been played. */
+  anyGamesPlayed: boolean;
 }
 
 /** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
@@ -198,5 +212,13 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
     };
   });
 
-  return { currentTable, projectedTable };
+  const integrityIssues = currentTable
+    .map(({ teamId, gamesPlayed }) => ({
+      teamId,
+      playedGames: gamesPlayed,
+      remainingGames: remainingGames.filter((game) => game.homeTeamId === teamId || game.awayTeamId === teamId).length,
+    }))
+    .filter((issue) => issue.playedGames + issue.remainingGames !== REGULAR_SEASON_GAMES);
+
+  return { currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0 };
 }

@@ -25,3 +25,10 @@ describe("project: Current Table against the official SIHF standings", () => {
     expect(computed).toEqual(officialRanks());
   });
 });
+
+describe("project: data integrity against the recorded SIHF schedule", () => {
+  it("finds every team's Played + Remaining Games adding up to 52", () => {
+    const { integrityIssues } = project(snapshot.games, new Date(snapshot.snapshotAt), splitFormRate);
+    expect(integrityIssues).toEqual([]);
+  });
+});

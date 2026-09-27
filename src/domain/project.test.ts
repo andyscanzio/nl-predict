@@ -400,3 +400,49 @@ describe("project: Form Window detail", () => {
     expect(projectedRow(games, 1)).toMatchObject({ homeFormWindow: [], awayFormWindow: [] });
   });
 });
+
+describe("project: data integrity", () => {
+  const later = "2026-10-10T19:45:00+02:00";
+
+  /** A full 52-Game Regular Season between two teams: 26 home Games each. */
+  function fullSeason(playedCount: number): Game[] {
+    return Array.from({ length: 52 }, (_, index) => {
+      const [home, away] = index % 2 === 0 ? [1, 2] : [2, 1];
+      return index < playedCount ? played(home, away, 3, 1) : scheduled(home, away, later);
+    });
+  }
+
+  it("reports no integrity issues when every team has 52 Played + Remaining Games", () => {
+    expect(project(fullSeason(10), asOf, splitFormRate).integrityIssues).toEqual([]);
+  });
+
+  it("counts a postponed past Game as Remaining towards the 52", () => {
+    const games = fullSeason(10);
+    games[10] = scheduled(1, 2, "2026-09-25T19:45:00+02:00");
+    expect(project(games, asOf, splitFormRate).integrityIssues).toEqual([]);
+  });
+
+  it("reports each team whose Played + Remaining Games do not add up to 52", () => {
+    const games = [...fullSeason(10).slice(1), scheduled(3, 2, later)];
+    expect(project(games, asOf, splitFormRate).integrityIssues).toEqual([
+      { teamId: 1, playedGames: 9, remainingGames: 42 },
+      { teamId: 3, playedGames: 0, remainingGames: 1 },
+    ]);
+  });
+
+  it("says whether any Game has been played", () => {
+    expect(project(fullSeason(1), asOf, splitFormRate).anyGamesPlayed).toBe(true);
+    const beforeSeason = project(fullSeason(0), asOf, splitFormRate);
+    expect(beforeSeason.anyGamesPlayed).toBe(false);
+    expect(beforeSeason.integrityIssues).toEqual([]);
+  });
+
+  it("says no Game has been played when there are no Games at all", () => {
+    expect(project([], asOf, splitFormRate)).toMatchObject({
+      anyGamesPlayed: false,
+      currentTable: [],
+      projectedTable: [],
+      integrityIssues: [],
+    });
+  });
+});
