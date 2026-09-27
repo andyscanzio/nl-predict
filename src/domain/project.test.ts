@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { project } from "./project.ts";
+import { splitFormRate } from "./splitFormRate.ts";
 import type { Decision, Game } from "./types.ts";
 
 const asOf = new Date("2026-10-01T12:00:00+02:00");
@@ -28,7 +29,7 @@ function scheduled(homeTeamId: number, awayTeamId: number, startsAt: string): Ga
 
 function pointsByTeam(games: Game[]) {
   return Object.fromEntries(
-    project(games, asOf).currentTable.map((row) => [row.teamId, row.points]),
+    project(games, asOf, splitFormRate).currentTable.map((row) => [row.teamId, row.points]),
   );
 }
 
@@ -56,7 +57,7 @@ describe("project: Current Table", () => {
 
   it("orders the Current Table by Points and assigns ranks", () => {
     const games = [played(1, 2, 1, 3), played(3, 1, 2, 1, "SO"), played(2, 3, 5, 0)];
-    const table = project(games, asOf).currentTable;
+    const table = project(games, asOf, splitFormRate).currentTable;
     expect(table.map((row) => [row.rank, row.teamId, row.points])).toEqual([
       [1, 2, 6],
       [2, 3, 2],
@@ -69,7 +70,7 @@ describe("project: Current Table", () => {
       played(1, 2, 4, 2, "regulation", "2026-09-30T19:45:00+02:00"),
       played(2, 1, 4, 2, "regulation", "2026-10-02T19:45:00+02:00"),
     ];
-    const table = project(games, asOf).currentTable;
+    const table = project(games, asOf, splitFormRate).currentTable;
     expect(table.find((row) => row.teamId === 1)).toMatchObject({ gamesPlayed: 1, points: 3 });
   });
 
@@ -80,7 +81,7 @@ describe("project: Current Table", () => {
 
   it("does not count past Games without a result, such as postponed ones", () => {
     const games = [played(1, 2, 4, 2), scheduled(2, 1, "2026-09-25T19:45:00+02:00")];
-    const table = project(games, asOf).currentTable;
+    const table = project(games, asOf, splitFormRate).currentTable;
     expect(table.map((row) => row.gamesPlayed)).toEqual([1, 1]);
   });
 
@@ -91,7 +92,7 @@ describe("project: Current Table", () => {
       played(1, 2, 1, 2, "SO"),
       played(2, 1, 5, 1),
     ];
-    const row = project(games, asOf).currentTable.find((r) => r.teamId === 1);
+    const row = project(games, asOf, splitFormRate).currentTable.find((r) => r.teamId === 1);
     expect(row).toEqual({
       rank: 2,
       teamId: 1,
@@ -104,5 +105,200 @@ describe("project: Current Table", () => {
       goalsAgainst: 12,
       points: 5,
     });
+  });
+});
+
+function projectedRow(games: Game[], teamId: number) {
+  const row = project(games, asOf, splitFormRate).projectedTable.find((r) => r.teamId === teamId);
+  if (!row) throw new Error(`no Projected Table row for team ${teamId}`);
+  return row;
+}
+
+const later = "2026-10-10T19:45:00+02:00";
+
+describe("project: Split Form Rate", () => {
+  it("adds Remaining home Games × Home Form and Remaining away Games × Away Form to current Points", () => {
+    const games = [
+      played(1, 2, 4, 2), // 1 home: 3
+      played(1, 3, 1, 2, "OT"), // 1 home: 1 → Home Form 2
+      played(2, 1, 3, 2, "SO"), // 1 away: 1 → Away Form 1
+      scheduled(1, 2, later),
+      scheduled(1, 3, later),
+      scheduled(1, 2, later),
+      scheduled(3, 1, later),
+    ];
+    // current 5 + 3 home × 2 + 1 away × 1
+    expect(projectedRow(games, 1)).toMatchObject({
+      currentPoints: 5,
+      homeForm: 2,
+      awayForm: 1,
+      remainingHomeGames: 3,
+      remainingAwayGames: 1,
+      projectedPoints: 12,
+    });
+  });
+
+  it("builds the home Form Window from only the five most recent Played home Games", () => {
+    const games = [
+      played(1, 2, 0, 1, "regulation", "2026-09-28T19:45:00+02:00"), // 0
+      played(1, 2, 2, 1, "OT", "2026-09-26T19:45:00+02:00"), // 2
+      played(1, 2, 5, 1, "regulation", "2026-09-10T19:45:00+02:00"), // oldest, outside the window
+      played(1, 2, 1, 2, "SO", "2026-09-24T19:45:00+02:00"), // 1
+      played(1, 2, 5, 1, "regulation", "2026-09-12T19:45:00+02:00"), // outside the window
+      played(1, 2, 0, 1, "regulation", "2026-09-22T19:45:00+02:00"), // 0
+      played(1, 2, 3, 1, "regulation", "2026-09-20T19:45:00+02:00"), // 3
+    ];
+    expect(projectedRow(games, 1).homeForm).toBe(1.2);
+  });
+
+  it("builds the away Form Window from only the five most recent Played away Games", () => {
+    const games = [
+      played(2, 1, 1, 0, "regulation", "2026-09-10T19:45:00+02:00"), // outside the window
+      played(2, 1, 0, 1, "regulation", "2026-09-20T19:45:00+02:00"), // 3
+      played(2, 1, 0, 1, "regulation", "2026-09-21T19:45:00+02:00"), // 3
+      played(2, 1, 1, 2, "OT", "2026-09-22T19:45:00+02:00"), // 2
+      played(2, 1, 2, 1, "SO", "2026-09-23T19:45:00+02:00"), // 1
+      played(2, 1, 0, 1, "regulation", "2026-09-24T19:45:00+02:00"), // 3
+    ];
+    expect(projectedRow(games, 1).awayForm).toBe(2.4);
+  });
+
+  it("treats Games after the As-Of Date as Remaining, even when they already have a result", () => {
+    const games = [
+      played(1, 2, 4, 2), // before As-Of: Home Form 3
+      played(1, 2, 0, 5, "regulation", "2026-10-02T19:45:00+02:00"), // after As-Of: Remaining
+    ];
+    expect(projectedRow(games, 1)).toMatchObject({
+      currentPoints: 3,
+      homeForm: 3,
+      remainingHomeGames: 1,
+      projectedPoints: 6,
+    });
+  });
+
+  it("treats past Games without a result, such as postponed ones, as Remaining", () => {
+    const games = [played(1, 2, 4, 2), scheduled(1, 2, "2026-09-25T19:45:00+02:00")];
+    expect(projectedRow(games, 1)).toMatchObject({ remainingHomeGames: 1, projectedPoints: 6 });
+  });
+
+  it("flags Low Sample when either Form Window holds fewer than five Games", () => {
+    const fiveHome = Array.from({ length: 5 }, () => played(1, 2, 3, 1));
+    const fiveAway = Array.from({ length: 5 }, () => played(2, 1, 1, 3));
+    expect(projectedRow([...fiveHome, ...fiveAway], 1).lowSample).toBe(false);
+    expect(projectedRow([...fiveHome, ...fiveAway.slice(1)], 1).lowSample).toBe(true);
+    expect(projectedRow([...fiveHome.slice(1), ...fiveAway], 1).lowSample).toBe(true);
+  });
+
+  it("uses Home Form for away Games too when the away Form Window is empty", () => {
+    const games = [played(1, 2, 2, 1, "OT"), scheduled(1, 2, later), scheduled(2, 1, later)];
+    // current 2 + 1 home × 2 + 1 away × 2
+    expect(projectedRow(games, 1)).toMatchObject({ homeForm: 2, awayForm: null, projectedPoints: 6 });
+  });
+
+  it("uses Away Form for home Games too when the home Form Window is empty", () => {
+    const games = [played(1, 2, 2, 1, "OT"), scheduled(1, 2, later), scheduled(2, 1, later)];
+    // team 2: current 1 + 1 home × 1 + 1 away × 1
+    expect(projectedRow(games, 2)).toMatchObject({ homeForm: null, awayForm: 1, projectedPoints: 3 });
+  });
+
+  it("keeps projected Points at current Points when both Form Windows are empty", () => {
+    const games = [scheduled(1, 2, later), scheduled(2, 1, later)];
+    expect(projectedRow(games, 1)).toMatchObject({
+      currentPoints: 0,
+      homeForm: null,
+      awayForm: null,
+      remainingHomeGames: 1,
+      remainingAwayGames: 1,
+      projectedPoints: 0,
+      lowSample: true,
+    });
+  });
+
+  it("projects every team at 0 Points in schedule order when no Games have been played", () => {
+    const games = [scheduled(3, 1, later), scheduled(2, 3, later), scheduled(1, 2, later)];
+    const table = project(games, asOf, splitFormRate).projectedTable;
+    expect(table.map((row) => [row.rank, row.teamId, row.projectedPoints])).toEqual([
+      [1, 3, 0],
+      [2, 1, 0],
+      [3, 2, 0],
+    ]);
+  });
+
+  it("ranks the Projected Table by projected Points", () => {
+    const games = [
+      played(1, 2, 4, 2), // 1: 3 Points; 2: Away Form 0
+      played(3, 2, 2, 3, "SO"), // 2: 2 Points, Away Form 1 overall; 3: 1 Point, Home Form 1
+      ...Array.from({ length: 4 }, () => scheduled(2, 3, later)),
+    ];
+    // 1: 3 (nothing Remaining); 2: 2 + 4 home × 1 = 6; 3: 1 + 4 away × 1 = 5
+    const table = project(games, asOf, splitFormRate).projectedTable;
+    expect(table.map((row) => [row.rank, row.teamId, row.projectedPoints])).toEqual([
+      [1, 2, 6],
+      [2, 3, 5],
+      [3, 1, 3],
+    ]);
+  });
+
+  it("breaks projected ties by Current Table position, even through floating-point noise", () => {
+    const games = [
+      // team 2: 6 Points, Home Form 1/3 over 3 Games, 7 Remaining home → 6 + 7/3 = 25/3
+      played(2, 3, 2, 3, "SO"),
+      played(2, 3, 0, 1),
+      played(2, 3, 0, 1),
+      played(3, 2, 1, 4),
+      played(3, 2, 1, 2, "OT"),
+      ...Array.from({ length: 7 }, () => scheduled(2, 3, later)),
+      // team 1: 5 Points, Home Form 5/3 over 3 Games, 2 Remaining home → 5 + 10/3 = 25/3
+      played(1, 3, 3, 0),
+      played(1, 3, 3, 2, "OT"),
+      played(1, 3, 0, 1),
+      ...Array.from({ length: 2 }, () => scheduled(1, 3, later)),
+    ];
+    const { currentTable, projectedTable } = project(games, asOf, splitFormRate);
+    const order = (rows: { teamId: number }[]) => rows.map((row) => row.teamId).filter((id) => id !== 3);
+    expect(order(currentTable)).toEqual([2, 1]);
+    expect(projectedTable.find((row) => row.teamId === 1)?.projectedPoints).toBeCloseTo(25 / 3);
+    expect(projectedTable.find((row) => row.teamId === 2)?.projectedPoints).toBeCloseTo(25 / 3);
+    expect(order(projectedTable)).toEqual([2, 1]);
+  });
+
+  it("assigns Cut Lines by projected rank: 1–6 playoffs, 7–10 play-in, 11–14 eliminated", () => {
+    const games = Array.from({ length: 13 }, (_, i) => scheduled(i + 1, i + 2, later));
+    const table = project(games, asOf, splitFormRate).projectedTable;
+    expect(table.map((row) => [row.rank, row.cutLine])).toEqual([
+      [1, "playoffs"],
+      [2, "playoffs"],
+      [3, "playoffs"],
+      [4, "playoffs"],
+      [5, "playoffs"],
+      [6, "playoffs"],
+      [7, "play-in"],
+      [8, "play-in"],
+      [9, "play-in"],
+      [10, "play-in"],
+      [11, "eliminated"],
+      [12, "eliminated"],
+      [13, "eliminated"],
+      [14, "eliminated"],
+    ]);
+  });
+
+  it("reports movement against the current rank: positive when rising, negative when falling", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 2, 2, 3, "SO"),
+      ...Array.from({ length: 4 }, () => scheduled(2, 3, later)),
+    ];
+    const table = project(games, asOf, splitFormRate).projectedTable;
+    expect(table.map((row) => [row.teamId, row.currentRank, row.rank, row.movement])).toEqual([
+      [2, 2, 1, 1],
+      [3, 3, 2, 1],
+      [1, 1, 3, -2],
+    ]);
+  });
+
+  it("reports no movement when the projected rank equals the current rank", () => {
+    const games = [played(1, 2, 4, 2), scheduled(1, 2, later)];
+    expect(projectedRow(games, 1)).toMatchObject({ currentRank: 1, rank: 1, movement: 0 });
   });
 });

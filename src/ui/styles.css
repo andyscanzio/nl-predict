@@ -5,6 +5,11 @@
   --border: #e2e5e9;
   --stripe: #f5f7f9;
   --accent: #b3001b;
+  --up: #1a7f37;
+  --down: #b3001b;
+  --playoffs: #1a7f37;
+  --play-in: #bf8700;
+  --eliminated: #8c959f;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--fg);
@@ -19,6 +24,11 @@
     --border: #2b2f35;
     --stripe: #1a1d21;
     --accent: #ff5a6e;
+    --up: #4ac26b;
+    --down: #ff5a6e;
+    --playoffs: #4ac26b;
+    --play-in: #d4a72c;
+    --eliminated: #6e7681;
   }
 }
 
@@ -131,4 +141,80 @@ footer a {
   .team-acronym {
     display: inline;
   }
+}
+
+.movement {
+  font-size: 0.8rem;
+}
+
+.movement.up {
+  color: var(--up);
+}
+
+.movement.down {
+  color: var(--down);
+}
+
+.movement.same {
+  color: var(--muted);
+}
+
+.low-sample {
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  cursor: help;
+}
+
+.projected tbody tr > :first-child,
+.legend li[class^="cut-"] {
+  border-left: 4px solid transparent;
+}
+
+.projected .cut-playoffs > :first-child,
+.legend .cut-playoffs {
+  border-left-color: var(--playoffs);
+}
+
+.projected .cut-play-in > :first-child,
+.legend .cut-play-in {
+  border-left-color: var(--play-in);
+}
+
+.projected .cut-eliminated > :first-child,
+.legend .cut-eliminated {
+  border-left-color: var(--eliminated);
+}
+
+.projected tr.cut-line > * {
+  border-top: 2px solid var(--fg);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend li[class^="cut-"] {
+  padding-left: 0.4rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

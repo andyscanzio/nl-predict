@@ -1,4 +1,5 @@
-import type { Game, GameResult, TeamId } from "./types.ts";
+import { FORM_WINDOW_SIZE, formOf, pointsFor, type FormWindows, type PlayedGame } from "./form.ts";
+import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
   rank: number;
@@ -13,18 +14,59 @@ export interface CurrentTableRow {
   points: number;
 }
 
-export interface Projection {
+export interface ProjectionModelInput {
   currentTable: CurrentTableRow[];
+  formWindows: Map<TeamId, FormWindows>;
+  remainingGames: Game[];
 }
 
-type PlayedGame = Game & { result: GameResult };
+/** Turns the Current Table, Form Windows and Remaining Games into each team's projected Points. */
+export interface ProjectionModel {
+  projectPoints(input: ProjectionModelInput): Map<TeamId, number>;
+}
+
+/** Where a rank falls against the Cut Lines. */
+export type CutLine = "playoffs" | "play-in" | "eliminated";
+
+export function cutLineFor(rank: number): CutLine {
+  if (rank <= 6) return "playoffs";
+  if (rank <= 10) return "play-in";
+  return "eliminated";
+}
+
+export interface ProjectedTableRow {
+  rank: number;
+  teamId: TeamId;
+  currentRank: number;
+  /** Places gained (positive) or lost (negative) against the current rank. */
+  movement: number;
+  cutLine: CutLine;
+  currentPoints: number;
+  /** Points per Game over the home Form Window, or null when it is empty. */
+  homeForm: number | null;
+  /** Points per Game over the away Form Window, or null when it is empty. */
+  awayForm: number | null;
+  remainingHomeGames: number;
+  remainingAwayGames: number;
+  projectedPoints: number;
+  /** Either Form Window holds fewer than five Games. */
+  lowSample: boolean;
+}
+
+export interface Projection {
+  currentTable: CurrentTableRow[];
+  projectedTable: ProjectedTableRow[];
+}
+
+/** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
+const PROJECTED_TIE_TOLERANCE = 1e-9;
 
 /** A Game is Played once it has a final result and started before the As-Of Date. */
 function isPlayed(game: Game, asOf: Date): game is PlayedGame {
   return game.result !== undefined && new Date(game.startsAt) < asOf;
 }
 
-export function project(games: Game[], asOf: Date): Projection {
+export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
   const rows = new Map<TeamId, Omit<CurrentTableRow, "rank">>();
   const rowFor = (teamId: TeamId) => {
     let row = rows.get(teamId);
@@ -59,16 +101,14 @@ export function project(games: Game[], asOf: Date): Projection {
       row.gamesPlayed++;
       row.goalsFor += goalsFor;
       row.goalsAgainst += goalsAgainst;
+      row.points += pointsFor(game, row.teamId);
     }
     if (decision === "regulation") {
       winner.regulationWins++;
-      winner.points += 3;
       loser.regulationLosses++;
     } else {
       winner.overtimeOrShootoutWins++;
-      winner.points += 2;
       loser.overtimeOrShootoutLosses++;
-      loser.points += 1;
     }
   }
 
@@ -76,5 +116,49 @@ export function project(games: Game[], asOf: Date): Projection {
     .sort((a, b) => b.points - a.points)
     .map((row, index) => ({ rank: index + 1, ...row }));
 
-  return { currentTable };
+  const playedGames = games.filter((game) => isPlayed(game, asOf));
+  const remainingGames = games.filter((game) => !isPlayed(game, asOf));
+  const byRecency = [...playedGames].sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+  const formWindows = new Map<TeamId, FormWindows>(
+    currentTable.map(({ teamId }) => [
+      teamId,
+      {
+        home: byRecency.filter((game) => game.homeTeamId === teamId).slice(0, FORM_WINDOW_SIZE),
+        away: byRecency.filter((game) => game.awayTeamId === teamId).slice(0, FORM_WINDOW_SIZE),
+      },
+    ]),
+  );
+
+  const projectedPoints = model.projectPoints({ currentTable, formWindows, remainingGames });
+  const projectedFor = (teamId: TeamId) => {
+    const points = projectedPoints.get(teamId);
+    if (points === undefined) throw new Error(`Projection Model returned no projected Points for team ${teamId}`);
+    return points;
+  };
+
+  // Current Table order is the tie-break: the sort is stable.
+  const projectedTable = currentTable
+    .map((row) => ({ row, projected: projectedFor(row.teamId) }))
+    .sort((a, b) =>
+      Math.abs(b.projected - a.projected) < PROJECTED_TIE_TOLERANCE ? 0 : b.projected - a.projected,
+    )
+    .map(({ row, projected }, index): ProjectedTableRow => {
+    const windows = formWindows.get(row.teamId)!;
+    return {
+      rank: index + 1,
+      teamId: row.teamId,
+      currentRank: row.rank,
+      movement: row.rank - (index + 1),
+      cutLine: cutLineFor(index + 1),
+      currentPoints: row.points,
+      homeForm: formOf(windows.home, row.teamId),
+      awayForm: formOf(windows.away, row.teamId),
+      remainingHomeGames: remainingGames.filter((game) => game.homeTeamId === row.teamId).length,
+      remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
+      projectedPoints: projected,
+      lowSample: windows.home.length < FORM_WINDOW_SIZE || windows.away.length < FORM_WINDOW_SIZE,
+    };
+  });
+
+  return { currentTable, projectedTable };
 }

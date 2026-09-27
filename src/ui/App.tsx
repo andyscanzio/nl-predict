@@ -1,5 +1,7 @@
-import { project } from "../domain/project.ts";
-import type { Snapshot } from "../domain/types.ts";
+import { project, type CutLine, type ProjectedTableRow } from "../domain/project.ts";
+import { splitFormRate } from "../domain/splitFormRate.ts";
+import { FORM_WINDOW_SIZE } from "../domain/form.ts";
+import type { Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -10,10 +12,53 @@ const snapshotTime = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Zurich",
 });
 
+const CUT_LINE_LABELS: Record<CutLine, string> = {
+  playoffs: "Playoffs",
+  "play-in": "Play-in",
+  eliminated: "Eliminated",
+};
+
+function formatForm(form: number | null) {
+  return form === null ? "–" : form.toFixed(2);
+}
+
+function Movement({ movement }: { movement: number }) {
+  if (movement > 0) {
+    return (
+      <span class="movement up" title={`Up ${movement} from current rank`}>
+        ▲{movement}
+      </span>
+    );
+  }
+  if (movement < 0) {
+    return (
+      <span class="movement down" title={`Down ${-movement} from current rank`}>
+        ▼{-movement}
+      </span>
+    );
+  }
+  return (
+    <span class="movement same" title="Same as current rank">
+      –
+    </span>
+  );
+}
+
 export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
-  const { currentTable } = project(snapshot.games, now);
+  const { currentTable, projectedTable } = project(snapshot.games, now, splitFormRate);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
+  const teamCell = (teamId: TeamId) => {
+    const team = teams.get(teamId);
+    return (
+      <>
+        <span class="team-name">{team?.name ?? teamId}</span>
+        <span class="team-acronym">{team?.acronym ?? teamId}</span>
+      </>
+    );
+  };
+  const isFirstOfCutLine = (row: ProjectedTableRow, index: number) =>
+    index > 0 && projectedTable[index - 1]?.cutLine !== row.cutLine;
 
   return (
     <>
@@ -22,6 +67,65 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
         <p class="subtitle">National League {season} · Regular Season</p>
       </header>
       <main>
+        <h2>Projected Table</h2>
+        <div class="table-scroll">
+          <table class="projected">
+            <thead>
+              <tr>
+                <th class="num" scope="col" title="Projected rank">#</th>
+                <th scope="col" title="Movement against current rank">
+                  <span class="visually-hidden">Movement</span>
+                </th>
+                <th scope="col">Team</th>
+                <th class="num" scope="col" title="Current rank">Now</th>
+                <th class="num" scope="col" title="Current Points">Pts</th>
+                <th class="num" scope="col" title={`Home Form: Points per Game over the last ≤${FORM_WINDOW_SIZE} home Games`}>
+                  Home
+                </th>
+                <th class="num" scope="col" title={`Away Form: Points per Game over the last ≤${FORM_WINDOW_SIZE} away Games`}>
+                  Away
+                </th>
+                <th class="num" scope="col" title="Projected Points">Proj</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projectedTable.map((row, index) => (
+                <tr
+                  key={row.teamId}
+                  class={`cut-${row.cutLine}${isFirstOfCutLine(row, index) ? " cut-line" : ""}`}
+                  title={CUT_LINE_LABELS[row.cutLine]}
+                >
+                  <td class="num">{row.rank}</td>
+                  <td>
+                    <Movement movement={row.movement} />
+                  </td>
+                  <th scope="row" class="team">
+                    {teamCell(row.teamId)}
+                    {row.lowSample && (
+                      <abbr class="low-sample" title={`Low Sample: a Form Window holds fewer than ${FORM_WINDOW_SIZE} Games`}>
+                        LS
+                      </abbr>
+                    )}
+                  </th>
+                  <td class="num">{row.currentRank}</td>
+                  <td class="num">{row.currentPoints}</td>
+                  <td class="num">{formatForm(row.homeForm)}</td>
+                  <td class="num">{formatForm(row.awayForm)}</td>
+                  <td class="num points">{Math.round(row.projectedPoints)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <ul class="legend">
+          <li class="cut-playoffs">1–6 Playoffs</li>
+          <li class="cut-play-in">7–10 Play-in</li>
+          <li class="cut-eliminated">11–14 Eliminated</li>
+          <li>
+            <abbr class="low-sample">LS</abbr> Low Sample: fewer than {FORM_WINDOW_SIZE} Games in a Form Window
+          </li>
+        </ul>
+
         <h2>Current Table</h2>
         <div class="table-scroll">
           <table>
@@ -40,13 +144,11 @@ export function App({ snapshot, now }: { snapshot: Snapshot; now: Date }) {
             </thead>
             <tbody>
               {currentTable.map((row) => {
-                const team = teams.get(row.teamId);
                 return (
                   <tr key={row.teamId}>
                     <td class="num">{row.rank}</td>
                     <th scope="row" class="team">
-                      <span class="team-name">{team?.name ?? row.teamId}</span>
-                      <span class="team-acronym">{team?.acronym ?? row.teamId}</span>
+                      {teamCell(row.teamId)}
                     </th>
                     <td class="num">{row.gamesPlayed}</td>
                     <td class="num">{row.regulationWins}</td>
