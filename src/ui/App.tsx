@@ -61,7 +61,7 @@ const DECISION_LABELS: Record<Decision, string> = {
   SO: "SO",
 };
 
-const PROJECTED_COLUMNS = 9;
+const PROJECTED_COLUMNS = 10;
 
 const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; short: string; title: string }[] = [
   { key: "playoffs", label: "Playoffs", short: "PO", title: "Chance of finishing 1–6: straight to the playoffs" },
@@ -493,21 +493,22 @@ export function App({
                 <table class="projected">
                   <thead>
                     <tr>
-                      <th class="num" scope="col" title="Projected rank">#</th>
+                      <th class="rank-head" scope="col" title="Projected rank">#</th>
                       <th scope="col" title="Movement against current rank">
                         <span class="visually-hidden">Movement</span>
                       </th>
                       <th scope="col">Team</th>
-                      <th class="num" scope="col" title="Current rank">Now</th>
-                      <th class="wide" scope="col" title={`Home and away Form Windows: the last ≤${FORM_WINDOW_SIZE} Games each, newest first`}>
+                      <th class="num roomy" scope="col" title="Current rank">Now</th>
+                      <th class="wide" scope="col" colSpan={2} title={`Home and away Form Windows: the last ≤${FORM_WINDOW_SIZE} Games each, newest first`}>
                         Form
                       </th>
-                      <th class="num" scope="col" title="Remaining Games: home · away">
+                      <th class="num roomy" scope="col" title="Remaining Games: home · away">
                         Left
                       </th>
-                      <th class="num" scope="col" title="Current Points">Pts</th>
+                      <th class="num roomy" scope="col" title="Current Points">Pts</th>
                       <th class="wide bar-col" scope="col" title="Current Points plus Projected Gain">
-                        + Projected Gain
+                        <span aria-hidden="true">+ Gain</span>
+                        <span class="visually-hidden">Projected Gain</span>
                       </th>
                       <th class="num" scope="col" title="Projected Points">Proj</th>
                       {showProbabilities &&
@@ -552,17 +553,17 @@ export function App({
                               </abbr>
                             )}
                           </th>
-                          <td class="num">{row.currentRank}</td>
-                          <td class="wide">
-                            <span class="form-chips">
-                              <FormChips side="home" form={row.homeForm} games={row.homeFormWindow} teamName={teamName} />
-                              <FormChips side="away" form={row.awayForm} games={row.awayFormWindow} teamName={teamName} />
-                            </span>
+                          <td class="num roomy">{row.currentRank}</td>
+                          <td class="wide form-home">
+                            <FormChips side="home" form={row.homeForm} games={row.homeFormWindow} teamName={teamName} />
                           </td>
-                          <td class="num" title={`${row.remainingHomeGames} home, ${row.remainingAwayGames} away`}>
+                          <td class="wide form-away">
+                            <FormChips side="away" form={row.awayForm} games={row.awayFormWindow} teamName={teamName} />
+                          </td>
+                          <td class="num roomy" title={`${row.remainingHomeGames} home, ${row.remainingAwayGames} away`}>
                             {row.remainingHomeGames}·{row.remainingAwayGames}
                           </td>
-                          <td class="num">{row.currentPoints}</td>
+                          <td class="num roomy">{row.currentPoints}</td>
                           <td class="wide bar-col">
                             <GainBar row={row} scale={barScale} />
                           </td>
@@ -669,7 +670,7 @@ export function App({
                 <table class="current">
                   <thead>
                     <tr>
-                      <th class="num" scope="col" title="Rank">#</th>
+                      <th class="rank-head" scope="col" title="Rank">#</th>
                       <th scope="col">Team</th>
                       <th class="num" scope="col" title="Games played">GP</th>
                       <th class="num" scope="col" title="Regulation wins">W</th>

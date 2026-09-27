@@ -327,6 +327,8 @@ h1 .dot {
 /* ───────── Tables ───────── */
 
 .table-scroll {
+  /* Contains the header's absolutely positioned .visually-hidden labels, which otherwise widen the page. */
+  position: relative;
   overflow-x: auto;
 }
 
@@ -342,6 +344,11 @@ td {
   border-top: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
+}
+
+/* The outer columns keep the panel's 1rem inset; nested Form Window tables are left alone. */
+.table-scroll > table > * > tr > :last-child {
+  padding-right: 1rem;
 }
 
 thead th {
@@ -367,6 +374,10 @@ tbody th {
 .rank {
   width: 2.6rem;
   font: 700 1.05rem var(--display);
+  text-align: center;
+}
+
+.rank-head {
   text-align: center;
 }
 
@@ -482,9 +493,13 @@ tbody th {
 
 /* ───────── Form chips ───────── */
 
-.form-chips {
-  display: inline-flex;
-  gap: 0.7rem;
+/* Home and away chips sit in their own cells, so the away chips line up down the column. */
+.projected .form-home {
+  padding-right: 0.35rem;
+}
+
+.projected .form-away {
+  padding-left: 0.35rem;
 }
 
 .chips {
@@ -527,13 +542,9 @@ tbody th {
 
 /* ───────── Points + Projected Gain bar ───────── */
 
-/* The bar takes what the other columns leave; its header wraps so the percentages fit beside it. */
+/* The bar takes what the other columns leave; its short header keeps the percentages beside it. */
 .bar-col {
-  min-width: 5rem;
-}
-
-thead th.bar-col {
-  white-space: normal;
+  min-width: 4rem;
 }
 
 .gain-bar {
@@ -712,7 +723,18 @@ footer a {
 
 /* ───────── Narrow screens ───────── */
 
-@media (max-width: 44rem) {
+/* Below the full 60rem layout, acronyms leave room for the percentages; then Form and the bar give way. */
+@media (max-width: 62rem) {
+  .projected .team-name {
+    display: none;
+  }
+
+  .projected .team-acronym {
+    display: inline;
+  }
+}
+
+@media (max-width: 50rem) {
   .wide,
   .legend .wide {
     display: none;
@@ -721,13 +743,27 @@ footer a {
 
 @media (max-width: 36rem) {
   #app {
-    padding: 1rem 0.5rem 1.5rem;
+    padding: 1rem 1rem 1.5rem;
   }
 
   th,
   td {
-    padding: 0.4rem 0.3rem;
+    padding: 0.4rem 0.25rem;
     font-size: 0.9rem;
+  }
+
+  .table-scroll > table > * > tr > :last-child {
+    padding-right: 0.6rem;
+  }
+
+  .as-of {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .model-picker-label {
+    flex-basis: 100%;
   }
 
   h1 {
@@ -752,6 +788,8 @@ footer a {
   }
 
   .model-options span {
+    padding: 0.3rem 0.4rem;
+    letter-spacing: 0.08em;
     text-align: center;
   }
 
@@ -766,5 +804,12 @@ footer a {
 
   .projected tr.detail > td {
     padding-left: 0.5rem;
+  }
+}
+
+/* Phones: Now, Left and Pts (also in the Current Table) give way so the Season Simulation percentages fit without scrolling. */
+@media (max-width: 30rem) {
+  .roomy {
+    display: none;
   }
 }
