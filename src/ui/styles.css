@@ -98,6 +98,73 @@ body {
   margin-bottom: 0;
 }
 
+/* ───────── Model picker: a scoreboard switch, the lit segment in amber ───────── */
+
+.model-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.model-picker legend {
+  float: left;
+  padding: 0;
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.model-options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  background: var(--led-screen);
+  border-radius: 5px;
+}
+
+.model-options label {
+  position: relative;
+  cursor: pointer;
+}
+
+.model-options input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.model-options span {
+  display: block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 3px;
+  font: 600 0.72rem var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8593a2;
+}
+
+.model-options label:hover span {
+  color: #ffb000;
+}
+
+.model-options input:checked + span {
+  color: #000;
+  background: #ffb000;
+  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+}
+
+.model-options input:focus-visible + span {
+  outline: 2px solid #ffb000;
+  outline-offset: 1px;
+}
+
 /* ───────── Header ───────── */
 
 .scoreboard {

@@ -75,9 +75,9 @@ export function createEloModel(parameters: EloParameters): ProjectionModel {
  */
 
 /** K: how far one Game moves a Rating. */
-const ELO_K = 15;
+export const ELO_K = 15;
 
 /** Home Advantage, in Rating points. */
-const ELO_HOME_ADVANTAGE = 70;
+export const ELO_HOME_ADVANTAGE = 70;
 
 export const eloModel = createEloModel({ k: ELO_K, homeAdvantage: ELO_HOME_ADVANTAGE });
