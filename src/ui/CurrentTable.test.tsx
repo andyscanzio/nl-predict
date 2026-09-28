@@ -70,11 +70,14 @@ describe("CurrentTable", () => {
     expect(html).toContain('title="Regulation losses"');
   });
 
-  it("keeps the tie-break note under the table", () => {
+  it("keeps the tie-break note under the table, linking the official rule", () => {
     const html = panel([row()]);
     expect(html.indexOf("</table>")).toBeLessThan(html.indexOf("Teams level on Points"));
     expect(text(html)).toContain(
-      "Teams level on Points are ordered by Points per Game, then goal difference, goals for and regulation wins. This approximates the official SIHF rule, which also uses head-to-head results, so the order can differ slightly from the official table.",
+      "Teams level on Points are ordered by Points per Game (which only matters while teams have played different numbers of Games), then by the official National League rule (head-to-head first).",
+    );
+    expect(html).toContain(
+      '<a href="https://www.nationalleague.ch/media/bvinatrg/weisungen_spielbetrieb_nl_26_27_d.pdf">official National League rule</a>',
     );
   });
 });

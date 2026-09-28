@@ -1,4 +1,4 @@
-import type { CurrentTableRow } from "../domain/project.ts";
+import { OFFICIAL_TIE_BREAK_RULE_URL, type CurrentTableRow } from "../domain/project.ts";
 import { TeamName, type Teams } from "./TeamName.tsx";
 
 /** The Season's standings as they stand today, with the note on how ties are broken. */
@@ -52,9 +52,9 @@ export function CurrentTable({
         </table>
       </div>
       <p class="meta panel-body">
-        Teams level on Points are ordered by Points per Game, then goal difference, goals for and regulation wins.
-        This approximates the official SIHF rule, which also uses head-to-head results, so the order can differ
-        slightly from the official table.
+        Teams level on Points are ordered by Points per Game (which only matters while teams have played different
+        numbers of Games), then by the <a href={OFFICIAL_TIE_BREAK_RULE_URL}>official National League rule</a>{" "}
+        (head-to-head first).
       </p>
     </section>
   );
