@@ -1,4 +1,4 @@
-import { nearestMatchDay, type ChartTooltip } from "./projectionChart.ts";
+import { nearestMatchDay, type ChartPoint, type ChartTooltip, type ProjectionChart } from "./projectionChart.ts";
 
 /** Box of the Projection History chart and the margins around its plot, in SVG units; the SVG scales to its box, so the aspect ratio stays fixed. */
 export const CHART = { width: 320, height: 130, left: 34, right: 8, top: 8, bottom: 20 };
@@ -25,7 +25,7 @@ export function plotY(share: number): number {
 }
 
 /** An SVG `points` attribute for a line given as plot shares. */
-export function polylinePoints(points: { x: number; y: number }[]): string {
+export function polylinePoints(points: readonly ChartPoint[]): string {
   return points.map((point) => `${plotX(point.x)},${plotY(point.y)}`).join(" ");
 }
 
@@ -70,14 +70,26 @@ export function matchDayAtPointer(clientX: number, svg: { left: number; width: n
   return nearestMatchDay((svgX - CHART.left) / PLOT_WIDTH, count);
 }
 
+/** The Low Sample band in SVG units, with where its label goes. */
+export interface LowSampleBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** False when the band is too narrow for its label. */
+  labelled: boolean;
+  textX: number;
+  textY: number;
+}
+
 /** Wide enough a stretch of the plot (as an x share) to hold the "Low Sample" label. */
 const LOW_SAMPLE_LABEL_SHARE = 0.2;
 
 /**
  * The shaded band over the stretch of the plot where the team had too few Played Games, and where its label goes;
- * null when the stretch is empty. `labelled` is false when the band is too narrow for its label.
+ * null when the stretch is empty.
  */
-export function lowSampleBox(span: { from: number; to: number } | null) {
+export function lowSampleBox(span: ProjectionChart["lowSample"]): LowSampleBox | null {
   if (!span || span.to <= span.from) return null;
   const x = plotX(span.from);
   const y = plotY(0);
