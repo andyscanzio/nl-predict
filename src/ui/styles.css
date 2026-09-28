@@ -803,6 +803,60 @@ tbody th {
   gap: 0.5rem 1rem;
 }
 
+/* Alone in the row (a Points-only model has no Rank Distribution), the chart keeps the width it has beside one. */
+.rank-row > .history-chart:only-child {
+  max-width: 28rem;
+}
+
+.history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.history-head h3 {
+  margin: 0;
+}
+
+.history-toggle {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.history-toggle button {
+  padding: 0.2rem 0.55rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 600 0.65rem var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.history-toggle button + button {
+  border-left: 1px solid var(--line);
+}
+
+.history-toggle button:hover {
+  color: var(--fg);
+}
+
+.history-toggle button[aria-pressed="true"] {
+  background: var(--playoffs);
+  color: var(--bg);
+}
+
+.history-toggle button:focus-visible {
+  outline: 2px solid var(--playoffs);
+  outline-offset: -2px;
+}
+
 .history-chart svg {
   display: block;
   width: 100%;

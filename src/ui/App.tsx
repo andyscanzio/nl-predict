@@ -20,7 +20,7 @@ import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
-import { projectionChart } from "./projectionChart.ts";
+import { chartMetrics, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
@@ -376,27 +376,56 @@ function RankHistogram({ distribution, projectedRank }: { distribution: readonly
 /** Plot area of the Projection History chart, in SVG units; the SVG scales to its box, so the aspect ratio stays fixed. */
 const CHART = { width: 320, height: 130, left: 34, right: 8, top: 8, bottom: 20 };
 
-/** A team's playoff chance over the Season: its line bold, the other teams' faint, on a fixed 0–100% scale with a 50% guide. */
-function ProjectionHistoryChart({ history, teamId, teamName }: { history: ProjectionHistory; teamId: TeamId; teamName: string }) {
-  const chart = projectionChart(history, teamId);
-  if (!chart) return null;
+const METRIC_LABELS: Record<ChartMetric, { title: string; toggle: string }> = {
+  playoffs: { title: "Playoff chance over the Season", toggle: "Playoff %" },
+  points: { title: "Projected Points over the Season", toggle: "Points" },
+};
+
+/**
+ * A team's playoff chance or projected Points over the Season: its line bold, the other teams' faint. A model without
+ * Outcome Probabilities has only the Points view, and so no toggle.
+ */
+function ProjectionHistoryChart({
+  history,
+  teamId,
+  teamName,
+  metric: chosenMetric,
+  onMetricChange,
+}: {
+  history: ProjectionHistory;
+  teamId: TeamId;
+  teamName: string;
+  metric: ChartMetric;
+  onMetricChange: (metric: ChartMetric) => void;
+}) {
+  const metrics = chartMetrics(history);
+  const metric = shownMetric(chosenMetric, metrics);
+  const chart = metric && projectionChart(history, teamId, metric);
+  if (!metric || !chart) return null;
   const plotWidth = CHART.width - CHART.left - CHART.right;
   const plotHeight = CHART.height - CHART.top - CHART.bottom;
   const x = (share: number) => (CHART.left + share * plotWidth).toFixed(1);
   const y = (share: number) => (CHART.top + share * plotHeight).toFixed(1);
   return (
     <section class="history-chart">
-      <h3>Playoff chance over the Season</h3>
+      <div class="history-head">
+        <h3>{METRIC_LABELS[metric].title}</h3>
+        {metrics.length > 1 && (
+          <div class="history-toggle" role="group" aria-label="Chart metric">
+            {metrics.map((option) => (
+              <button key={option} type="button" aria-pressed={option === metric} onClick={() => onMetricChange(option)}>
+                {METRIC_LABELS[option].toggle}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <svg viewBox={`0 0 ${CHART.width} ${CHART.height}`} role="img" aria-label={`${teamName}: ${chart.summary}`}>
         {[0, 1].map((share) => (
           <line key={share} class="history-edge" x1={x(0)} x2={x(1)} y1={y(share)} y2={y(share)} />
         ))}
-        <line class="history-guide" x1={x(0)} x2={x(1)} y1={y(chart.guideY)} y2={y(chart.guideY)} />
-        {[
-          { share: 0, text: "100%" },
-          { share: chart.guideY, text: "50%" },
-          { share: 1, text: "0%" },
-        ].map(({ share, text }) => (
+        {chart.guideY !== null && <line class="history-guide" x1={x(0)} x2={x(1)} y1={y(chart.guideY)} y2={y(chart.guideY)} />}
+        {chart.yTicks.map(({ y: share, text }) => (
           <text key={text} class="history-label" x={CHART.left - 4} y={y(share)} text-anchor="end" dominant-baseline="middle">
             {text}
           </text>
@@ -699,6 +728,8 @@ export function App({
   const headline = headlineOf(projectedTable);
   const barScale = Math.max(1, ...projectedTable.map((row) => row.projectedPoints));
   const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
+  // Kept here rather than per chart, so the choice survives switching model and opening another team.
+  const [chartMetric, setChartMetric] = useState<ChartMetric>("playoffs");
   const toggle = (teamId: TeamId) =>
     setExpanded((previous) => {
       const next = new Set(previous);
@@ -829,12 +860,18 @@ export function App({
                           <tr class="detail" id={detailId}>
                             <td colSpan={columns}>
                               <div class="form-windows">
-                                {row.rankDistribution && (
-                                  <div class="rank-row">
+                                <div class="rank-row">
+                                  {row.rankDistribution && (
                                     <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />
-                                    <ProjectionHistoryChart history={history} teamId={row.teamId} teamName={teamName(row.teamId)} />
-                                  </div>
-                                )}
+                                  )}
+                                  <ProjectionHistoryChart
+                                    history={history}
+                                    teamId={row.teamId}
+                                    teamName={teamName(row.teamId)}
+                                    metric={chartMetric}
+                                    onMetricChange={setChartMetric}
+                                  />
+                                </div>
                                 <FormWindowDetail
                                   side="home"
                                   form={row.homeForm}

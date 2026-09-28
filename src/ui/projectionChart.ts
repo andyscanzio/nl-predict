@@ -9,7 +9,10 @@ export interface ChartPoint {
   y: number;
 }
 
-/** One team's playoff-chance line. */
+/** What the Projection History chart plots: each team's playoff chance, or its projected Points. */
+export type ChartMetric = "playoffs" | "points";
+
+/** One team's line. */
 export interface ChartLine {
   teamId: TeamId;
   /** The team the visitor opened; drawn bold, the others faint. */
@@ -17,12 +20,20 @@ export interface ChartLine {
   points: ChartPoint[];
 }
 
+/** A y-axis label, at a `y` share of the plot. */
+export interface ChartTick {
+  y: number;
+  text: string;
+}
+
 /** Everything the Projection History chart draws, in shares of the plot so the component picks its own size. */
 export interface ProjectionChart {
   /** One line per team; the chosen team's comes last, so it is drawn on top. */
   lines: ChartLine[];
-  /** Where the faint 50% guide sits, as a `y`. */
-  guideY: number;
+  /** Where the faint 50% guide sits, as a `y`; null on the Points scale, which has none. */
+  guideY: number | null;
+  /** Labels for the y-axis, top to bottom. */
+  yTicks: ChartTick[];
   /** Sparse date labels for the x-axis. */
   xLabels: { x: number; text: string }[];
   /** A text version for screen readers. */
@@ -43,33 +54,74 @@ function labelledIndexes(count: number): number[] {
   return [...new Set([0, Math.round((count - 1) / 2), count - 1])];
 }
 
-function summaryOf(start: number, previous: number, latest: number): string {
-  const change = Math.round((latest - previous) * 100);
-  const since = change === 0 ? "unchanged" : `${change > 0 ? "up" : "down"} ${Math.abs(change)} pts`;
+function changeText(change: number, unit: string, decimals: number): string {
+  const rounded = Number(Math.abs(change).toFixed(decimals));
+  return rounded === 0 ? "unchanged" : `${change > 0 ? "up" : "down"} ${rounded.toFixed(decimals)}${unit}`;
+}
+
+function playoffsSummary(start: number, previous: number, latest: number): string {
+  const since = changeText(Math.round((latest - previous) * 100), " pts", 0);
   return `Playoff chance ${formatPercent(latest)}% now, ${formatPercent(start)}% at the start of the Season, ${since} since the previous Match Day.`;
 }
 
+function pointsSummary(start: number, previous: number, latest: number): string {
+  const since = changeText(latest - previous, "", 1);
+  return `Projected Points ${latest.toFixed(1)} now, ${start.toFixed(1)} at the start of the Season, ${since} since the previous Match Day.`;
+}
+
+/** The metrics a model's history can chart: playoff % only where the model has Outcome Probabilities (ADR 0002). None while only the Season-start point exists. */
+export function chartMetrics(history: ProjectionHistory): ChartMetric[] {
+  if (history.length < 2) return [];
+  const hasChances = history.every((point) => Object.values(point.teams).every((team) => team.playoffs !== null));
+  return hasChances ? ["playoffs", "points"] : ["points"];
+}
+
+/** The metric to draw: the visitor's choice where the model supports it, otherwise the first it does. */
+export function shownMetric(chosen: ChartMetric, available: ChartMetric[]): ChartMetric | null {
+  return available.includes(chosen) ? chosen : (available[0] ?? null);
+}
+
 /**
- * The playoff-chance chart of a team's Projection History under one model: a line per team on a fixed 0–100% scale.
- * Null when there is nothing to show: only the Season-start point, or a Points-only model with no chances.
+ * The Projection History chart of a team under one model: a line per team.
+ * Playoff % is on a fixed 0–100% scale; projected Points span the whole field's lowest to highest value at every point,
+ * so small changes are not exaggerated and no team's line is clipped. Null when the model can't chart that metric.
  */
-export function projectionChart(history: ProjectionHistory, teamId: TeamId): ProjectionChart | null {
-  if (history.length < 2) return null;
-  const chances = (id: TeamId) => history.map((point) => point.teams[id]!.playoffs);
+export function projectionChart(history: ProjectionHistory, teamId: TeamId, metric: ChartMetric): ProjectionChart | null {
+  if (!chartMetrics(history).includes(metric)) return null;
   const teamIds = Object.keys(history[0]!.teams).map(Number);
-  if (teamIds.some((id) => chances(id).includes(null))) return null;
+  const values = (id: TeamId) => history.map((point) => (metric === "playoffs" ? point.teams[id]!.playoffs! : point.teams[id]!.projectedPoints));
+
+  let yOf: (value: number) => number;
+  let guideY: number | null = null;
+  let yTicks: ChartTick[];
+  if (metric === "playoffs") {
+    yOf = (value) => 1 - value;
+    guideY = 0.5;
+    yTicks = [
+      { y: 0, text: "100%" },
+      { y: 0.5, text: "50%" },
+      { y: 1, text: "0%" },
+    ];
+  } else {
+    const field = teamIds.flatMap(values);
+    const low = Math.min(...field);
+    const high = Math.max(...field);
+    yOf = (value) => (high === low ? 0.5 : (high - value) / (high - low));
+    yTicks = [high, (high + low) / 2, low].map((value) => ({ y: yOf(value), text: value.toFixed(1) }));
+  }
 
   const xOf = (index: number) => index / (history.length - 1);
   const lineOf = (id: TeamId): ChartLine => ({
     teamId: id,
     chosen: id === teamId,
-    points: chances(id).map((chance, index) => ({ x: xOf(index), y: 1 - chance! })),
+    points: values(id).map((value, index) => ({ x: xOf(index), y: yOf(value) })),
   });
-  const chosen = chances(teamId) as number[];
+  const chosen = values(teamId);
   return {
     lines: [...teamIds.filter((id) => id !== teamId).map(lineOf), lineOf(teamId)],
-    guideY: 0.5,
+    guideY,
+    yTicks,
     xLabels: labelledIndexes(history.length).map((index) => ({ x: xOf(index), text: dateLabel(history[index]!.matchDay) })),
-    summary: summaryOf(chosen[0]!, chosen.at(-2)!, chosen.at(-1)!),
+    summary: (metric === "playoffs" ? playoffsSummary : pointsSummary)(chosen[0]!, chosen.at(-2)!, chosen.at(-1)!),
   };
 }
