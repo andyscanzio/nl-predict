@@ -54,13 +54,6 @@ function teamRows(html: string) {
   return [...html.matchAll(/<tbody class="cut-[\w-]+">(<tr[^>]*>)(.*?)<\/tr>/g)].map((match) => ({ open: match[1]!, html: match[2]! }));
 }
 
-/** The gain bar's solid and striped widths in a team's row. */
-function gainWidths(rowHtml: string) {
-  const now = /gain-bar-now" style="width:([\d.]+)%/.exec(rowHtml)?.[1];
-  const gain = /gain-bar-gain" style="left:[\d.]+%;width:([\d.]+)%/.exec(rowHtml)?.[1];
-  return { now: Number(now), gain: Number(gain) };
-}
-
 describe("ProjectedTable", () => {
   describe("Cut Line breaks", () => {
     const rows = [
@@ -81,25 +74,10 @@ describe("ProjectedTable", () => {
     });
   });
 
-  describe("gain bars", () => {
-    it("share one scale set by the highest projected Points", () => {
-      const rows = [
-        row({ teamId: 1, currentPoints: 20, projectedPoints: 40 }),
-        row({ teamId: 2, currentPoints: 10, projectedPoints: 30 }),
-      ];
-      const [first, second] = teamRows(panel(rows));
-      expect(gainWidths(first!.html)).toEqual({ now: 50, gain: 50 });
-      expect(gainWidths(second!.html)).toEqual({ now: 25, gain: 50 });
-    });
-
-    it("shows no striped gain for a team projected to gain nothing", () => {
-      const rows = [
-        row({ teamId: 1, currentPoints: 20, projectedPoints: 40 }),
-        row({ teamId: 2, currentPoints: 30, projectedPoints: 28 }),
-      ];
-      const [, behind] = teamRows(panel(rows));
-      expect(gainWidths(behind!.html).gain).toBe(0);
-    });
+  it("has no Projected Gain column: Pts and Proj already show it", () => {
+    const html = panel([row()]);
+    expect(html).not.toContain("gain-bar");
+    expect(text(html)).not.toContain("Gain");
   });
 
   describe("percentage columns", () => {
@@ -108,6 +86,12 @@ describe("ProjectedTable", () => {
       for (const label of ["Playoffs %", "Play-in %", "Eliminated %", "1st %"]) expect(text(html)).toContain(label);
       expect(text(html)).toContain("% of");
       expect(text(html)).not.toContain("No % columns");
+    });
+
+    it("print a % in the visible headers", () => {
+      const headers = [...panel([row()]).matchAll(/<th class="num pct"[^>]*><span aria-hidden="true">(.*?)<\/span>/g)].map((m) => m[1]);
+      // thead th is uppercased in CSS, so these read PO%, PI%, OUT%, 1ST%.
+      expect(headers).toEqual(["PO%", "PI%", "Out%", "1st%"]);
     });
 
     it('print remote chances as "<1" and ">99"', () => {
@@ -139,6 +123,21 @@ describe("ProjectedTable", () => {
       const [low, ok] = teamRows(panel(rows));
       expect(low!.html).toContain('class="low-sample"');
       expect(ok!.html).not.toContain("low-sample");
+    });
+
+    it("keeps the LS legend entry while only some teams are Low Sample", () => {
+      const html = panel([row({ teamId: 1, lowSample: true }), row({ teamId: 2, lowSample: false })]);
+      expect(text(html)).toContain("LS Low Sample: fewer than 10 Played Games");
+      expect(text(html)).not.toContain("teams are Low Sample");
+    });
+
+    it("hides every badge and says so once in the legend when all teams are Low Sample", () => {
+      const html = panel([row({ teamId: 1, lowSample: true }), row({ teamId: 2, lowSample: true })]);
+      for (const teamRow of teamRows(html)) expect(teamRow.html).not.toContain("low-sample");
+      expect(html).not.toContain('class="low-sample"');
+      expect(text(html)).toContain(
+        "All teams are Low Sample, with fewer than 10 Played Games, so these projections rest on little data.",
+      );
     });
   });
 

@@ -14,7 +14,7 @@
   --line: light-dark(#d6dde5, #1f2833);
   --amber: light-dark(#a86a00, #ffb000);
   --led: light-dark(#d61f1f, #ff4545);
-  /* The clock and ticker: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
+  /* The clock and Headline: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
   --led-screen: light-dark(var(--panel), #000);
   --led-edge: light-dark(var(--line), transparent);
   --led-text: light-dark(#8f5a00, #ffb000);
@@ -27,7 +27,6 @@
   --playoffs: light-dark(#0079a8, #29d3ff);
   --play-in: light-dark(#a86a00, #ffb000);
   --eliminated: light-dark(#9aa6b2, #56616d);
-  --bar-now: light-dark(#0c1117, #eef3f8);
   --warning-bg: light-dark(#fff4d6, #2a1f05);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
@@ -161,7 +160,7 @@ body {
   margin: 0.2rem 0 0;
   padding-left: calc(2.9rem + 0.6rem); /* lines up under the teams, past the start time column */
   font: 700 0.8rem var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* What-If picker: the theme toggle's segments under each Game, lined up under the teams. */
@@ -175,7 +174,10 @@ body {
   font-size: 0.68rem;
 }
 
-/* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle. */
+/*
+ * Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle.
+ * Home and away are told apart by --fg and --muted, so --playoffs and --play-in keep their Cut Line meaning.
+ */
 .win-split {
   display: flex;
   align-items: center;
@@ -209,26 +211,34 @@ body {
 .win-split-side {
   display: flex;
   min-width: 2px;
-  background: var(--inset);
+  background: var(--side-colour, var(--inset));
 }
 
 .win-split-side.home {
-  background: var(--amber);
+  --side-colour: var(--fg);
   justify-content: flex-end;
 }
 
 .win-split-side.away {
-  background: var(--playoffs);
+  --side-colour: var(--muted);
   justify-content: flex-start;
 }
 
 .win-split-side.none {
-  background: var(--eliminated);
+  --side-colour: var(--eliminated);
 }
 
+/*
+ * A faded shade of the side's colour, mixed towards the panel so it still shows on the near-white home side in dark mode,
+ * striped so the home OT/SO slice is not mistaken for the grey away side.
+ */
 .win-split-otso {
   height: 100%;
-  background: rgb(255 255 255 / 0.4);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--side-colour, var(--inset)) 0 1.5px,
+    color-mix(in srgb, var(--side-colour, var(--inset)) 45%, var(--panel)) 1.5px 4px
+  );
 }
 
 /* A panel-coloured seam between a side's regulation wins and its lighter OT/SO slice. */
@@ -269,7 +279,7 @@ body {
   grid-template-columns: repeat(4, auto);
   gap: 2px;
   padding: 2px;
-  /* Follows the theme, unlike the clock and ticker: a light track in light mode, the LED screen in dark. */
+  /* Follows the theme, unlike the clock and Headline: a light track in light mode, the LED screen in dark. */
   background: light-dark(var(--panel-strip), #000);
   box-shadow: inset 0 0 0 1px light-dark(var(--line), transparent);
   border-radius: 5px;
@@ -424,22 +434,21 @@ h1 .dot {
   text-shadow: 0 0 10px var(--led-glow);
 }
 
-/* ───────── Ticker ───────── */
+/* ───────── Headline ───────── */
 
-.ticker {
+.headline {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin: 0 0 1rem;
-  padding: 0 0.5rem 0 0.8rem;
+  padding: 0.6rem 0.8rem;
   background: var(--led-screen);
   box-shadow: inset 0 0 0 1px var(--led-edge);
   border-radius: 8px;
-  overflow: hidden;
   font-family: var(--display);
 }
 
-.ticker-tag {
+.headline-tag {
   flex: none;
   font-weight: 700;
   font-size: 0.65rem;
@@ -451,29 +460,9 @@ h1 .dot {
   border-radius: 2px;
 }
 
-.ticker-rail {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
-}
-
-.ticker-track {
-  display: flex;
-  width: max-content;
-  animation: ticker-crawl 28s linear infinite;
-}
-
-.ticker:hover .ticker-track,
-.ticker:focus-within .ticker-track,
-.ticker.paused .ticker-track {
-  animation-play-state: paused;
-}
-
-.ticker-track p {
+.headline p {
   margin: 0;
-  padding: 0.6rem 5rem 0.6rem 0;
-  white-space: nowrap;
+  min-width: 0;
   font-weight: 600;
   font-size: 0.95rem;
   letter-spacing: 0.06em;
@@ -481,52 +470,8 @@ h1 .dot {
   color: var(--led-text);
 }
 
-.ticker-track strong {
+.headline strong {
   color: var(--led-bright);
-}
-
-@keyframes ticker-crawl {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.ticker-toggle {
-  flex: none;
-  width: 1.8rem;
-  height: 1.8rem;
-  padding: 0;
-  border: 1px solid light-dark(var(--line), #333);
-  border-radius: 4px;
-  background: none;
-  color: var(--led-text);
-  font-size: 0.65rem;
-  cursor: pointer;
-}
-
-.ticker-toggle:hover {
-  border-color: var(--led-text);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    width: auto;
-    animation: none;
-  }
-
-  .ticker-track p {
-    white-space: normal;
-    padding-right: 0;
-  }
-
-  .ticker-track p + p,
-  .ticker-toggle {
-    display: none;
-  }
-
-  .ticker-rail {
-    mask-image: none;
-  }
 }
 
 /* ───────── Tables ───────── */
@@ -599,7 +544,7 @@ tbody th {
 
 .projected-points {
   font: 700 1.45rem/1 var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* The What-If Change from the Real Projection, stacked under the projected Points. */
@@ -622,7 +567,7 @@ tbody th {
   color: var(--muted);
 }
 
-/* Season Simulation percentages: short labels (PO, PI, Out, 1st), spelled out in the legend. */
+/* Season Simulation percentages: short labels (PO%, PI%, Out%, 1st%), spelled out in the legend. */
 .projected .pct {
   padding-left: 0.3rem;
   padding-right: 0.3rem;
@@ -634,7 +579,7 @@ tbody th {
 
 .current .points {
   font: 700 1.05rem var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* Zones: the rank cell carries the Cut Line color. */
@@ -750,50 +695,24 @@ tbody th {
   vertical-align: -0.05em;
 }
 
+/* Colour says win or loss; fill says how: solid in regulation, half-filled in OT/SO, empty for a regulation loss.
+   Whole-pixel outlines stay sharp on standard and retina screens alike. */
 .chip-3 {
   background: var(--win);
 }
 
 .chip-2 {
-  background: color-mix(in srgb, var(--win) 45%, transparent);
+  background: linear-gradient(to top, var(--win) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--win);
 }
 
 .chip-1 {
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--loss) 55%, transparent);
+  background: linear-gradient(to top, var(--loss) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--loss);
 }
 
 .chip-0 {
-  box-shadow: inset 0 0 0 2px var(--loss);
-}
-
-/* ───────── Points + Projected Gain bar ───────── */
-
-/* The bar takes what the other columns leave; its short header keeps the percentages beside it. */
-.bar-col {
-  min-width: 4rem;
-}
-
-.gain-bar {
-  position: relative;
-  display: block;
-  height: 10px;
-  background: var(--line);
-}
-
-.gain-bar-now,
-.gain-bar-gain {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-}
-
-.gain-bar-now {
-  background: var(--bar-now);
-}
-
-.gain-bar-gain {
-  background: repeating-linear-gradient(90deg, var(--amber) 0 3px, transparent 3px 5px);
+  box-shadow: inset 0 0 0 1px var(--loss);
 }
 
 /* ───────── Legend ───────── */
@@ -832,11 +751,6 @@ tbody th {
 
 .legend .cut-eliminated {
   border-left-color: var(--eliminated);
-}
-
-.legend-bar {
-  display: inline-block;
-  width: 2.5rem;
 }
 
 .legend-swatch {
@@ -936,12 +850,12 @@ tbody th {
 }
 
 .history-toggle button[aria-pressed="true"] {
-  background: var(--playoffs);
+  background: var(--fg);
   color: var(--bg);
 }
 
 .history-toggle button:focus-visible {
-  outline: 2px solid var(--playoffs);
+  outline: 2px solid var(--amber);
   outline-offset: -2px;
 }
 
@@ -976,7 +890,7 @@ tbody th {
 }
 
 .history-line.chosen {
-  stroke: var(--playoffs);
+  stroke: var(--fg);
   stroke-opacity: 1;
   stroke-width: 2.5;
 }
@@ -1011,7 +925,7 @@ tbody th {
 }
 
 .history-tip-dot {
-  fill: var(--playoffs);
+  fill: var(--fg);
   stroke: var(--bg);
   stroke-width: 1.5;
 }
@@ -1228,7 +1142,7 @@ footer a {
 
 /* ───────── Narrow screens ───────── */
 
-/* Below the full 60rem layout, acronyms leave room for the percentages; then Form and the bar give way. */
+/* Below the full 60rem layout, acronyms leave room for the percentages; then Form gives way. */
 @media (max-width: 62rem) {
   .projected .team-name {
     display: none;

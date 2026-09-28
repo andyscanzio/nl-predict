@@ -8,12 +8,13 @@ import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionM
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { ChartMetric } from "./projectionChart.ts";
 import { formatForm, formatGameDate, SIMULATION_RUNS_LABEL } from "./format.ts";
+import { lowSampleSentence, lowSampleShare } from "./lowSample.ts";
 import { SIDES } from "./formSides.ts";
 import { TeamDetail } from "./TeamDetail.tsx";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
 import { formatPercent } from "./winSplit.ts";
 
-const PROJECTED_COLUMNS = 10;
+const PROJECTED_COLUMNS = 9;
 
 const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; short: string; title: string }[] = [
   { key: "playoffs", label: "Playoffs", short: "PO", title: "Chance of finishing 1–6: straight to the playoffs" },
@@ -110,7 +111,7 @@ function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number];
   );
 }
 
-/** One chip per Form Window Game, newest first: filled for wins, outlined for losses, dimmer for OT/SO. */
+/** One chip per Form Window Game, newest first: green for wins, red for losses, half-filled for OT/SO. */
 function FormChips({
   side,
   form,
@@ -145,22 +146,6 @@ function FormChips({
           />
         ))
       )}
-    </span>
-  );
-}
-
-/** Current Points solid, Projected Gain striped, on a scale shared by every row. */
-function GainBar({ row, scale }: { row: ProjectedTableRow; scale: number }) {
-  const gain = Math.max(0, row.projectedPoints - row.currentPoints);
-  const percent = (points: number) => `${(points / scale) * 100}%`;
-  return (
-    <span
-      class="gain-bar"
-      aria-hidden="true"
-      title={`${row.currentPoints} Points + ${Math.round(gain)} Projected Gain`}
-    >
-      <span class="gain-bar-now" style={{ width: percent(row.currentPoints) }} />
-      <span class="gain-bar-gain" style={{ left: percent(row.currentPoints), width: percent(gain) }} />
     </span>
   );
 }
@@ -221,7 +206,8 @@ export function ProjectedTable({
   const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
-  const barScale = Math.max(1, ...rows.map((row) => row.projectedPoints));
+  // When every team is Low Sample, one legend line says so instead of a badge on every row.
+  const lowSampleTeams = lowSampleShare(rows);
   const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
   // Kept here rather than per chart, so the choice survives switching model and opening another team.
   const [chartMetric, setChartMetric] = useState<ChartMetric>("playoffs");
@@ -255,15 +241,11 @@ export function ProjectedTable({
                 Left
               </th>
               <th class="num roomy" scope="col" title="Current Points">Pts</th>
-              <th class="wide bar-col" scope="col" title="Current Points plus Projected Gain">
-                <span aria-hidden="true">+ Gain</span>
-                <span class="visually-hidden">Projected Gain</span>
-              </th>
               <th class="num" scope="col" title="Projected Points">Proj</th>
               {showProbabilities &&
                 PROBABILITY_COLUMNS.map((column) => (
                   <th key={column.key} class="num pct" scope="col" title={column.title}>
-                    <span aria-hidden="true">{column.short}</span>
+                    <span aria-hidden="true">{column.short}%</span>
                     <span class="visually-hidden">{column.label} %</span>
                   </th>
                 ))}
@@ -299,7 +281,7 @@ export function ProjectedTable({
                       </span>
                       <TeamName teams={teams} teamId={row.teamId} />
                     </button>
-                    {row.lowSample && (
+                    {row.lowSample && lowSampleTeams !== "all" && (
                       <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
                         LS
                       </abbr>
@@ -316,9 +298,6 @@ export function ProjectedTable({
                     {row.remainingHomeGames}·{row.remainingAwayGames}
                   </td>
                   <td class="num roomy">{row.currentPoints}</td>
-                  <td class="wide bar-col">
-                    <GainBar row={row} scale={barScale} />
-                  </td>
                   <td class="num projected-points">
                     <ProjectedPoints row={row} />
                   </td>
@@ -360,16 +339,13 @@ export function ProjectedTable({
           <span class="chip chip-3" /> Win <span class="chip chip-2" /> OT/SO win{" "}
           <span class="chip chip-1" /> OT/SO loss <span class="chip chip-0" /> Loss
         </li>
-        <li class="wide">
-          <span class="gain-bar legend-bar">
-            <span class="gain-bar-now" style={{ width: "40%" }} />
-            <span class="gain-bar-gain" style={{ left: "40%", width: "60%" }} />
-          </span>{" "}
-          Points + Projected Gain
-        </li>
-        <li>
-          <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
-        </li>
+        {lowSampleTeams === "all" ? (
+          <li>{lowSampleSentence(lowSampleTeams)}, so these projections rest on little data.</li>
+        ) : (
+          <li>
+            <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
+          </li>
+        )}
         <li>Left: Remaining home · away Games</li>
         {showProbabilities ? (
           <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated Seasons</li>

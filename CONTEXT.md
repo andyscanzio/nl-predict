@@ -84,6 +84,10 @@ _Avoid_: Head-to-head games, mini-league
 The expected final Regular Season standings produced by a Projection Model, ranked by projected Points with ties broken by Current Table position.
 _Avoid_: Leaderboard, prediction
 
+**Headline**:
+The one-sentence summary of the Projected Table shown above it: who finishes first, who finishes last, and the team climbing the most places, if any.
+_Avoid_: Ticker, crawl
+
 **Projected Gain**:
 The Points a Projection Model expects a team to add over its Remaining Games: projected Points minus current Points.
 _Avoid_: Remaining Points (that suggests the Points still available to win)
@@ -132,7 +136,7 @@ An outcome a visitor sets for a Game in the Next Round: home or away win, in reg
 _Avoid_: Forced result, pick, prediction
 
 **What-If**:
-The set of What-If Results a visitor currently has; while it is non-empty, the Projected Table and headline show the What-If projection rather than the Real Projection, and the Projected Table shows each What-If Change.
+The set of What-If Results a visitor currently has; while it is non-empty, the Projected Table and Headline show the What-If projection rather than the Real Projection, and the Projected Table shows each What-If Change.
 _Avoid_: Scenario, simulation (that is the Season Simulation)
 
 **Real Projection**:
