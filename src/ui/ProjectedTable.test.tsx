@@ -88,6 +88,12 @@ describe("ProjectedTable", () => {
       expect(text(html)).not.toContain("No % columns");
     });
 
+    it("print a % in the visible headers", () => {
+      const headers = [...panel([row()]).matchAll(/<th class="num pct"[^>]*><span aria-hidden="true">(.*?)<\/span>/g)].map((m) => m[1]);
+      // thead th is uppercased in CSS, so these read PO%, PI%, OUT%, 1ST%.
+      expect(headers).toEqual(["PO%", "PI%", "Out%", "1st%"]);
+    });
+
     it('print remote chances as "<1" and ">99"', () => {
       const html = panel([row({ probabilities: { playoffs: 0.999, playIn: 0.004, eliminated: 0.001, first: 0.5 } })]);
       const cells = [...teamRows(html)[0]!.html.matchAll(/<td class="num pct[^"]*">(.*?)<\/td>/g)].map((match) => text(match[1]!));

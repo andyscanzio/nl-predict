@@ -556,7 +556,7 @@ tbody th {
   color: var(--muted);
 }
 
-/* Season Simulation percentages: short labels (PO, PI, Out, 1st), spelled out in the legend. */
+/* Season Simulation percentages: short labels (PO%, PI%, Out%, 1st%), spelled out in the legend. */
 .projected .pct {
   padding-left: 0.3rem;
   padding-right: 0.3rem;

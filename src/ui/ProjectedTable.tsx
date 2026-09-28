@@ -245,7 +245,7 @@ export function ProjectedTable({
               {showProbabilities &&
                 PROBABILITY_COLUMNS.map((column) => (
                   <th key={column.key} class="num pct" scope="col" title={column.title}>
-                    <span aria-hidden="true">{column.short}</span>
+                    <span aria-hidden="true">{column.short}%</span>
                     <span class="visually-hidden">{column.label} %</span>
                   </th>
                 ))}
