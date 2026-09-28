@@ -32,3 +32,7 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
 > _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+
+## Capitalisation: docs vs visible text
+
+Glossary terms are capitalised in code, docs, issues and ADRs so they read as defined terms. Text a visitor sees on the page uses normal sentence case instead ("played games", "current table", "what-if"), including section headings. Projection Model names ("Elo", "Season Rate", "Matchup Model", "Split Form Rate") stay capitalised as names.

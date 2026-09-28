@@ -72,9 +72,9 @@ describe("CurrentTable", () => {
 
   it("keeps the tie-break note under the table, linking the official rule", () => {
     const html = panel([row()]);
-    expect(html.indexOf("</table>")).toBeLessThan(html.indexOf("Teams level on Points"));
+    expect(html.indexOf("</table>")).toBeLessThan(html.indexOf("Teams level on points"));
     expect(text(html)).toContain(
-      "Teams level on Points are ordered by Points per Game (which only matters while teams have played different numbers of Games), then by the official National League rule (head-to-head first).",
+      "Teams level on points are ordered by points per game (which only matters while teams have played different numbers of games), then by the official National League rule (head-to-head first).",
     );
     expect(html).toContain(
       '<a href="https://www.nationalleague.ch/media/bvinatrg/weisungen_spielbetrieb_nl_26_27_d.pdf">official National League rule</a>',

@@ -20,13 +20,16 @@ const scoreboardTime = new Intl.DateTimeFormat("en-GB", {
   minute: "2-digit",
   hourCycle: "h23",
   timeZone: "Europe/Zurich",
+  // Short names such as "CEST" vary by browser, where the offset does not.
+  timeZoneName: "shortOffset",
 });
 
-/** Scoreboard-style Snapshot time, e.g. "27.09 13:33". */
+/** Scoreboard-style Snapshot time with the Swiss time zone, e.g. "27.09 13:33 CEST", or "CET" in winter. */
 export function formatScoreboardTime(date: Date) {
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     scoreboardTime.formatToParts(date).find((p) => p.type === type)?.value ?? "";
-  return `${part("day")}.${part("month")} ${part("hour")}:${part("minute")}`;
+  const zone = part("timeZoneName") === "GMT+2" ? "CEST" : "CET";
+  return `${part("day")}.${part("month")} ${part("hour")}:${part("minute")} ${zone}`;
 }
 
 const gameDate = new Intl.DateTimeFormat("en-GB", {

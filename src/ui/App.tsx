@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import { project, REGULAR_SEASON_GAMES, type IntegrityIssue, type ProjectionModel, type WhatIf, type WhatIfOutcome } from "../domain/project.ts";
+import {
+  project,
+  REGULAR_SEASON_GAMES,
+  type IntegrityIssue,
+  type NextRoundDay,
+  type ProjectionModel,
+  type WhatIf,
+  type WhatIfOutcome,
+} from "../domain/project.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
@@ -11,9 +19,9 @@ import { formatScoreboardTime, formatSnapshotTime, ordinal } from "./format.ts";
 import { CurrentTable } from "./CurrentTable.tsx";
 import { ModelExplanation } from "./ModelExplanation.tsx";
 import { ProjectedTable } from "./ProjectedTable.tsx";
-import { fullTeamName } from "./TeamName.tsx";
+import { fullTeamName, teamAcronym, type Teams } from "./TeamName.tsx";
 import { lowSampleShare } from "./lowSample.ts";
-import { UpcomingGames } from "./UpcomingGames.tsx";
+import { UpcomingGames, whatIfLabel } from "./UpcomingGames.tsx";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
 
@@ -64,13 +72,13 @@ function IntegrityWarning({
   return (
     <div class="warning" role="alert">
       <p>
-        <strong>Incomplete schedule.</strong> These teams' Played and Remaining Games don't add up to{" "}
+        <strong>Incomplete schedule.</strong> These teams' played and remaining games don't add up to{" "}
         {REGULAR_SEASON_GAMES}, so their projections may be off:
       </p>
       <ul>
         {issues.map((issue) => (
           <li key={issue.teamId}>
-            {teamName(issue.teamId)}: {issue.playedGames} Played + {issue.remainingGames} Remaining ={" "}
+            {teamName(issue.teamId)}: {issue.playedGames} played + {issue.remainingGames} remaining ={" "}
             {issue.playedGames + issue.remainingGames}
           </li>
         ))}
@@ -79,15 +87,46 @@ function IntegrityWarning({
   );
 }
 
-/** Tells the visitor the tables and Headline assume their What-If Results, and lets them go back to the Real Projection. */
-function WhatIfBanner({ count, onReset }: { count: number; onReset: () => void }) {
+/**
+ * Tells the visitor the tables and Headline assume their What-If Results, lists them in Next Round order with a ✕ to
+ * remove each, and lets them go back to the Real Projection.
+ */
+function WhatIfBanner({
+  nextRound,
+  teams,
+  onRemove,
+  onReset,
+}: {
+  nextRound: NextRoundDay[];
+  teams: Teams;
+  onRemove: (gameId: string) => void;
+  onReset: () => void;
+}) {
+  const results = nextRound.flatMap((day) => day.games.flatMap(({ game, whatIf }) => (whatIf ? [{ game, whatIf }] : [])));
   return (
     <div class="warning what-if-banner" role="status">
       <p>
-        <strong>What-if:</strong> {count} {count === 1 ? "result" : "results"} set. The Projected Table, chances and
-        headline assume them. The small numbers show the What-If Change from the Real Projection, and ▲▼ compares with
-        the real projected rank.
+        <strong>What-if:</strong> the projected table, chances and headline assume these results; small numbers and ▲▼
+        compare with the real projection.
       </p>
+      <ul class="what-if-results">
+        {results.map(({ game, whatIf }) => {
+          const home = fullTeamName(teams, game.homeTeamId);
+          const away = fullTeamName(teams, game.awayTeamId);
+          return (
+            <li key={game.id} class="what-if-result">
+              {teamAcronym(teams, game.homeTeamId)}–{teamAcronym(teams, game.awayTeamId)}: {whatIfLabel(whatIf, home, away)}{" "}
+              <button
+                type="button"
+                aria-label={`Remove the what-if result of ${home} vs ${away}`}
+                onClick={() => onRemove(game.id)}
+              >
+                ✕
+              </button>
+            </li>
+          );
+        })}
+      </ul>
       <button type="button" onClick={onReset}>
         Reset
       </button>
@@ -192,7 +231,7 @@ export function App({
           <h1>
             NL <span class="dot" aria-hidden="true">●</span> Predict
           </h1>
-          <p class="subtitle">National League {season} · Regular Season</p>
+          <p class="subtitle">National League {season} · Regular season</p>
         </div>
         <div class="scoreboard-side">
           <ThemeToggle />
@@ -214,7 +253,12 @@ export function App({
               </HeadlineScreen>
             )}
             {whatIfActive && (
-              <WhatIfBanner count={appliedWhatIf.size} onReset={() => onWhatIfChange(new Map(), "push")} />
+              <WhatIfBanner
+                nextRound={nextRound}
+                teams={teams}
+                onRemove={(gameId) => pickWhatIfResult(gameId, undefined)}
+                onReset={() => onWhatIfChange(new Map(), "push")}
+              />
             )}
             <ProjectedTable
               rows={projectedTable}
@@ -232,16 +276,16 @@ export function App({
               onWhatIfPick={pickWhatIfResult}
             />
 
-            <ModelExplanation model={model} />
-
             <CurrentTable rows={currentTable} teams={teams} whatIfActive={whatIfActive} />
+
+            <ModelExplanation model={model} />
           </>
         ) : (
           <section class="panel empty-state">
-            <h2>No Games played yet</h2>
+            <h2>No games played yet</h2>
             <p class="panel-body">
-              The {season} Regular Season hasn't started, so there is no Home Form or Away Form to project from. The Projected Table
-              and Current Table appear here once the first Game has a result.
+              The {season} regular season hasn't started, so there is no home or away form to project from. The projected table
+              and current table appear here once the first game has a result.
             </p>
           </section>
         )}

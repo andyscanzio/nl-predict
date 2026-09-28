@@ -590,6 +590,7 @@ describe("project: Form Window detail", () => {
         goalsAgainst: 3,
         decision: "SO",
         points: 1,
+        whatIf: false,
       },
       {
         gameId: olderHome!.id,
@@ -599,6 +600,7 @@ describe("project: Form Window detail", () => {
         goalsAgainst: 2,
         decision: "regulation",
         points: 3,
+        whatIf: false,
       },
     ]);
     expect(projectedRow(games, 1).awayFormWindow).toEqual([
@@ -610,6 +612,7 @@ describe("project: Form Window detail", () => {
         goalsAgainst: 1,
         decision: "OT",
         points: 2,
+        whatIf: false,
       },
     ]);
   });

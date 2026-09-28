@@ -9,7 +9,7 @@ export function lowSampleShare(rows: { lowSample: boolean }[]): LowSampleShare {
   return count === 0 ? "none" : count === rows.length ? "all" : "some";
 }
 
-/** "Some teams are Low Sample, …" or "All teams are Low Sample, …", without the closing clause. */
+/** "Some teams are low sample, …" or "All teams are low sample, …", without the closing clause. */
 export function lowSampleSentence(share: Exclude<LowSampleShare, "none">): string {
-  return `${share === "all" ? "All" : "Some"} teams are Low Sample, with fewer than ${LOW_SAMPLE_GAMES} Played Games`;
+  return `${share === "all" ? "All" : "Some"} teams are low sample, with fewer than ${LOW_SAMPLE_GAMES} played games`;
 }

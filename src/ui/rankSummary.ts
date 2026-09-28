@@ -27,7 +27,7 @@ export function rankSummary(distribution: readonly number[]): RankSummary {
   const { low, high } = middle80(distribution);
   const share = distribution.slice(low - 1, high).reduce((sum, probability) => sum + probability, 0);
 
-  if (peak >= 1 - TOLERANCE) return { mostLikely, low, high, share, text: `${ordinal(mostLikely)} in every simulated Season`, around80: null };
+  if (peak >= 1 - TOLERANCE) return { mostLikely, low, high, share, text: `${ordinal(mostLikely)} in every simulated season`, around80: null };
   const around80 = {
     before: `Most likely ${ordinal(mostLikely)} · `,
     after: low === high ? ` at ${ordinal(low)}` : ` between ${ordinal(low)} and ${ordinal(high)}`,

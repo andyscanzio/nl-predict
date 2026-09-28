@@ -3,8 +3,9 @@ import { render } from "preact-render-to-string";
 import { ProjectedTable } from "./ProjectedTable.tsx";
 import type { Teams } from "./TeamName.tsx";
 import type { ProjectedTableRow, ProjectionModel } from "../domain/project.ts";
-import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
+import { DEFAULT_MODEL, PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
+import { formatGameDate } from "./format.ts";
 
 const teams: Teams = new Map([
   [1, { id: 1, name: "HC Davos", acronym: "HCD" }],
@@ -103,7 +104,7 @@ describe("ProjectedTable", () => {
     it("are absent for Split Form Rate, with a legend line saying why", () => {
       const html = panel([row({ probabilities: undefined, rankDistribution: undefined })], pointsModel);
       expect(html).not.toContain("pct");
-      expect(text(html)).toContain(`No % columns: ${pointsModel.name} gives no Outcome Probabilities`);
+      expect(text(html)).toContain(`No % columns: ${pointsModel.name} gives no outcome probabilities`);
     });
   });
 
@@ -127,8 +128,8 @@ describe("ProjectedTable", () => {
 
     it("keeps the LS legend entry while only some teams are Low Sample", () => {
       const html = panel([row({ teamId: 1, lowSample: true }), row({ teamId: 2, lowSample: false })]);
-      expect(text(html)).toContain("LS Low Sample: fewer than 10 Played Games");
-      expect(text(html)).not.toContain("teams are Low Sample");
+      expect(text(html)).toContain("LS Low sample: fewer than 10 played games");
+      expect(text(html)).not.toContain("teams are low sample");
     });
 
     it("hides every badge and says so once in the legend when all teams are Low Sample", () => {
@@ -136,9 +137,17 @@ describe("ProjectedTable", () => {
       for (const teamRow of teamRows(html)) expect(teamRow.html).not.toContain("low-sample");
       expect(html).not.toContain('class="low-sample"');
       expect(text(html)).toContain(
-        "All teams are Low Sample, with fewer than 10 Played Games, so these projections rest on little data.",
+        "All teams are low sample, with fewer than 10 played games, so these projections rest on little data.",
       );
     });
+  });
+
+  it("names a What-If Result in a form chip's hover text instead of its made-up score", () => {
+    const whatIfGame = { gameId: "a", startsAt: "2026-09-26T17:45:00Z", opponentId: 2, goalsFor: 1, goalsAgainst: 0, decision: "OT" as const, points: 2, whatIf: true };
+    const html = panel([row({ homeFormWindow: [whatIfGame, { ...whatIfGame, gameId: "b", goalsFor: 3, goalsAgainst: 1, decision: "regulation", points: 3, whatIf: false }] })]);
+    const titles = [...html.matchAll(/<span class="chip chip-\d"[^>]*title="([^"]*)"/g)].map((match) => match[1]);
+    const date = formatGameDate(new Date("2026-09-26T17:45:00Z"));
+    expect(titles).toEqual([`${date} vs SC Bern: What-if OT/SO win (2 Pts)`, `${date} vs SC Bern: 3:1 Regulation win (3 Pts)`]);
   });
 
   it("lists the Projection Models in the picker, with the picked one checked", () => {
@@ -147,6 +156,34 @@ describe("ProjectedTable", () => {
     expect(inputs).toHaveLength(PROJECTION_MODELS.length);
     expect(inputs.filter((input) => input.includes("checked"))).toHaveLength(1);
     expect(inputs.find((input) => input.includes("checked"))).toContain(`value="${pointsModel.id}"`);
+  });
+
+  it("mutes the Now column so ▲▼ carries the emphasis", () => {
+    const [team] = teamRows(panel([row({ currentRank: 3 })]));
+    expect(team!.html).toContain('<td class="num roomy now">3</td>');
+  });
+
+  describe("model picker", () => {
+    /** Each option's model id and the text it shows. */
+    function options(html: string) {
+      return [...html.matchAll(/<label>(<input[^>]*name="model"[^>]*>)(.*?)<\/label>/g)].map((match) => ({
+        id: match[1]!.match(/value="([^"]*)"/)![1],
+        text: text(match[2]!),
+      }));
+    }
+
+    it("describes every Projection Model in one line under its name", () => {
+      for (const option of options(panel([row()]))) {
+        const model = PROJECTION_MODELS.find((m) => m.id === option.id)!;
+        expect(option.text.startsWith(model.name)).toBe(true);
+        expect(option.text.length).toBeGreaterThan(model.name.length + 20);
+      }
+    });
+
+    it("marks the Default Model, and only it, as best in back-test", () => {
+      const marked = options(panel([row()])).filter((option) => option.text.includes("Default · best in back-test"));
+      expect(marked.map((option) => option.id)).toEqual([DEFAULT_MODEL.id]);
+    });
   });
 
   describe("What-If Change", () => {
@@ -171,7 +208,7 @@ describe("ProjectedTable", () => {
 
     it("gives screen readers one phrase and hides the stacked number", () => {
       const cell = projCell(panel([changed({ projectedPoints: 43 }, 1, 45)]));
-      expect(cell).toContain("43, down 2 from the Real Projection");
+      expect(cell).toContain("43, down 2 from the real projection");
       expect(cell).toMatch(/<small[^>]*aria-hidden="true"/);
     });
 
@@ -245,10 +282,10 @@ describe("ProjectedTable", () => {
 
       it("gives screen readers one phrase and hides the stacked number", () => {
         const cell = pctCells(panel([withChances({ playoffs: 0.64 })]))[0]!;
-        expect(cell).toContain("64 percent, up 14 from the Real Projection");
+        expect(cell).toContain("64 percent, up 14 from the real projection");
         expect(cell).toMatch(/<small[^>]*aria-hidden="true"/);
         const down = pctCells(panel([withChances({ eliminated: 0.1 })]))[2]!;
-        expect(down).toContain("10 percent, down 5 from the Real Projection");
+        expect(down).toContain("10 percent, down 5 from the real projection");
       });
 
       it("leaves the cells plain without a Real Projection", () => {

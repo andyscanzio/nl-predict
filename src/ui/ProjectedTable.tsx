@@ -4,7 +4,7 @@ import type { CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
 import type { TeamId } from "../domain/types.ts";
-import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
+import { DEFAULT_MODEL, PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { ChartMetric } from "./projectionChart.ts";
 import { formatForm, formatGameDate, SIMULATION_RUNS_LABEL } from "./format.ts";
@@ -29,9 +29,11 @@ const CUT_LINE_LABELS: Record<CutLine, string> = {
   eliminated: "Eliminated",
 };
 
+/** A Form Window Game's result, e.g. "3:1 Regulation win"; a What-If Result has no real score and was picked as OT/SO, not OT or SO. */
 function resultLabel(game: FormWindowGame) {
   const outcome = game.goalsFor > game.goalsAgainst ? "win" : "loss";
-  return game.decision === "regulation" ? `Regulation ${outcome}` : `${game.decision} ${outcome}`;
+  if (game.whatIf) return `What-if ${game.decision === "regulation" ? "regulation" : "OT/SO"} ${outcome}`;
+  return `${game.goalsFor}:${game.goalsAgainst} ${game.decision === "regulation" ? "Regulation" : game.decision} ${outcome}`;
 }
 
 /** Movement against the current rank, or against the real projected rank when `comparison` says so. */
@@ -70,7 +72,7 @@ function ProjectedPoints({ row }: { row: ProjectedTableRow }) {
   return (
     <>
       <span class="visually-hidden">
-        {points}, {change > 0 ? "up" : "down"} {Math.abs(change)} from the Real Projection
+        {points}, {change > 0 ? "up" : "down"} {Math.abs(change)} from the real projection
       </span>
       <span aria-hidden="true">{points}</span>
       <small class={`what-if-change ${change > 0 ? "up" : "down"}`} aria-hidden="true">
@@ -101,7 +103,7 @@ function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number];
   return (
     <>
       <span class="visually-hidden">
-        {printed} percent, {direction} {Math.abs(change)} from the Real Projection
+        {printed} percent, {direction} {Math.abs(change)} from the real projection
       </span>
       <span aria-hidden="true">{printed}</span>
       <small class={`what-if-change ${tone}`} aria-hidden="true">
@@ -125,7 +127,7 @@ function FormChips({
 }) {
   const labels = SIDES[side];
   return (
-    <span class="chips" title={`${labels.form}: ${formatForm(form)} Points per Game`}>
+    <span class="chips" title={`${labels.form}: ${formatForm(form)} points per game`}>
       <span class="chips-side" aria-hidden="true">
         {labels.letter}
       </span>
@@ -142,13 +144,21 @@ function FormChips({
             key={game.gameId}
             class={`chip chip-${game.points}`}
             aria-hidden="true"
-            title={`${formatGameDate(new Date(game.startsAt))} ${side === "home" ? "vs" : "@"} ${teamName(game.opponentId)}: ${game.goalsFor}:${game.goalsAgainst} ${resultLabel(game)} (${game.points} Pts)`}
+            title={`${formatGameDate(new Date(game.startsAt))} ${side === "home" ? "vs" : "@"} ${teamName(game.opponentId)}: ${resultLabel(game)} (${game.points} Pts)`}
           />
         ))
       )}
     </span>
   );
 }
+
+/** Each Projection Model in one line, under its name in the picker; a model without an entry fails type-checking. */
+const MODEL_SUMMARIES: Record<ProjectionModelId, string> = {
+  elo: "Ratings updated after every game; strong opponents count more",
+  "season-rate": "Points per game this season, whatever the venue or opponent",
+  matchup: "The home team's home form against the away team's away form",
+  "split-form-rate": "Home and away form, ignoring opponents; gives no chances",
+};
 
 function ModelPicker({
   model,
@@ -159,7 +169,7 @@ function ModelPicker({
 }) {
   return (
     <fieldset class="model-picker">
-      <legend class="visually-hidden">Projection Model</legend>
+      <legend class="visually-hidden">Projection model</legend>
       <span class="model-picker-label" aria-hidden="true">
         Model
       </span>
@@ -173,7 +183,11 @@ function ModelPicker({
               checked={option.id === model.id}
               onChange={() => onChange(option)}
             />
-            <span>{option.name}</span>
+            <span>
+              <span class="model-name">{option.name}</span>
+              {option.id === DEFAULT_MODEL.id && <span class="model-default">Default · best in back-test</span>}
+              <span class="model-summary">{MODEL_SUMMARIES[option.id]}</span>
+            </span>
           </label>
         ))}
       </div>
@@ -203,7 +217,7 @@ export function ProjectedTable({
   const showChanges = rows.some((row) => row.realProjection);
   const movementComparison = showChanges ? "the real projected rank" : "current rank";
   const showProbabilities = model.kind === "outcomes";
-  const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
+  const expandTarget = showProbabilities ? "finishing ranks and form window games" : "form window games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   // When every team is Low Sample, one legend line says so instead of a badge on every row.
@@ -222,7 +236,7 @@ export function ProjectedTable({
 
   return (
     <section class="panel">
-      <h2>Projected Table</h2>
+      <h2>Projected table</h2>
       <ModelPicker model={model} onChange={onModelChange} />
       <div class="table-scroll">
         <table class="projected">
@@ -234,14 +248,14 @@ export function ProjectedTable({
               </th>
               <th scope="col">Team</th>
               <th class="num roomy" scope="col" title="Current rank">Now</th>
-              <th class="wide" scope="col" colSpan={2} title={`Home and away Form Windows: the last ≤${FORM_WINDOW_SIZE} Games each, newest first`}>
+              <th class="wide" scope="col" colSpan={2} title={`Home and away form windows: the last ≤${FORM_WINDOW_SIZE} games each, newest first`}>
                 Form
               </th>
-              <th class="num roomy" scope="col" title="Remaining Games: home · away">
+              <th class="num roomy" scope="col" title="Remaining games: home · away">
                 Left
               </th>
-              <th class="num roomy" scope="col" title="Current Points">Pts</th>
-              <th class="num" scope="col" title="Projected Points">Proj</th>
+              <th class="num roomy" scope="col" title="Current points">Pts</th>
+              <th class="num" scope="col" title="Projected points">Proj</th>
               {showProbabilities &&
                 PROBABILITY_COLUMNS.map((column) => (
                   <th key={column.key} class="num pct" scope="col" title={column.title}>
@@ -256,8 +270,10 @@ export function ProjectedTable({
             const detailId = `form-windows-${row.teamId}`;
             return (
               <tbody key={row.teamId} class={`cut-${row.cutLine}`}>
+                {/* The whole row expands on click; the button, for the keyboard and screen readers, bubbles its click here. */}
                 <tr
                   class={isFirstOfCutLine(row, index) ? "cut-line" : undefined}
+                  onClick={() => toggle(row.teamId)}
                   title={CUT_LINE_LABELS[row.cutLine]}
                 >
                   <td class="num rank">{String(row.rank).padStart(2, "0")}</td>
@@ -274,7 +290,6 @@ export function ProjectedTable({
                       aria-expanded={isExpanded}
                       aria-controls={detailId}
                       title={`${isExpanded ? "Hide" : "Show"} ${expandTarget}`}
-                      onClick={() => toggle(row.teamId)}
                     >
                       <span class="chevron" aria-hidden="true">
                         {isExpanded ? "▾" : "▸"}
@@ -282,12 +297,12 @@ export function ProjectedTable({
                       <TeamName teams={teams} teamId={row.teamId} />
                     </button>
                     {row.lowSample && lowSampleTeams !== "all" && (
-                      <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
+                      <abbr class="low-sample" title={`Low sample: fewer than ${LOW_SAMPLE_GAMES} played games`}>
                         LS
                       </abbr>
                     )}
                   </th>
-                  <td class="num roomy">{row.currentRank}</td>
+                  <td class="num roomy now">{row.currentRank}</td>
                   <td class="wide form-home">
                     <FormChips side="home" form={row.homeForm} games={row.homeFormWindow} teamName={teamName} />
                   </td>
@@ -343,14 +358,14 @@ export function ProjectedTable({
           <li>{lowSampleSentence(lowSampleTeams)}, so these projections rest on little data.</li>
         ) : (
           <li>
-            <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
+            <abbr class="low-sample">LS</abbr> Low sample: fewer than {LOW_SAMPLE_GAMES} played games
           </li>
         )}
-        <li>Left: Remaining home · away Games</li>
+        <li>Left: remaining home · away games</li>
         {showProbabilities ? (
-          <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated Seasons</li>
+          <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated seasons</li>
         ) : (
-          <li>No % columns: {model.name} gives no Outcome Probabilities (see below)</li>
+          <li>No % columns: {model.name} gives no outcome probabilities (see below)</li>
         )}
       </ul>
     </section>

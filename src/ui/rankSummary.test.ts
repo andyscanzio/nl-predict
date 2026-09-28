@@ -59,13 +59,13 @@ describe("rankSummary text", () => {
 
   it("reads a rank with probability 1 as certain", () => {
     const summary = rankSummary(distribution(0, 0, 1));
-    expect(summary.text).toBe("3rd in every simulated Season");
+    expect(summary.text).toBe("3rd in every simulated season");
     expect(summary.share).toBe(1);
   });
 
   it("uses English ordinals, including 11th to 13th and 21st", () => {
     const text = rankSummary([...Array(10).fill(0), 0.2, 0.3, 0.3, 0.2]).text;
     expect(text).toBe("Most likely 12th · 80% between 11th and 14th");
-    expect(rankSummary([...Array(20).fill(0), 1]).text).toBe("21st in every simulated Season");
+    expect(rankSummary([...Array(20).fill(0), 1]).text).toBe("21st in every simulated season");
   });
 });

@@ -77,14 +77,14 @@ describe("projectionChart", () => {
   });
 
   it("summarises the chosen team's playoff chance for screen readers", () => {
-    expect(projectionChart(history, 1, "playoffs")!.summary).toBe("Playoff chance 80% now, 50% at the start of the Season, up 20 pts since the previous Match Day.");
-    expect(projectionChart(history, 2, "playoffs")!.summary).toBe("Playoff chance 30% now, 50% at the start of the Season, down 10 pts since the previous Match Day.");
-    expect(projectionChart(history, 3, "playoffs")!.summary).toBe("Playoff chance 40% now, 50% at the start of the Season, down 10 pts since the previous Match Day.");
+    expect(projectionChart(history, 1, "playoffs")!.summary).toBe("Playoff chance 80% now, 50% at the start of the season, up 20 pts since the previous match day.");
+    expect(projectionChart(history, 2, "playoffs")!.summary).toBe("Playoff chance 30% now, 50% at the start of the season, down 10 pts since the previous match day.");
+    expect(projectionChart(history, 3, "playoffs")!.summary).toBe("Playoff chance 40% now, 50% at the start of the season, down 10 pts since the previous match day.");
   });
 
   it("says a chance is unchanged when it did not move", () => {
     const flat = [point(SEASON_START, { 1: 0.5 }), point("2026-09-15", { 1: 0.5 })];
-    expect(projectionChart(flat, 1, "playoffs")!.summary).toBe("Playoff chance 50% now, 50% at the start of the Season, unchanged since the previous Match Day.");
+    expect(projectionChart(flat, 1, "playoffs")!.summary).toBe("Playoff chance 50% now, 50% at the start of the season, unchanged since the previous match day.");
   });
 
   it("labels the playoff scale 100%, 50% and 0%", () => {
@@ -154,10 +154,10 @@ describe("projectionChart, projected Points", () => {
   });
 
   it("summarises the chosen team's projected Points for screen readers", () => {
-    expect(projectionChart(points, 1, "points")!.summary).toBe("Projected Points 62.0 now, 60.0 at the start of the Season, down 2.0 since the previous Match Day.");
-    expect(projectionChart(points, 3, "points")!.summary).toBe("Projected Points 70.0 now, 60.0 at the start of the Season, up 9.0 since the previous Match Day.");
+    expect(projectionChart(points, 1, "points")!.summary).toBe("Projected points 62.0 now, 60.0 at the start of the season, down 2.0 since the previous match day.");
+    expect(projectionChart(points, 3, "points")!.summary).toBe("Projected points 70.0 now, 60.0 at the start of the season, up 9.0 since the previous match day.");
     const flat = [point(SEASON_START, { 1: 0.5 }, { 1: 60 }), point("2026-09-15", { 1: 0.5 }, { 1: 60 })];
-    expect(projectionChart(flat, 1, "points")!.summary).toBe("Projected Points 60.0 now, 60.0 at the start of the Season, unchanged since the previous Match Day.");
+    expect(projectionChart(flat, 1, "points")!.summary).toBe("Projected points 60.0 now, 60.0 at the start of the season, unchanged since the previous match day.");
   });
 });
 
@@ -182,8 +182,8 @@ describe("projectionChart tooltips", () => {
 
   it("shows the projected Points in the Points view, with the change in Points", () => {
     const chart = projectionChart(tipped, 1, "points")!;
-    expect(chart.tooltips[1]!.lines).toEqual(["15 Sep", "Points 61.2", "1st place 10%", "+1.2 Points"]);
-    expect(chart.tooltips[2]!.lines.at(-1)).toBe("−1.2 Points");
+    expect(chart.tooltips[1]!.lines).toEqual(["15 Sep", "Points 61.2", "1st place 10%", "+1.2 points"]);
+    expect(chart.tooltips[2]!.lines.at(-1)).toBe("−1.2 points");
   });
 
   it("gives the first point no change, and names it the Season start", () => {
@@ -194,14 +194,14 @@ describe("projectionChart tooltips", () => {
     const pointsOnly = [point(SEASON_START, { 1: null }, { 1: 60 }), point("2026-09-15", { 1: null }, { 1: 63 })];
     expect(projectionChart(pointsOnly, 1, "points")!.tooltips.map((tip) => tip.lines)).toEqual([
       ["Season start", "Points 60.0"],
-      ["15 Sep", "Points 63.0", "+3.0 Points"],
+      ["15 Sep", "Points 63.0", "+3.0 points"],
     ]);
   });
 
   it("shows a change that rounds to nothing as 0", () => {
     const flat = [point(SEASON_START, { 1: 0.5 }, { 1: 60 }), point("2026-09-15", { 1: 0.502 }, { 1: 60.01 })];
     expect(projectionChart(flat, 1, "playoffs")!.tooltips[1]!.lines.at(-1)).toBe("0 pts");
-    expect(projectionChart(flat, 1, "points")!.tooltips[1]!.lines.at(-1)).toBe("0.0 Points");
+    expect(projectionChart(flat, 1, "points")!.tooltips[1]!.lines.at(-1)).toBe("0.0 points");
   });
 });
 

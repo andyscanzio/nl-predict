@@ -107,15 +107,15 @@ describe("UpcomingGames", () => {
     });
 
     it("shows the expected-Points legend", () => {
-      expect(text(html.slice(html.indexOf('<ul class="legend">')))).toBe("Pts – Pts: expected Points for the home – away team");
+      expect(text(html.slice(html.indexOf('<ul class="legend">')))).toBe("Pts – Pts: expected points for the home – away team");
     });
   });
 
   it("shows the Low Sample note only when a team is Low Sample, saying whether it is some or all", () => {
     const nextRound = [day("2026-10-06", upcomingGame())];
-    expect(text(panel(nextRound, "some"))).toContain("Some teams are Low Sample, with fewer than 10 Played Games");
-    expect(text(panel(nextRound, "all"))).toContain("All teams are Low Sample, with fewer than 10 Played Games");
-    expect(panel(nextRound, "none")).not.toContain("Low Sample");
+    expect(text(panel(nextRound, "some"))).toContain("Some teams are low sample, with fewer than 10 played games");
+    expect(text(panel(nextRound, "all"))).toContain("All teams are low sample, with fewer than 10 played games");
+    expect(panel(nextRound, "none")).not.toContain("low sample");
   });
 
   it("shows a What-If Result's outcome in place of the win-split bar", () => {
@@ -138,46 +138,44 @@ describe("UpcomingGames", () => {
     expect(text(html)).toContain("SC Bern win in regulation");
   });
 
-  describe("picker", () => {
+  describe("result toggles", () => {
     const setGame = (whatIf: WhatIfOutcome): UpcomingGame => ({
       game: { id: "g1", startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
       whatIf,
     });
 
-    /** The picker's option values in order, with the checked one. */
-    function options(html: string) {
-      const inputs = [...html.matchAll(/<input[^>]*type="radio"[^>]*>/g)].map((match) => match[0]);
-      return {
-        values: inputs.map((input) => input.match(/value="([^"]*)"/)![1]),
-        checked: inputs.filter((input) => /\bchecked\b/.test(input)).map((input) => input.match(/value="([^"]*)"/)![1]),
-      };
+    /** Each Game's toggle buttons, as their text and whether they are pressed. */
+    function toggles(html: string) {
+      return [...html.matchAll(/<div class="what-if-toggles"[^>]*>(.*?)<\/div>/g)].map((group) =>
+        [...group[1]!.matchAll(/<button[^>]*aria-pressed="(true|false)"[^>]*>(.*?)<\/button>/g)].map((button) => ({
+          label: button[2],
+          pressed: button[1] === "true",
+        })),
+      );
     }
 
-    it("offers five options on every Game, Model checked by default", () => {
+    it("offers four toggle buttons on every Game, none pressed by default, and no Model option", () => {
       const html = panel([day("2026-10-06", upcomingGame({ id: "a" }), upcomingGame({ id: "b", outcomes: null }))]);
-      expect(html.match(/<fieldset/g)).toHaveLength(2);
-      expect(text(html)).toContain("Home Home OT Model Away OT Away");
-      const { values, checked } = options(html);
-      expect(values).toEqual(Array(2).fill(["regulationWin", "overtimeOrShootoutWin", "model", "overtimeOrShootoutLoss", "regulationLoss"]).flat());
-      expect(checked).toEqual(["model", "model"]);
+      const groups = toggles(html);
+      expect(groups).toHaveLength(2);
+      for (const group of groups) {
+        expect(group).toEqual(["Home", "Home OT", "Away OT", "Away"].map((label) => ({ label, pressed: false })));
+      }
+      expect(html).not.toContain('type="radio"');
+      expect(text(html)).not.toContain("Model");
     });
 
-    it("names both teams in a visually hidden legend", () => {
+    it("names both teams for screen readers", () => {
       const html = panel([day("2026-10-06", upcomingGame())]);
-      expect(html).toContain('<legend class="visually-hidden">Set the result of HC Davos vs SC Bern</legend>');
+      expect(html).toMatch(/<div class="what-if-toggles" role="group" aria-label="Set the result of HC Davos vs SC Bern">/);
     });
 
-    it("gives each Game its own radio group", () => {
-      const html = panel([day("2026-10-06", upcomingGame({ id: "a" }), upcomingGame({ id: "b" }))]);
-      const names = [...html.matchAll(/<input[^>]*name="([^"]*)"/g)].map((match) => match[1]);
-      expect(new Set(names)).toEqual(new Set(["whatif-a", "whatif-b"]));
-    });
-
-    it("checks the option of a What-If Result", () => {
-      for (const outcome of ["regulationWin", "overtimeOrShootoutWin", "overtimeOrShootoutLoss", "regulationLoss"] as const) {
-        expect(options(panel([day("2026-10-06", setGame(outcome))])).checked).toEqual([outcome]);
+    it("presses the button of a What-If Result", () => {
+      const labels = { regulationWin: "Home", overtimeOrShootoutWin: "Home OT", overtimeOrShootoutLoss: "Away OT", regulationLoss: "Away" };
+      for (const [outcome, label] of Object.entries(labels) as [WhatIfOutcome, string][]) {
+        const pressed = toggles(panel([day("2026-10-06", setGame(outcome))]))[0]!.filter((button) => button.pressed);
+        expect(pressed.map((button) => button.label)).toEqual([label]);
       }
     });
-
   });
 });
