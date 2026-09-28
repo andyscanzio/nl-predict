@@ -165,9 +165,14 @@ body {
 }
 
 /* What-If picker: the theme toggle's segments under each Game, lined up under the teams. */
-.what-if-picker {
+.theme-toggle.what-if-picker {
   width: fit-content;
-  margin: 0.4rem 0 0 calc(2.9rem + 0.6rem);
+  margin: 0.7rem 0 0.2rem calc(2.9rem + 0.6rem);
+}
+
+.what-if-picker span {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.68rem;
 }
 
 /* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle. */
@@ -1285,5 +1290,22 @@ footer a {
 @media (max-width: 30rem) {
   .roomy {
     display: none;
+  }
+}
+
+/* Phones: the What-If picker spans the Game's full width, its five segments sharing it. */
+@media (max-width: 30rem) {
+  .theme-toggle.what-if-picker {
+    width: auto;
+    margin-left: 0;
+  }
+
+  .what-if-picker label {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  .what-if-picker span {
+    padding-inline: 0.2rem;
   }
 }
