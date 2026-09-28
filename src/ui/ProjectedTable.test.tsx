@@ -149,4 +149,56 @@ describe("ProjectedTable", () => {
     expect(inputs.filter((input) => input.includes("checked"))).toHaveLength(1);
     expect(inputs.find((input) => input.includes("checked"))).toContain(`value="${pointsModel.id}"`);
   });
+
+  describe("What-If Change", () => {
+    const changed = (overrides: Partial<ProjectedTableRow>, realRank: number, realPoints: number) =>
+      row({ realProjection: { rank: realRank, projectedPoints: realPoints }, ...overrides });
+    const projCell = (html: string) => /<td class="num projected-points">(.*?)<\/td>/.exec(teamRows(html)[0]!.html)![1]!;
+
+    it("shows a signed Proj change with a real minus sign, green up and red down", () => {
+      const up = projCell(panel([changed({ projectedPoints: 45.2 }, 1, 43.1)]));
+      expect(up).toContain('what-if-change up');
+      expect(text(up)).toContain("+2");
+      const down = projCell(panel([changed({ projectedPoints: 41.2 }, 1, 43.1)]));
+      expect(down).toContain('what-if-change down');
+      expect(text(down)).toContain("−2");
+    });
+
+    it("shows no change when the rounded values match, never +0", () => {
+      const cell = projCell(panel([changed({ projectedPoints: 43.4 }, 1, 42.6)]));
+      expect(cell).not.toContain("what-if-change");
+      expect(text(cell)).toBe("43");
+    });
+
+    it("gives screen readers one phrase and hides the stacked number", () => {
+      const cell = projCell(panel([changed({ projectedPoints: 43 }, 1, 45)]));
+      expect(cell).toContain("43, down 2 from the Real Projection");
+      expect(cell).toMatch(/<small[^>]*aria-hidden="true"/);
+    });
+
+    it("measures Movement against the real projected rank with the new tooltips", () => {
+      const html = panel([
+        changed({ rank: 1, teamId: 1, movement: 0 }, 3, 30),
+        changed({ rank: 2, teamId: 2, movement: 0 }, 1, 30),
+        changed({ rank: 3, teamId: 3, movement: 0 }, 3, 30),
+      ]);
+      expect(html).toContain("Up 2 from the real projected rank");
+      expect(html).toContain("Down 1 from the real projected rank");
+      expect(html).toContain("Same as the real projected rank");
+      expect(html).toContain("Movement against the real projected rank");
+    });
+
+    it("keeps today's Movement text when rows carry no Real Projection", () => {
+      const html = panel([row({ movement: 2 })]);
+      expect(html).toContain("Up 2 from current rank");
+      expect(html).toContain("Movement against current rank");
+      expect(html).not.toContain("what-if-change");
+    });
+
+    it("shows Movement and the Proj change only for Split Form Rate", () => {
+      const html = panel([changed({ projectedPoints: 45, probabilities: null, rankDistribution: null }, 2, 43)], pointsModel);
+      expect(html).toContain("Up 1 from the real projected rank");
+      expect(text(projCell(html))).toContain("+2");
+    });
+  });
 });

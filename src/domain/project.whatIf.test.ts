@@ -31,7 +31,7 @@ function projectedOnceReallyPlayed(model: ProjectionModel, gameId: string, outco
  */
 const withoutMovement = (projection: Projection) =>
   projection.projectedTable.map(
-    ({ currentRank: _currentRank, movement: _movement, probabilities: _p, rankDistribution: _r, ...row }) => row,
+    ({ currentRank: _currentRank, movement: _movement, probabilities: _p, rankDistribution: _r, realProjection: _real, ...row }) => row,
   );
 
 describe("project with a What-If", () => {
@@ -136,6 +136,42 @@ describe("project with a What-If", () => {
         const valid = firstGame(model).id;
         const mixed = project(snapshot.games, asOf, model, new Map([...stale, [valid, "regulationWin"]]));
         expect([...mixed.whatIf]).toEqual([[valid, "regulationWin"]]);
+      });
+
+      describe("Real Projection on each row", () => {
+        const picked = () => new Map<string, WhatIfOutcome>([[firstGame(model).id, "regulationWin"]]);
+
+        it("carries each team's Real Projection rank and projected Points", () => {
+          const realRows = new Map(real(model).projectedTable.map((row) => [row.teamId, row]));
+          const rows = project(snapshot.games, asOf, model, picked()).projectedTable;
+          expect(rows.length).toBe(realRows.size);
+          for (const row of rows) {
+            expect(row.realProjection).toEqual({
+              rank: realRows.get(row.teamId)!.rank,
+              projectedPoints: realRows.get(row.teamId)!.projectedPoints,
+            });
+          }
+        });
+
+        it("carries none when the applied What-If is empty or every entry is stale", () => {
+          const stale = new Map<string, WhatIfOutcome>([["no-such-game", "regulationWin"]]);
+          for (const whatIf of [new Map(), stale]) {
+            const rows = project(snapshot.games, asOf, model, whatIf).projectedTable;
+            expect(rows.some((row) => "realProjection" in row)).toBe(false);
+          }
+        });
+
+        it("gives the same result with a precomputed Real Projection", () => {
+          expect(project(snapshot.games, asOf, model, picked(), real(model))).toEqual(
+            project(snapshot.games, asOf, model, picked()),
+          );
+        });
+
+        it("keeps movement against the Current Table rank", () => {
+          for (const row of project(snapshot.games, asOf, model, picked()).projectedTable) {
+            expect(row.movement).toBe(row.currentRank - row.rank);
+          }
+        });
       });
 
       it("gives exactly the real projection with no What-If or an empty one", () => {

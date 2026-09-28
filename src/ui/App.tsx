@@ -109,7 +109,8 @@ function WhatIfBanner({ count, onReset }: { count: number; onReset: () => void }
     <div class="warning what-if-banner" role="status">
       <p>
         <strong>What-if:</strong> {count} {count === 1 ? "result" : "results"} set. The Projected Table, chances and
-        headline assume them.
+        headline assume them. The small numbers show the What-If Change from the Real Projection, and ▲▼ compares with
+        the real projected rank.
       </p>
       <button type="button" onClick={onReset}>
         Reset
@@ -178,6 +179,8 @@ export function App({
    */
   onWhatIfChange: (whatIf: WhatIf, mode: "push" | "replace") => void;
 }) {
+  // Kept per snapshot, As-Of Date and model, so picking a What-If Result reruns only the What-If projection.
+  const realProjection = useMemo(() => project(snapshot.games, now, model), [snapshot, now, model]);
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
   const {
     currentTable,
@@ -186,7 +189,7 @@ export function App({
     anyGamesPlayed,
     nextRound,
     whatIf: appliedWhatIf,
-  } = useMemo(() => project(snapshot.games, now, model, whatIf), [snapshot, now, model, whatIf]);
+  } = useMemo(() => project(snapshot.games, now, model, whatIf, realProjection), [snapshot, now, model, whatIf, realProjection]);
   // Entries that did not apply (Played, out of the Next Round, unknown) must not linger in the URL.
   const stale = !sameWhatIf(whatIf, appliedWhatIf);
   useEffect(() => {
