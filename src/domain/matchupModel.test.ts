@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { matchupModel } from "./matchupModel.ts";
-import { project } from "./project.ts";
+import { createMatchupModel, matchupModel, MATCHUP_PRIOR_GAMES } from "./matchupModel.ts";
+import { project, type ProjectionModel } from "./project.ts";
 import type { Decision, Game } from "./types.ts";
 
 const asOf = new Date("2026-10-01T12:00:00+02:00");
@@ -21,9 +21,9 @@ function scheduled(homeTeamId: number, awayTeamId: number): Game {
   return { id: String(nextId++), startsAt: later, homeTeamId, awayTeamId };
 }
 
-function projectedPoints(games: Game[]) {
+function projectedPoints(games: Game[], model: ProjectionModel = matchupModel) {
   return Object.fromEntries(
-    project(games, asOf, matchupModel).projectedTable.map((row) => [row.teamId, row.projectedPoints]),
+    project(games, asOf, model).projectedTable.map((row) => [row.teamId, row.projectedPoints]),
   );
 }
 
@@ -91,5 +91,54 @@ describe("project: Matchup Model", () => {
     const { projectedTable } = project(games, asOf, matchupModel);
     const gained = projectedTable.reduce((sum, row) => sum + row.projectedPoints - row.currentPoints, 0);
     expect(gained).toBeCloseTo(5 * 3);
+  });
+});
+
+describe("createMatchupModel", () => {
+  const model = (priorGames: number, homePointsPerGame: number) =>
+    createMatchupModel({ priorGames, homePointsPerGame, centre: "league" });
+
+  it("ships the unshrunk model", () => {
+    expect(MATCHUP_PRIOR_GAMES).toBe(0);
+  });
+
+  it("with priorGames 0 gives the shipped model's Points whatever the other parameters, fallbacks included", () => {
+    const scenarios = [
+      [played(3, 1, 0, 3), scheduled(1, 2)], // other-venue fallback, and 1.5 with neither
+      [played(1, 3, 0, 3), played(2, 4, 3, 0), scheduled(1, 2)], // away Form Window empty
+      [played(1, 3, 2, 3, "OT"), played(1, 4, 3, 0), played(3, 2, 1, 2, "SO"), played(4, 2, 3, 0), scheduled(1, 2)],
+    ];
+    for (const games of scenarios) {
+      for (const homePointsPerGame of [1.74, 1.5]) {
+        expect(projectedPoints(games, model(0, homePointsPerGame))).toEqual(projectedPoints(games));
+      }
+    }
+  });
+
+  it("shrinks a venue's rate toward its league average: (Points + prior · m) / (Games + m)", () => {
+    const games = [played(1, 3, 3, 0), played(1, 4, 3, 0), scheduled(1, 2)];
+    // 1 at home: (6 + 1.74 · 5) / 7 = 2.1; 2 has no Games, so away it is the away prior 3 − 1.74 = 1.26
+    // home expects (2.1 + (3 − 1.26)) / 2 = 1.92 of the 3 Points
+    const points = projectedPoints(games, model(5, 1.74));
+    expect(points[1]).toBeCloseTo(6 + 1.92);
+    expect(points[2]).toBeCloseTo(3 - 1.92);
+  });
+
+  it("rates an empty Form Window at exactly its venue prior, not the team's other-venue Form", () => {
+    const games = [played(3, 1, 0, 3), scheduled(1, 2)];
+    // 1 has an Away Form of 3 but no home Games, so at home it is the home prior 1.74, as is 2's away prior 3 − 1.26
+    const points = projectedPoints(games, model(5, 1.74));
+    expect(points[1]).toBeCloseTo(3 + 1.74);
+    expect(points[2]).toBeCloseTo(3 - 1.74);
+  });
+
+  it("with a home average of 1.5 shrinks both venues toward 1.5", () => {
+    const games = [played(1, 3, 3, 0), played(1, 4, 3, 0), played(3, 2, 0, 3), scheduled(1, 2)];
+    // home 1: (6 + 1.5 · 5) / 7; away 2: (3 + 1.5 · 5) / 6 = 1.75
+    const home = 13.5 / 7;
+    const share = (home + (3 - 1.75)) / 2;
+    const points = projectedPoints(games, model(5, 1.5));
+    expect(points[1]).toBeCloseTo(6 + share);
+    expect(points[2]).toBeCloseTo(3 + 3 - share);
   });
 });
