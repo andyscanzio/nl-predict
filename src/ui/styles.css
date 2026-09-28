@@ -780,15 +780,21 @@ tbody th {
   gap: 0.5rem 1rem;
 }
 
-.form-window {
-  flex: 1 1 16rem;
+.form-window,
+.rank-histogram {
+  flex: 1 1 13rem;
   padding: 0.5rem 0.75rem;
   background: var(--inset);
   border: 1px solid var(--line);
   border-radius: 6px;
 }
 
-.form-window h3 {
+.rank-histogram {
+  flex-basis: 10rem;
+}
+
+.form-window h3,
+.rank-histogram h3 {
   margin: 0 0 0.25rem;
   font: 600 0.72rem var(--display);
   letter-spacing: 0.08em;
@@ -807,6 +813,53 @@ tbody th {
 .form-window th,
 .form-window td {
   padding: 0.2rem 0.4rem;
+}
+
+.rank-bars {
+  display: flex;
+  gap: 2px;
+  height: 5rem;
+}
+
+.rank-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.rank-bar-fill {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+}
+
+.rank-bar-fill.chance {
+  min-height: 2px;
+}
+
+.rank-bar-fill.zone-playoffs {
+  background: var(--playoffs);
+}
+
+.rank-bar-fill.zone-play-in {
+  background: var(--play-in);
+}
+
+.rank-bar-fill.zone-eliminated {
+  background: var(--eliminated);
+}
+
+.rank-bar-rank {
+  margin-top: 0.15rem;
+  font: 600 0.65rem var(--display);
+  text-align: center;
+  color: var(--muted);
 }
 
 .decision {

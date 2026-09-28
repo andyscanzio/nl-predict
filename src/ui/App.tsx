@@ -18,6 +18,7 @@ import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
+import { rankBars } from "./rankHistogram.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -318,6 +319,36 @@ function FormWindowDetail({
           </tbody>
         </table>
       )}
+    </section>
+  );
+}
+
+/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar. */
+function RankHistogram({ distribution }: { distribution: readonly number[] }) {
+  const bars = rankBars(distribution);
+  return (
+    <section class="rank-histogram">
+      <h3>Rank Distribution</h3>
+      <div class="rank-bars" aria-hidden="true">
+        {bars.map((bar) => (
+          <span key={bar.rank} class="rank-bar" title={bar.label}>
+            <span class="rank-bar-track">
+              <span
+                class={`rank-bar-fill zone-${bar.zone}${bar.height > 0 ? " chance" : ""}`}
+                style={{ height: `${bar.height * 100}%` }}
+              />
+            </span>
+            <span class="rank-bar-rank">{bar.rank}</span>
+          </span>
+        ))}
+      </div>
+      <ul class="visually-hidden">
+        {bars
+          .filter((bar) => bar.height > 0)
+          .map((bar) => (
+            <li key={bar.rank}>{bar.label}</li>
+          ))}
+      </ul>
     </section>
   );
 }
@@ -723,6 +754,7 @@ export function App({
                           <tr class="detail" id={detailId}>
                             <td colSpan={columns}>
                               <div class="form-windows">
+                                {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} />}
                                 <FormWindowDetail
                                   side="home"
                                   form={row.homeForm}

@@ -115,6 +115,68 @@ describe("project: Season Simulation", () => {
   });
 });
 
+function rankDistributionsByTeam(games: Game[], model: ProjectionModel, seed = 1) {
+  return new Map(project(games, asOf, model, seed).projectedTable.map((row) => [row.teamId, row.rankDistribution]));
+}
+
+/** The Rank Distribution entries from rank `from` to rank `to` (1-based, inclusive), summed. */
+function chanceOfRanks(distribution: number[], from: number, to: number) {
+  return distribution.slice(from - 1, to).reduce((sum, probability) => sum + probability, 0);
+}
+
+describe("project: Rank Distribution", () => {
+  it("gives every team a distribution summing to 1, and every rank probabilities summing to 1 across teams", () => {
+    const distributions = [...rankDistributionsByTeam(roundRobin(), seasonRate).values()].map((d) => d!);
+    for (const distribution of distributions) {
+      expect(distribution).toHaveLength(14);
+      expect(distribution.reduce((sum, probability) => sum + probability, 0)).toBeCloseTo(1, 12);
+    }
+    for (let rank = 0; rank < 14; rank++) {
+      expect(distributions.reduce((sum, distribution) => sum + distribution[rank]!, 0)).toBeCloseTo(1, 12);
+    }
+  });
+
+  it("sums, over each Cut Line zone, to the team's Playoffs / Play-in / Eliminated, and its 1st entry to its 1st", () => {
+    for (const { rankDistribution, probabilities } of project(roundRobin(), asOf, seasonRate, 7).projectedTable) {
+      const distribution = rankDistribution!;
+      expect(chanceOfRanks(distribution, 1, 6)).toBeCloseTo(probabilities!.playoffs, 12);
+      expect(chanceOfRanks(distribution, 7, 10)).toBeCloseTo(probabilities!.playIn, 12);
+      expect(chanceOfRanks(distribution, 11, 14)).toBeCloseTo(probabilities!.eliminated, 12);
+      expect(distribution[0]).toBeCloseTo(probabilities!.first, 12);
+    }
+  });
+
+  it("puts a team with a certain rank on probability 1 there, and teams tied on Points about 50/50 across their ranks", () => {
+    // As in the sure-outcomes case above: 14 is first, 9–14 make the playoffs, 1 and 8 share 7th–8th.
+    const distributions = rankDistributionsByTeam(roundRobin(), homeAlwaysWins);
+    expect(distributions.get(14)![0]).toBe(1);
+    expect(distributions.get(13)![1]).toBe(1);
+    expect(distributions.get(5)![10]).toBe(1);
+    expect(distributions.get(2)![13]).toBe(1);
+    for (const team of [1, 8]) {
+      expect(distributions.get(team)![6]).toBeGreaterThan(0.45);
+      expect(distributions.get(team)![6]).toBeLessThan(0.55);
+      expect(distributions.get(team)![6]! + distributions.get(team)![7]!).toBe(1);
+    }
+  });
+
+  it("has one entry per team for a Season with fewer than 14 teams", () => {
+    const games = [played(1, 2, 3, 0), played(2, 3, 3, 0), scheduled(1, 3), scheduled(3, 2)];
+    const distributions = rankDistributionsByTeam(games, seasonRate);
+    expect(distributions.size).toBe(3);
+    for (const distribution of distributions.values()) {
+      expect(distribution).toHaveLength(3);
+      expect(distribution!.reduce((sum, probability) => sum + probability, 0)).toBeCloseTo(1, 12);
+    }
+  });
+
+  it("gives no Rank Distribution for a Points-only model", () => {
+    for (const distribution of rankDistributionsByTeam(roundRobin(), splitFormRate).values()) {
+      expect(distribution).toBeNull();
+    }
+  });
+});
+
 describe("simulationSeed", () => {
   it("derives the same seed from the same snapshot time and model, and a different one for another model", () => {
     const snapshotAt = "2026-09-27T13:33:00+02:00";
@@ -143,5 +205,25 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
       expect(probabilities!.playoffs + probabilities!.playIn + probabilities!.eliminated).toBeCloseTo(1, 12);
     }
     expect(projectedTable.reduce((sum, row) => sum + row.probabilities!.first, 0)).toBeCloseTo(1, 12);
+  });
+
+  it.each([seasonRate, matchupModel, eloModel])("gives valid Rank Distributions under $name", (model) => {
+    const { projectedTable } = project(
+      snapshot.games,
+      new Date(snapshot.snapshotAt),
+      model,
+      simulationSeed(snapshot.snapshotAt, model.id),
+    );
+    for (const { rankDistribution } of projectedTable) {
+      expect(rankDistribution).toHaveLength(14);
+      for (const probability of rankDistribution!) {
+        expect(probability).toBeGreaterThanOrEqual(0);
+        expect(probability).toBeLessThanOrEqual(1);
+      }
+      expect(rankDistribution!.reduce((sum, probability) => sum + probability, 0)).toBeCloseTo(1, 12);
+    }
+    for (let rank = 0; rank < 14; rank++) {
+      expect(projectedTable.reduce((sum, row) => sum + row.rankDistribution![rank]!, 0)).toBeCloseTo(1, 12);
+    }
   });
 });
