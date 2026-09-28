@@ -177,18 +177,51 @@ function goalDifference(row: UnrankedRow): number {
   return row.goalsFor - row.goalsAgainst;
 }
 
+/** Teams still level on the Current Table order so far, in no particular order within the Group. */
+type Group = UnrankedRow[];
+
+/** Splits `rows` into Groups tied on `key`, ordered by `key` descending. */
+function groupBy(rows: Group, key: (row: UnrankedRow) => number): Group[] {
+  const byKey = new Map<number, Group>();
+  for (const row of rows) {
+    const groupKey = key(row);
+    const bucket = byKey.get(groupKey);
+    if (bucket) bucket.push(row);
+    else byKey.set(groupKey, [row]);
+  }
+  return [...byKey.entries()].sort(([a], [b]) => b - a).map(([, group]) => group);
+}
+
+/** Narrows every still-tied Group (more than one team) by `key`; a settled Group (one team) is left untouched. */
+function narrow(groups: Group[], key: (row: UnrankedRow) => number): Group[] {
+  return groups.flatMap((group) => (group.length <= 1 ? [group] : groupBy(group, key)));
+}
+
+const GROUP_STEPS: ((row: UnrankedRow) => number)[] = [
+  goalDifference,
+  (row) => row.goalsFor,
+  (row) => row.regulationWins,
+  (row) => -row.teamId,
+];
+
 /**
- * Current Table order: Points, then Points per Game, goal difference, goals for and regulation wins.
- * An approximation of the official SIHF order, which also uses head-to-head.
+ * Settles a Group of teams level on Points and Points per Game, using the Played Games available to it. Today that's
+ * goal difference, goals for and regulation wins over all Played Games, then a fixed team order as the last resort,
+ * so the order is always total. The official National League head-to-head steps of Art. 6.2 will narrow further
+ * here, using the Group's Direct Games, once added (#22).
  */
-function byCurrentTableOrder(a: UnrankedRow, b: UnrankedRow): number {
-  return (
-    b.points - a.points ||
-    pointsPerGame(b) - pointsPerGame(a) ||
-    goalDifference(b) - goalDifference(a) ||
-    b.goalsFor - a.goalsFor ||
-    b.regulationWins - a.regulationWins
-  );
+function settleGroup(group: Group, playedGames: readonly PlayedGame[]): Group {
+  return GROUP_STEPS.reduce((groups, key) => narrow(groups, key), [group]).flat();
+}
+
+/**
+ * Current Table order: Points, then Points per Game (as the official live table does mid-season). Teams still level
+ * form a Group, settled with the Played Games available to it rather than compared pairwise — see settleGroup.
+ */
+function currentTableOrder(rows: Group, playedGames: readonly PlayedGame[]): Group {
+  return groupBy(rows, (row) => row.points)
+    .flatMap((group) => groupBy(group, pointsPerGame))
+    .flatMap((group) => settleGroup(group, playedGames));
 }
 
 /** A Game is Played once it has a final result and started before the As-Of Date. */
@@ -247,12 +280,14 @@ export function projectionModelInput(games: Game[], asOf: Date, alsoPlayed: Read
     }
   }
 
-  const currentTable = [...rows.values()]
-    .sort(byCurrentTableOrder)
-    .map((row, index) => ({ rank: index + 1, ...row }));
-
   const playedGames = games.filter(played);
   const remainingGames = games.filter((game) => !played(game));
+
+  const currentTable = currentTableOrder([...rows.values()], playedGames).map((row, index) => ({
+    rank: index + 1,
+    ...row,
+  }));
+
   const byRecency = [...playedGames].sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
   const formWindows = new Map<TeamId, FormWindows>(
     currentTable.map(({ teamId }) => [

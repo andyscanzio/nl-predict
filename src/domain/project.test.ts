@@ -104,6 +104,12 @@ describe("project: Current Table", () => {
     expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
   });
 
+  it("breaks Current Table ties on every criterion by a fixed team order (ascending team id)", () => {
+    const games = [scheduled(5, 2, "2026-10-05T19:45:00+02:00"), scheduled(6, 4, "2026-10-05T19:45:00+02:00")];
+    // No Played Games, so all four teams are level on every criterion; insertion order would give 5, 2, 6, 4.
+    expect(currentTableOrder(games)).toEqual([2, 4, 5, 6]);
+  });
+
   it("counts Games with a result as Played only if they started before the As-Of Date", () => {
     const games = [
       played(1, 2, 4, 2, "regulation", "2026-09-30T19:45:00+02:00"),
@@ -252,13 +258,14 @@ describe("project: Split Form Rate", () => {
     });
   });
 
-  it("projects every team at 0 Points in schedule order when no Games have been played", () => {
+  it("projects every team at 0 Points in team id order when no Games have been played", () => {
+    // Level on every Current Table criterion, so the fixed team order (ascending team id) settles it.
     const games = [scheduled(3, 1, later), scheduled(2, 3, later), scheduled(1, 2, later)];
     const table = project(games, asOf, splitFormRate).projectedTable;
     expect(table.map((row) => [row.rank, row.teamId, row.projectedPoints])).toEqual([
-      [1, 3, 0],
-      [2, 1, 0],
-      [3, 2, 0],
+      [1, 1, 0],
+      [2, 2, 0],
+      [3, 3, 0],
     ]);
   });
 
