@@ -46,6 +46,15 @@ describe("App", () => {
     expect(html).not.toContain("<table");
   });
 
+  it("shows the Headline once, as static text with no pause button", () => {
+    const html = page(new Date(snapshot.snapshotAt));
+    const headline = /<section class="headline"[^>]*>(.*?)<\/section>/.exec(html)![1]!;
+    expect(headline.match(/<p[ >]/g)).toHaveLength(1);
+    expect(headline).toContain(`${DEFAULT_MODEL.name} projection:`);
+    expect(headline).not.toContain("<button");
+    expect(html).not.toContain("ticker");
+  });
+
   describe("with a What-If", () => {
     const asOf = new Date(snapshot.snapshotAt);
     const nextRoundIds = project(snapshot.games, asOf, DEFAULT_MODEL).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
@@ -77,16 +86,16 @@ describe("App", () => {
       expect(checked.filter((value) => value === "model")).toHaveLength(nextRoundIds.length - 1);
     });
 
-    it("tags the ticker 'What-if' and marks the Current Table as real results", () => {
+    it("tags the Headline 'What-if' and marks the Current Table as real results", () => {
       const html = page(asOf, new Map([[nextRoundIds[0]!, "regulationWin"]]));
-      expect(html).toMatch(/<span class="ticker-tag"[^>]*>\s*What-if\s*<\/span>/);
-      expect(html).not.toMatch(/<span class="ticker-tag"[^>]*>\s*Projection\s*<\/span>/);
+      expect(html).toMatch(/<span class="headline-tag"[^>]*>\s*What-if\s*<\/span>/);
+      expect(html).not.toMatch(/<span class="headline-tag"[^>]*>\s*Projection\s*<\/span>/);
       expect(headings(html).at(-1)).toBe("Current Table (real results)");
     });
 
-    it("keeps the ticker tag and Current Table heading as they are without a What-If", () => {
+    it("keeps the Headline tag and Current Table heading as they are without a What-If", () => {
       const html = page(asOf);
-      expect(html).toMatch(/<span class="ticker-tag"[^>]*>\s*Projection\s*<\/span>/);
+      expect(html).toMatch(/<span class="headline-tag"[^>]*>\s*Projection\s*<\/span>/);
       expect(headings(html).at(-1)).toBe("Current Table");
     });
 

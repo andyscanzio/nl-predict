@@ -14,7 +14,7 @@
   --line: light-dark(#d6dde5, #1f2833);
   --amber: light-dark(#a86a00, #ffb000);
   --led: light-dark(#d61f1f, #ff4545);
-  /* The clock and ticker: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
+  /* The clock and Headline: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
   --led-screen: light-dark(var(--panel), #000);
   --led-edge: light-dark(var(--line), transparent);
   --led-text: light-dark(#8f5a00, #ffb000);
@@ -269,7 +269,7 @@ body {
   grid-template-columns: repeat(4, auto);
   gap: 2px;
   padding: 2px;
-  /* Follows the theme, unlike the clock and ticker: a light track in light mode, the LED screen in dark. */
+  /* Follows the theme, unlike the clock and Headline: a light track in light mode, the LED screen in dark. */
   background: light-dark(var(--panel-strip), #000);
   box-shadow: inset 0 0 0 1px light-dark(var(--line), transparent);
   border-radius: 5px;
@@ -424,22 +424,21 @@ h1 .dot {
   text-shadow: 0 0 10px var(--led-glow);
 }
 
-/* ───────── Ticker ───────── */
+/* ───────── Headline ───────── */
 
-.ticker {
+.headline {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin: 0 0 1rem;
-  padding: 0 0.5rem 0 0.8rem;
+  padding: 0.6rem 0.8rem;
   background: var(--led-screen);
   box-shadow: inset 0 0 0 1px var(--led-edge);
   border-radius: 8px;
-  overflow: hidden;
   font-family: var(--display);
 }
 
-.ticker-tag {
+.headline-tag {
   flex: none;
   font-weight: 700;
   font-size: 0.65rem;
@@ -451,29 +450,9 @@ h1 .dot {
   border-radius: 2px;
 }
 
-.ticker-rail {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
-}
-
-.ticker-track {
-  display: flex;
-  width: max-content;
-  animation: ticker-crawl 28s linear infinite;
-}
-
-.ticker:hover .ticker-track,
-.ticker:focus-within .ticker-track,
-.ticker.paused .ticker-track {
-  animation-play-state: paused;
-}
-
-.ticker-track p {
+.headline p {
   margin: 0;
-  padding: 0.6rem 5rem 0.6rem 0;
-  white-space: nowrap;
+  min-width: 0;
   font-weight: 600;
   font-size: 0.95rem;
   letter-spacing: 0.06em;
@@ -481,52 +460,8 @@ h1 .dot {
   color: var(--led-text);
 }
 
-.ticker-track strong {
+.headline strong {
   color: var(--led-bright);
-}
-
-@keyframes ticker-crawl {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.ticker-toggle {
-  flex: none;
-  width: 1.8rem;
-  height: 1.8rem;
-  padding: 0;
-  border: 1px solid light-dark(var(--line), #333);
-  border-radius: 4px;
-  background: none;
-  color: var(--led-text);
-  font-size: 0.65rem;
-  cursor: pointer;
-}
-
-.ticker-toggle:hover {
-  border-color: var(--led-text);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    width: auto;
-    animation: none;
-  }
-
-  .ticker-track p {
-    white-space: normal;
-    padding-right: 0;
-  }
-
-  .ticker-track p + p,
-  .ticker-toggle {
-    display: none;
-  }
-
-  .ticker-rail {
-    mask-image: none;
-  }
 }
 
 /* ───────── Tables ───────── */

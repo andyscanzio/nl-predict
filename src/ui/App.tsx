@@ -41,39 +41,14 @@ function HeadlineSentence({
   );
 }
 
-/** Scrolls the headline like a scoreboard crawl; pauses on hover, focus or the button, and stands still for reduced motion. */
-function Ticker({ whatIfActive, children }: { whatIfActive: boolean; children: ComponentChildren }) {
-  const [paused, setPaused] = useState(false);
+/** The Headline on the LED screen, tagged with whether it shows the Real Projection or a What-If; wraps on narrow screens. */
+function HeadlineScreen({ whatIfActive, children }: { whatIfActive: boolean; children: ComponentChildren }) {
   return (
-    <section class={paused ? "ticker paused" : "ticker"} aria-label="Projection headline">
-      <span class="ticker-tag" aria-hidden="true">
+    <section class="headline" aria-label="Projection headline">
+      <span class="headline-tag" aria-hidden="true">
         {whatIfActive ? "What-if" : "Projection"}
       </span>
-      <div class="ticker-rail">
-        <div class="ticker-track">
-          <p>{children}</p>
-          <p aria-hidden="true">{children}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        class="ticker-toggle"
-        aria-pressed={paused}
-        title={paused ? "Resume headline" : "Pause headline"}
-        onClick={() => setPaused(!paused)}
-      >
-        <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true" fill="currentColor">
-          {paused ? (
-            <path d="M2 1 L9 5 L2 9 Z" />
-          ) : (
-            <>
-              <rect x="2" y="1" width="2" height="8" />
-              <rect x="6" y="1" width="2" height="8" />
-            </>
-          )}
-        </svg>
-        <span class="visually-hidden">Pause headline</span>
-      </button>
+      <p>{children}</p>
     </section>
   );
 }
@@ -103,7 +78,7 @@ function IntegrityWarning({
   );
 }
 
-/** Tells the visitor the tables and headline assume their What-If Results, and lets them go back to the real projection. */
+/** Tells the visitor the tables and Headline assume their What-If Results, and lets them go back to the Real Projection. */
 function WhatIfBanner({ count, onReset }: { count: number; onReset: () => void }) {
   return (
     <div class="warning what-if-banner" role="status">
@@ -200,7 +175,7 @@ export function App({
   const snapshotAt = new Date(snapshot.snapshotAt);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
-  // While active, the Projected Table and headline follow the What-If; the Current Table and Projection History stay real.
+  // While active, the Projected Table and Headline follow the What-If; the Current Table and Projection History stay real.
   const whatIfActive = appliedWhatIf.size > 0;
   const pickWhatIfResult = (gameId: string, outcome: WhatIfOutcome | undefined) => {
     const next = new Map(appliedWhatIf);
@@ -233,9 +208,9 @@ export function App({
         {anyGamesPlayed ? (
           <>
             {headline && (
-              <Ticker whatIfActive={whatIfActive}>
+              <HeadlineScreen whatIfActive={whatIfActive}>
                 <HeadlineSentence headline={headline} modelName={model.name} teamName={teamName} />
-              </Ticker>
+              </HeadlineScreen>
             )}
             {whatIfActive && (
               <WhatIfBanner count={appliedWhatIf.size} onReset={() => onWhatIfChange(new Map(), "push")} />
