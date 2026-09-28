@@ -160,7 +160,7 @@ body {
   margin: 0.2rem 0 0;
   padding-left: calc(2.9rem + 0.6rem); /* lines up under the teams, past the start time column */
   font: 700 0.8rem var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* What-If picker: the theme toggle's segments under each Game, lined up under the teams. */
@@ -174,7 +174,10 @@ body {
   font-size: 0.68rem;
 }
 
-/* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle. */
+/*
+ * Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle.
+ * Home and away are told apart by --fg and --muted, so --playoffs and --play-in keep their Cut Line meaning.
+ */
 .win-split {
   display: flex;
   align-items: center;
@@ -208,26 +211,34 @@ body {
 .win-split-side {
   display: flex;
   min-width: 2px;
-  background: var(--inset);
+  background: var(--side-colour, var(--inset));
 }
 
 .win-split-side.home {
-  background: var(--amber);
+  --side-colour: var(--fg);
   justify-content: flex-end;
 }
 
 .win-split-side.away {
-  background: var(--playoffs);
+  --side-colour: var(--muted);
   justify-content: flex-start;
 }
 
 .win-split-side.none {
-  background: var(--eliminated);
+  --side-colour: var(--eliminated);
 }
 
+/*
+ * A faded shade of the side's colour, mixed towards the panel so it still shows on the near-white home side in dark mode,
+ * striped so the home OT/SO slice is not mistaken for the grey away side.
+ */
 .win-split-otso {
   height: 100%;
-  background: rgb(255 255 255 / 0.4);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--side-colour, var(--inset)) 0 1.5px,
+    color-mix(in srgb, var(--side-colour, var(--inset)) 45%, var(--panel)) 1.5px 4px
+  );
 }
 
 /* A panel-coloured seam between a side's regulation wins and its lighter OT/SO slice. */
@@ -533,7 +544,7 @@ tbody th {
 
 .projected-points {
   font: 700 1.45rem/1 var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* The What-If Change from the Real Projection, stacked under the projected Points. */
@@ -568,7 +579,7 @@ tbody th {
 
 .current .points {
   font: 700 1.05rem var(--display);
-  color: var(--amber);
+  color: var(--fg);
 }
 
 /* Zones: the rank cell carries the Cut Line color. */
@@ -839,12 +850,12 @@ tbody th {
 }
 
 .history-toggle button[aria-pressed="true"] {
-  background: var(--playoffs);
+  background: var(--fg);
   color: var(--bg);
 }
 
 .history-toggle button:focus-visible {
-  outline: 2px solid var(--playoffs);
+  outline: 2px solid var(--amber);
   outline-offset: -2px;
 }
 
@@ -879,7 +890,7 @@ tbody th {
 }
 
 .history-line.chosen {
-  stroke: var(--playoffs);
+  stroke: var(--fg);
   stroke-opacity: 1;
   stroke-width: 2.5;
 }
@@ -914,7 +925,7 @@ tbody th {
 }
 
 .history-tip-dot {
-  fill: var(--playoffs);
+  fill: var(--fg);
   stroke: var(--bg);
   stroke-width: 1.5;
 }
