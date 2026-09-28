@@ -8,17 +8,21 @@
  *
  * Per Season and model it runs the per-Game Back-Test and the Season Simulation Back-Test. Each held-out Season is
  * scored with the m that scored best on the other Seasons, twice: chosen by per-Game Brier and by Rank RPS.
+ *
+ * Each comparison of two models gets its uncertainty as #41 did: a cluster bootstrap over team-seasons for the pooled
+ * difference in per-Game Brier, Rank RPS and Cut Line Brier, a sign-flip test over the same team-seasons, and in how
+ * many Seasons the challenger was better, with an exact sign-flip test across those Seasons.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
-import { backTest } from "../src/domain/backTest.ts";
+import { gameBriers } from "../src/domain/backTest.ts";
 import { eloModel } from "../src/domain/eloModel.ts";
 import { projectionModelInput } from "../src/domain/project.ts";
 import { seasonLabel } from "../src/domain/season.ts";
 import { createSeasonRate } from "../src/domain/seasonRate.ts";
 import { seasonSimulationBackTest, type OutcomesProjectionModel, type SeasonSimulationScore } from "../src/domain/seasonBackTest.ts";
-import type { Snapshot } from "../src/domain/types.ts";
+import type { Snapshot, TeamId } from "../src/domain/types.ts";
 
 const { values } = parseArgs({
   options: {
@@ -26,6 +30,7 @@ const { values } = parseArgs({
     seasons: { type: "string", default: "2022,2023,2024,2025" },
     runs: { type: "string", default: "2000" },
     rescore: { type: "string" },
+    resamples: { type: "string", default: "10000" },
     "rescore-runs": { type: "string", default: "10000" },
     out: { type: "string", default: "data/local/shrinkage-study/season-rate.txt" },
   },
@@ -39,6 +44,7 @@ const seasons = values.seasons.split(",").map(Number);
 const runs = Number(values.runs);
 const rescore = values.rescore?.split(",").map(Number) ?? [];
 const rescoreRuns = Number(values["rescore-runs"]);
+const resamples = Number(values.resamples);
 
 const snapshots = new Map<number, Snapshot>();
 for (const season of seasons) {
@@ -55,6 +61,8 @@ const seasonRateOf = (m: number): OutcomesProjectionModel => ({ ...(createSeason
 interface SeasonScore {
   /** Mean per-Game Brier score. */
   brier: number;
+  /** Mean per-Game Brier score of each team's Played Games, by team. */
+  teamBrier: Map<TeamId, number>;
   rows: SeasonSimulationScore[];
 }
 
@@ -65,18 +73,34 @@ async function scoreAll(models: readonly OutcomesProjectionModel[], simulationRu
   for (const season of seasons) {
     const { games, snapshotAt } = snapshots.get(season)!;
     const started = Date.now();
-    const brier = withBrier ? backTest(games, new Date(snapshotAt), all) : [];
+    const briers = withBrier ? gameBriers(games, new Date(snapshotAt), all) : [];
     const simulations = seasonSimulationBackTest(games, all, simulationRuns);
     scores.set(
       season,
-      new Map(simulations.map(({ model, rows }, i) => [model, { brier: brier[i]?.brierScore ?? NaN, rows }])),
+      new Map(
+        simulations.map(({ model, rows }, i) => [
+          model,
+          { brier: mean([...(briers[i]?.values() ?? [])]), teamBrier: teamMeans(games, briers[i] ?? new Map()), rows },
+        ]),
+      ),
     );
     console.error(`${seasonLabel(season)}: ${all.length} models at ${simulationRuns} runs in ${((Date.now() - started) / 1000).toFixed(0)}s`);
   }
   return scores;
 }
 
-const mean = (xs: readonly number[]) => xs.reduce((sum, x) => sum + x, 0) / xs.length;
+const mean = (xs: readonly number[]) => (xs.length === 0 ? NaN : xs.reduce((sum, x) => sum + x, 0) / xs.length);
+
+/** Each team's mean Brier score over the Games it played: a Game counts for both its teams. */
+function teamMeans(games: Snapshot["games"], briers: ReadonlyMap<string, number>): Map<TeamId, number> {
+  const byTeam = new Map<TeamId, number[]>();
+  for (const game of games) {
+    const brier = briers.get(game.id);
+    if (brier === undefined) continue;
+    for (const teamId of [game.homeTeamId, game.awayTeamId]) byTeam.set(teamId, [...(byTeam.get(teamId) ?? []), brier]);
+  }
+  return new Map([...byTeam].map(([teamId, values]) => [teamId, mean(values)]));
+}
 
 function phaseOf(gamesPlayed: number): number {
   return Math.min(PHASES.length - 1, Math.max(0, Math.ceil(gamesPlayed / 13) - 1));
@@ -127,6 +151,106 @@ function leaveOneSeasonOut(scores: Map<number, Map<string, SeasonScore>>, metric
   );
 }
 
+/** A seeded generator (mulberry32) so the report is reproducible. */
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32;
+  };
+}
+
+const UNCERTAINTY_METRICS = [
+  ["brier", "per-Game Brier"],
+  ["rps", "Rank RPS"],
+  ["cut", "Cut Line Brier"],
+] as const satisfies readonly [MetricName, string][];
+/** Random sign-flips of the team-seasons' differences: more than the bootstrap needs, as their p-values can be small. */
+const SIGN_FLIPS = resamples * 10;
+
+/** A team-season's mean score of a variant on a metric: the independent unit of the uncertainty, as in #41. */
+interface TeamSeason {
+  season: number;
+  value: number;
+}
+
+function teamSeasons(variant: Variant, metric: MetricName): Map<string, TeamSeason> {
+  const units = new Map<string, TeamSeason>();
+  for (const season of seasons) {
+    const { teamBrier, rows } = variant.get(season)!;
+    if (metric === "brier") {
+      for (const [teamId, value] of teamBrier) units.set(`${season}:${teamId}`, { season, value });
+      continue;
+    }
+    const byTeam = new Map<TeamId, number[]>();
+    for (const row of rows) byTeam.set(row.teamId, [...(byTeam.get(row.teamId) ?? []), metric === "rps" ? row.rankRps : row.cutLineBrier]);
+    for (const [teamId, values] of byTeam) units.set(`${season}:${teamId}`, { season, value: mean(values) });
+  }
+  return units;
+}
+
+interface Uncertainty {
+  /** Challenger minus baseline, pooled over team-seasons; negative means the challenger is better. */
+  diff: number;
+  /** Baseline's pooled score, for the relative difference. */
+  baseline: number;
+  /** 95% percentile interval of the cluster bootstrap over team-seasons. */
+  low: number;
+  high: number;
+  /** Two-sided sign-flip test over the team-seasons' differences. */
+  p: number;
+  /** Seasons where the challenger's pooled difference is negative. */
+  seasonsBetter: number;
+  /** Two-sided exact sign-flip test over the Seasons' differences: it cannot go below 2 / 2^(Seasons). */
+  seasonP: number;
+}
+
+/** Differences of every team-season (challenger minus baseline), each with its Season. */
+function uncertainty(challenger: Variant, baseline: Variant, metric: MetricName, seed: number): Uncertainty {
+  const challengerUnits = teamSeasons(challenger, metric);
+  const baselineUnits = teamSeasons(baseline, metric);
+  const diffs = [...challengerUnits].map(([key, { season, value }]) => ({ season, diff: value - baselineUnits.get(key)!.value }));
+  const values = diffs.map(({ diff }) => diff);
+  const n = values.length;
+  const observed = mean(values);
+  const next = seededRandom(seed);
+
+  // Cluster bootstrap: resample whole team-seasons, since one team's forecasts share a final rank and a schedule.
+  const boot = Array.from({ length: resamples }, () => {
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += values[Math.floor(next() * n)]!;
+    return sum / n;
+  }).sort((a, b) => a - b);
+
+  // Sign-flip: under "no difference" each team-season's difference is as likely to have the other sign.
+  let extreme = 0;
+  for (let i = 0; i < SIGN_FLIPS; i++) {
+    let sum = 0;
+    for (const value of values) sum += next() < 0.5 ? -value : value;
+    if (Math.abs(sum / n) >= Math.abs(observed) - 1e-12) extreme++;
+  }
+
+  const seasonDiffs = seasons.map((season) => mean(diffs.filter((d) => d.season === season).map((d) => d.diff)));
+  let seasonExtreme = 0;
+  for (let flips = 0; flips < 2 ** seasons.length; flips++) {
+    const sum = seasonDiffs.reduce((acc, diff, i) => acc + (flips & (1 << i) ? -diff : diff), 0);
+    if (Math.abs(sum / seasons.length) >= Math.abs(mean(seasonDiffs)) - 1e-12) seasonExtreme++;
+  }
+
+  return {
+    diff: observed,
+    baseline: mean([...baselineUnits.values()].map(({ value }) => value)),
+    low: boot[Math.floor(0.025 * resamples)]!,
+    high: boot[Math.ceil(0.975 * resamples) - 1]!,
+    p: (extreme + 1) / (SIGN_FLIPS + 1),
+    seasonsBetter: seasonDiffs.filter((diff) => diff < 0).length,
+    seasonP: seasonExtreme / 2 ** seasons.length,
+  };
+}
+
 const lines: string[] = [];
 const print = (line = "") => lines.push(line);
 const heading = (title: string) => {
@@ -143,6 +267,8 @@ function table(rowHeader: string, headers: readonly string[], rows: readonly (re
   print(rowHeader.padEnd(labelWidth) + headers.map((h) => cell(h, width)).join(""));
   for (const [label, ...cells] of rows) print(label.padEnd(labelWidth) + cells.map((c) => cell(c, width)).join(""));
 }
+
+const signed = (x: number) => (x >= 0 ? "+" : "") + fixed(x);
 
 const seasonHeaders = seasons.map(seasonLabel);
 
@@ -275,12 +401,43 @@ print();
 heading("4. COMPARISON: Season Simulation Back-Test");
 variantReport(compared);
 
-heading("5. PER TEAM-SEASON: mean over the forecast points");
+heading("5. UNCERTAINTY: challenger minus baseline, negative means the challenger is better");
+print(`Cluster bootstrap (${resamples} resamples) over the ${seasons.length * snapshots.get(seasons[0]!)!.teams.length} team-seasons: 95% interval of the pooled difference.`);
+print(`p: sign-flip test over the same team-seasons (${SIGN_FLIPS} random flips), two-sided; the test #41 reported.`);
+print(`Seasons better: how many Seasons the challenger's pooled difference is negative in; Season p is the exact sign-flip test over the Seasons, whose smallest possible value is ${fixed(2 / 2 ** seasons.length, 3)}.`);
+print("A Game's Brier score counts for both its teams, so per-Game Brier intervals are somewhat too narrow. Neither the choice of m nor simulation noise is resampled.");
+print();
+const byName = new Map(compared);
+const comparisons: [challenger: string, baseline: string][] = [
+  ["m=10", "m=0"],
+  ["held-out m (by Rank RPS)", "m=0"],
+  ["held-out m (by Brier)", "m=0"],
+  ["m=10", eloName],
+  ["held-out m (by Rank RPS)", eloName],
+  ["held-out m (by Brier)", eloName],
+];
+let seed = 1;
+for (const [challenger, baseline] of comparisons) {
+  print(`${challenger}  −  ${baseline}`);
+  table(
+    "",
+    ["diff", "rel %", "95% CI low", "high", "p", "Seasons better", "Season p"],
+    UNCERTAINTY_METRICS.map(([metric, label]): [string, ...string[]] => {
+      const u = uncertainty(byName.get(challenger)!, byName.get(baseline)!, metric, seed++);
+      return [label, signed(u.diff), `${((100 * u.diff) / u.baseline).toFixed(1)}`, signed(u.low), signed(u.high), fixed(u.p), `${u.seasonsBetter}/${seasons.length}`, fixed(u.seasonP)];
+    }),
+    18,
+    15,
+  );
+  print();
+}
+
+heading("6. PER TEAM-SEASON: mean over the forecast points");
 teamSeasonReport(compared.filter(([label]) => label === "m=0" || label === "m=10" || label === eloName));
 
 if (rescore.length > 0) {
   const rescored = await scoreAll(rescore.map(seasonRateOf), rescoreRuns, false);
-  heading(`6. RE-SCORED AT ${rescoreRuns} SIMULATION RUNS: ${rescore.map(nameOf).join(", ")}`);
+  heading(`7. RE-SCORED AT ${rescoreRuns} SIMULATION RUNS: ${rescore.map(nameOf).join(", ")}`);
   variantReport([
     ...rescore.map((m): [string, Variant] => [nameOf(m), variantOf(rescored, () => nameOf(m))]),
     [eloName, variantOf(rescored, () => eloName)],
