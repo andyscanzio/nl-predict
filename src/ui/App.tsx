@@ -5,7 +5,6 @@ import {
   project,
   REGULAR_SEASON_GAMES,
   type IntegrityIssue,
-  type NextRoundDay,
   type ProjectedTableRow,
   type ProjectionModel,
 } from "../domain/project.ts";
@@ -17,7 +16,7 @@ import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
-import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
+import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
@@ -25,63 +24,12 @@ import { chartMetrics, projectionChart, shownMetric, type ChartMetric } from "./
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { applyTheme, readTheme, storeTheme, THEMES, type Theme } from "./theme.ts";
-import { formatPercent, winSplit } from "./winSplit.ts";
+import { formatForm, formatGameDate, formatScoreboardTime, formatSnapshotTime, ordinal } from "./format.ts";
+import { fullTeamName, TeamName } from "./TeamName.tsx";
+import { UpcomingGames } from "./UpcomingGames.tsx";
+import { formatPercent } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
-
-const snapshotTime = new Intl.DateTimeFormat("en-GB", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Europe/Zurich",
-});
-
-/** Scoreboard-style Snapshot time, e.g. "27.09 13:33". */
-const scoreboardTime = new Intl.DateTimeFormat("en-GB", {
-  day: "2-digit",
-  month: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "Europe/Zurich",
-});
-
-function formatScoreboardTime(date: Date) {
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    scoreboardTime.formatToParts(date).find((p) => p.type === type)?.value ?? "";
-  return `${part("day")}.${part("month")} ${part("hour")}:${part("minute")}`;
-}
-
-const gameDate = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  timeZone: "Europe/Zurich",
-});
-
-const upcomingGameTime = new Intl.DateTimeFormat("en-GB", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "Europe/Zurich",
-});
-
-/** A Next Round match day's Swiss calendar date (YYYY-MM-DD) as e.g. "Tue 29 Sep"; UTC avoids reinterpreting the date. */
-const matchDayHeading = new Intl.DateTimeFormat("en-GB", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
-
-function formatExpectedPoints(points: number) {
-  return points.toFixed(1);
-}
-
-const ordinalRules = new Intl.PluralRules("en-GB", { type: "ordinal" });
-const ORDINAL_SUFFIXES: Partial<Record<Intl.LDMLPluralRule, string>> = { one: "st", two: "nd", few: "rd" };
-
-function ordinal(n: number) {
-  return `${n}${ORDINAL_SUFFIXES[ordinalRules.select(n)] ?? "th"}`;
-}
 
 const DECISION_LABELS: Record<Decision, string> = {
   regulation: "",
@@ -103,10 +51,6 @@ const CUT_LINE_LABELS: Record<CutLine, string> = {
   "play-in": "Play-in",
   eliminated: "Eliminated",
 };
-
-function formatForm(form: number | null) {
-  return form === null ? "–" : form.toFixed(2);
-}
 
 function resultLabel(game: FormWindowGame) {
   const outcome = game.goalsFor > game.goalsAgainst ? "win" : "loss";
@@ -171,7 +115,7 @@ function FormChips({
             key={game.gameId}
             class={`chip chip-${game.points}`}
             aria-hidden="true"
-            title={`${gameDate.format(new Date(game.startsAt))} ${side === "home" ? "vs" : "@"} ${teamName(game.opponentId)}: ${game.goalsFor}:${game.goalsAgainst} ${resultLabel(game)} (${game.points} Pts)`}
+            title={`${formatGameDate(new Date(game.startsAt))} ${side === "home" ? "vs" : "@"} ${teamName(game.opponentId)}: ${game.goalsFor}:${game.goalsAgainst} ${resultLabel(game)} (${game.points} Pts)`}
           />
         ))
       )}
@@ -307,7 +251,7 @@ function FormWindowDetail({
             {games.map((game) => (
               <tr key={game.gameId}>
                 <td>
-                  <time dateTime={game.startsAt}>{gameDate.format(new Date(game.startsAt))}</time>
+                  <time dateTime={game.startsAt}>{formatGameDate(new Date(game.startsAt))}</time>
                 </td>
                 <td>
                   {side === "home" ? "vs " : "@ "}
@@ -518,131 +462,6 @@ function IntegrityWarning({
   );
 }
 
-const oneDecimalPercent = (probability: number) => `${(probability * 100).toFixed(1)}%`;
-
-/** Hover text listing a Game's four Outcome Probabilities, each named for the side that wins. */
-function outcomesTitle(outcomes: OutcomeProbabilities, home: string, away: string) {
-  return [
-    `${home} win in regulation ${oneDecimalPercent(outcomes.regulationWin)}`,
-    `${home} win in OT/SO ${oneDecimalPercent(outcomes.overtimeOrShootoutWin)}`,
-    `${away} win in OT/SO ${oneDecimalPercent(outcomes.overtimeOrShootoutLoss)}`,
-    `${away} win in regulation ${oneDecimalPercent(outcomes.regulationLoss)}`,
-  ].join(" · ");
-}
-
-/** Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins. */
-function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
-  const split = winSplit(outcomes);
-  const segment = (side: "home" | "away") => (
-    <span class={`win-split-side ${side}${split[side].exact ? " none" : ""}`} style={{ flexGrow: split[side].win }}>
-      <span class="win-split-otso" style={{ width: `${split[side].overtimeOrShootoutShare * 100}%` }} />
-    </span>
-  );
-  return (
-    <div class="win-split">
-      <span class={split.home.exact ? "win-split-pct none" : "win-split-pct"}>{split.home.label}</span>
-      <span class="win-split-bar" aria-hidden="true">
-        {segment("home")}
-        {segment("away")}
-      </span>
-      <span class={split.away.exact ? "win-split-pct none" : "win-split-pct"}>{split.away.label}</span>
-    </div>
-  );
-}
-
-/** The Next Round, grouped under match-day subheadings; hidden entirely when there are no Upcoming Games. */
-function UpcomingGamesPanel({
-  nextRound,
-  lowSample,
-  teamCell,
-  teamName,
-}: {
-  nextRound: NextRoundDay[];
-  lowSample: boolean;
-  teamCell: (teamId: TeamId) => ComponentChildren;
-  teamName: (teamId: TeamId) => string;
-}) {
-  if (nextRound.length === 0) return null;
-  return (
-    <section class="panel">
-      <h2>Upcoming Games</h2>
-      {nextRound.map((day) => (
-        <div class="upcoming-day" key={day.date}>
-          <h3 class="upcoming-day-heading">{matchDayHeading.format(new Date(`${day.date}T00:00:00Z`))}</h3>
-          <ul class="upcoming-games">
-            {day.games.map(({ game, prediction }) => (
-              <li
-                key={game.id}
-                class="upcoming-game"
-                title={
-                  prediction.outcomes
-                    ? outcomesTitle(prediction.outcomes, teamName(game.homeTeamId), teamName(game.awayTeamId))
-                    : undefined
-                }
-              >
-                <div class="upcoming-game-main">
-                  <time class="upcoming-time" dateTime={game.startsAt}>
-                    {upcomingGameTime.format(new Date(game.startsAt))}
-                  </time>
-                  <span class="upcoming-teams">
-                    <span class="upcoming-team">{teamCell(game.homeTeamId)}</span>
-                    <span class="upcoming-vs" aria-hidden="true">
-                      vs
-                    </span>
-                    <span class="upcoming-team">{teamCell(game.awayTeamId)}</span>
-                  </span>
-                </div>
-                {prediction.outcomes ? (
-                  <WinSplitBar outcomes={prediction.outcomes} />
-                ) : (
-                  <p class="upcoming-points">
-                    {formatExpectedPoints(prediction.points.home)} Pts – {formatExpectedPoints(prediction.points.away)} Pts
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {lowSample && (
-        <p class="meta panel-body upcoming-note">
-          Some teams are Low Sample, with fewer than {LOW_SAMPLE_GAMES} Played Games, so these predictions rest on
-          little data.
-        </p>
-      )}
-      <ul class="legend">
-        {nextRound.some((day) => day.games.some(({ prediction }) => prediction.outcomes)) ? (
-          <>
-            <li>
-              <span class="legend-swatch win-split-side home"></span>{" "}
-              Home win
-            </li>
-            <li>
-              <span class="legend-swatch win-split-side home">
-                <span class="win-split-otso" style={{ width: "100%" }} />
-              </span>{" "}
-              Home win in OT/SO
-            </li>
-            <li>
-              <span class="legend-swatch win-split-side away">
-                <span class="win-split-otso" style={{ width: "100%" }} />
-              </span>{" "}
-              Away win in OT/SO
-            </li>
-            <li>
-              <span class="legend-swatch win-split-side away"></span>{" "}
-              Away win
-            </li>
-            <li>Percentages are the chance of winning, in regulation or OT/SO</li>
-          </>
-        ) : (
-          <li>Pts – Pts: expected Points for the home – away team</li>
-        )}
-      </ul>
-    </section>
-  );
-}
-
 const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 
 /** Light, dark, or whatever the system says; remembered in this browser. index.html applies it before first paint. */
@@ -783,16 +602,7 @@ export function App({
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
   const snapshotAt = new Date(snapshot.snapshotAt);
-  const teamCell = (teamId: TeamId) => {
-    const team = teams.get(teamId);
-    return (
-      <>
-        <span class="team-name">{team?.name ?? teamId}</span>
-        <span class="team-acronym">{team?.acronym ?? teamId}</span>
-      </>
-    );
-  };
-  const teamName = (teamId: TeamId) => teams.get(teamId)?.name ?? String(teamId);
+  const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
   const barScale = Math.max(1, ...projectedTable.map((row) => row.projectedPoints));
   const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
@@ -820,7 +630,7 @@ export function App({
           <ThemeToggle />
           <p class="as-of">
             <span class="as-of-label">Data as of</span>
-            <time dateTime={snapshot.snapshotAt} title={`${snapshotTime.format(snapshotAt)} (Swiss time)`}>
+            <time dateTime={snapshot.snapshotAt} title={`${formatSnapshotTime(snapshotAt)} (Swiss time)`}>
               {formatScoreboardTime(snapshotAt)}
             </time>
           </p>
@@ -894,7 +704,7 @@ export function App({
                               <span class="chevron" aria-hidden="true">
                                 {isExpanded ? "▾" : "▸"}
                               </span>
-                              {teamCell(row.teamId)}
+                              <TeamName teams={teams} teamId={row.teamId} />
                             </button>
                             {row.lowSample && (
                               <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
@@ -997,12 +807,7 @@ export function App({
               </ul>
             </section>
 
-            <UpcomingGamesPanel
-              nextRound={nextRound}
-              lowSample={projectedTable.some((row) => row.lowSample)}
-              teamCell={teamCell}
-              teamName={teamName}
-            />
+            <UpcomingGames nextRound={nextRound} lowSample={projectedTable.some((row) => row.lowSample)} teams={teams} />
 
             <section class="panel explanation">
               <h2>How the projection works: {model.name}</h2>
@@ -1060,7 +865,7 @@ export function App({
                         <tr key={row.teamId}>
                           <td class="num rank">{String(row.rank).padStart(2, "0")}</td>
                           <th scope="row" class="team">
-                            {teamCell(row.teamId)}
+                            <TeamName teams={teams} teamId={row.teamId} />
                           </th>
                           <td class="num">{row.gamesPlayed}</td>
                           <td class="num">{row.regulationWins}</td>
