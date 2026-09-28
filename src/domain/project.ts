@@ -83,10 +83,14 @@ export function predictGames(model: ProjectionModel, input: ProjectionModelInput
   return predictions;
 }
 
-/** A team's place in the Real Projection: its projected rank and projected Points under the same Projection Model. */
+/**
+ * A team's place in the Real Projection under the same Projection Model: its projected rank, projected Points, and
+ * Cut Line zone and 1st-place chances (null for Points-only models).
+ */
 export interface RealProjectionRow {
   rank: number;
   projectedPoints: number;
+  probabilities: CutLineProbabilities | null;
 }
 
 export interface ProjectedTableRow {
@@ -553,7 +557,7 @@ export function project(
       : new Map(
           (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
             row.teamId,
-            { rank: row.rank, projectedPoints: row.projectedPoints },
+            { rank: row.rank, projectedPoints: row.projectedPoints, probabilities: row.probabilities },
           ]),
         );
 

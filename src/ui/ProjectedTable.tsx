@@ -79,6 +79,37 @@ function ProjectedPoints({ row }: { row: ProjectedTableRow }) {
   );
 }
 
+/** A printed percent as a number: "<1" counts as 0 and ">99" as 100. */
+function printedPercent(probability: number): number {
+  const printed = formatPercent(probability);
+  return printed === "<1" ? 0 : printed === ">99" ? 100 : Number(printed);
+}
+
+/**
+ * A chance percent, with its What-If Change from the Real Projection stacked under it when the printed values differ.
+ * A rise in PO or 1st is good and a fall bad, Out is the other way round, and PI is neutral.
+ */
+function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number]; row: ProjectedTableRow }) {
+  const probability = row.probabilities![column.key];
+  const printed = formatPercent(probability);
+  const real = row.realProjection?.probabilities;
+  const change = real ? printedPercent(probability) - printedPercent(real[column.key]) : 0;
+  if (change === 0) return <>{printed}</>;
+  const direction = change > 0 ? "up" : "down";
+  const tone = column.key === "playIn" ? "neutral" : (change > 0) === (column.key !== "eliminated") ? "good" : "bad";
+  return (
+    <>
+      <span class="visually-hidden">
+        {printed} percent, {direction} {Math.abs(change)} from the Real Projection
+      </span>
+      <span aria-hidden="true">{printed}</span>
+      <small class={`what-if-change ${tone}`} aria-hidden="true">
+        {signed(change)}
+      </small>
+    </>
+  );
+}
+
 /** One chip per Form Window Game, newest first: filled for wins, outlined for losses, dimmer for OT/SO. */
 function FormChips({
   side,
@@ -292,11 +323,11 @@ export function ProjectedTable({
                     <ProjectedPoints row={row} />
                   </td>
                   {row.probabilities &&
-                    PROBABILITY_COLUMNS.map(({ key }) => {
-                      const probability = row.probabilities![key];
+                    PROBABILITY_COLUMNS.map((column) => {
+                      const probability = row.probabilities![column.key];
                       return (
-                        <td key={key} class={probability === 0 ? "num pct none" : "num pct"}>
-                          {formatPercent(probability)}
+                        <td key={column.key} class={probability === 0 ? "num pct none" : "num pct"}>
+                          <Chance column={column} row={row} />
                         </td>
                       );
                     })}
