@@ -1,4 +1,5 @@
 import { project, type ProjectionModel } from "./project.ts";
+import type { ProjectionModelId } from "./projectionModels.ts";
 import { swissCalendarDay, swissDayEnd } from "./swissDay.ts";
 import type { Game, TeamId } from "./types.ts";
 
@@ -21,6 +22,9 @@ export interface HistoryPoint {
 
 /** The Projection History of one model: a point before the first Game, then one for each Match Day with a Played Game, oldest first. */
 export type ProjectionHistory = HistoryPoint[];
+
+/** The Projection History of every Projection Model, by model id. */
+export type ProjectionHistories = Record<ProjectionModelId, ProjectionHistory>;
 
 /** The Match Days on which at least one Played Game started, oldest first (YYYY-MM-DD). */
 function matchDaysPlayed(games: readonly Game[]): string[] {

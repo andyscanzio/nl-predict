@@ -43,7 +43,7 @@ export function eloRatings(
  * Ratings plus Home Advantage, as its expected share of the Game's 3 Points, turned into Outcome Probabilities with the
  * OT/SO Rate (see outcomesFromExpectedPoints).
  */
-export function createEloModel(parameters: EloParameters): ProjectionModel {
+export function createEloModel(parameters: EloParameters): ProjectionModel<"elo"> {
   return {
     id: "elo",
     name: "Elo Model",

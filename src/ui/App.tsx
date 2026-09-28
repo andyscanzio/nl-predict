@@ -12,12 +12,13 @@ import {
 import { SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
+import { splitFormRatesOf } from "../domain/splitFormRate.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
-import { PROJECTION_MODELS } from "./modelUrl.ts";
+import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { chartMetrics, nearestMatchDay, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
@@ -274,13 +275,11 @@ function FormWindowDetail({
   showProjectedRate: boolean;
 }) {
   const labels = SIDES[side];
-  // Mirrors Split Form Rate: an empty Form Window borrows the other Form, or earns nothing without either.
-  const rate =
-    form !== null
-      ? `${formatForm(form)} per Game`
-      : otherForm !== null
-        ? `${formatForm(otherForm)} per Game (${labels.other})`
-        : "0 per Game";
+  const borrowed = form === null && otherForm !== null;
+  const rates = side === "home" ? splitFormRatesOf(form, otherForm) : splitFormRatesOf(otherForm, form);
+  const projectedRate = rates[side];
+  // Neither Form exists: the rate is a bare 0, not a formatted Form.
+  const rate = `${form === null && otherForm === null ? "0" : formatForm(projectedRate)} per Game${borrowed ? ` (${labels.other})` : ""}`;
   return (
     <section class="form-window">
       <h3>
@@ -691,7 +690,13 @@ function localStorageOrUndefined() {
   }
 }
 
-function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
+function ModelPicker({
+  model,
+  onChange,
+}: {
+  model: ProjectionModel<ProjectionModelId>;
+  onChange: (model: ProjectionModel<ProjectionModelId>) => void;
+}) {
   return (
     <fieldset class="model-picker">
       <legend class="visually-hidden">Projection Model</legend>
@@ -718,63 +723,55 @@ function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (m
 
 const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
 
-/** How a Projection Model turns Played Games into projected Points, by model id. */
-function ModelExplanation({ model }: { model: ProjectionModel }) {
-  switch (model.id) {
-    case "split-form-rate":
-      return (
-        <>
-          <p>
-            Each team keeps the Points it has today and earns its Home Form on every Remaining home Game and its Away Form
-            on every Remaining away Game. Home Form is the Points per Game over the team's home Form Window, its up to{" "}
-            {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the same over its away Form Window. Projected
-            Points = current Points + Remaining home Games × Home Form + Remaining away Games × Away Form.
-          </p>
-          <p>
-            Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
-            home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
-            current Points.
-          </p>
-          <p>
-            <strong>No percentages.</strong> Split Form Rate predicts each side of a Game on its own, so a Game's two
-            predictions need not add up to its 3 Points and there are no Outcome Probabilities to play the Season out from.
-            Pick another model to see each team's Playoffs, Play-in, Eliminated and 1st chances.
-          </p>
-        </>
-      );
-    case "season-rate":
-      return (
-        <p>
-          Each team keeps earning its Points per Game over all its Played Games this Season, whatever the venue or
-          opponent; a team with no Played Games counts as {LEAGUE_AVERAGE_POINTS_PER_GAME}, half of a Game's 3 Points. A
-          Remaining Game's 3 Points can't honour both teams' rates at once, so the home team expects the mean of its own
-          rate and what the away team's rate leaves it: (home rate + 3 − away rate) ÷ 2.
-        </p>
-      );
-    case "matchup":
-      return (
-        <p>
-          Each Remaining Game weighs the home team's Home Form against the away team's Away Form. Home Form is the Points
-          per Game over a team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is
-          the same over its away Form Window. The home team expects (Home Form + 3 − the away team's Away Form) ÷ 2 of the
-          Game's 3 Points. A team with no Played Games at one venue uses its Form from the other; with neither, it counts
-          as {LEAGUE_AVERAGE_POINTS_PER_GAME}.
-        </p>
-      );
-    case "elo":
-      return (
-        <p>
-          Every team starts the Season on a Rating of {INITIAL_RATING}. After each Played Game, the home team's Rating rises by{" "}
-          {ELO_K} × (the share of the 3 Points it took − the share the Ratings expected) and the away team's falls by the
-          same, so beating a strong team counts for more than beating a weak one. The home team gets a Home Advantage of {ELO_HOME_ADVANTAGE} Rating
-          points. For each Remaining Game, the two current Ratings plus Home Advantage give the home team its expected
-          share of the 3 Points. K and Home Advantage were tuned by Back-Testing the 2024/25 and 2025/26 Regular Seasons.
-        </p>
-      );
-    default:
-      return null;
-  }
-}
+/** How each Projection Model turns Played Games into projected Points; a model without an entry fails type-checking. */
+const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
+  "split-form-rate": (
+    <>
+      <p>
+        Each team keeps the Points it has today and earns its Home Form on every Remaining home Game and its Away Form
+        on every Remaining away Game. Home Form is the Points per Game over the team's home Form Window, its up to{" "}
+        {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the same over its away Form Window. Projected
+        Points = current Points + Remaining home Games × Home Form + Remaining away Games × Away Form.
+      </p>
+      <p>
+        Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
+        home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
+        current Points.
+      </p>
+      <p>
+        <strong>No percentages.</strong> Split Form Rate predicts each side of a Game on its own, so a Game's two
+        predictions need not add up to its 3 Points and there are no Outcome Probabilities to play the Season out from.
+        Pick another model to see each team's Playoffs, Play-in, Eliminated and 1st chances.
+      </p>
+    </>
+  ),
+  "season-rate": (
+    <p>
+      Each team keeps earning its Points per Game over all its Played Games this Season, whatever the venue or
+      opponent; a team with no Played Games counts as {LEAGUE_AVERAGE_POINTS_PER_GAME}, half of a Game's 3 Points. A
+      Remaining Game's 3 Points can't honour both teams' rates at once, so the home team expects the mean of its own
+      rate and what the away team's rate leaves it: (home rate + 3 − away rate) ÷ 2.
+    </p>
+  ),
+  matchup: (
+    <p>
+      Each Remaining Game weighs the home team's Home Form against the away team's Away Form. Home Form is the Points
+      per Game over a team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is
+      the same over its away Form Window. The home team expects (Home Form + 3 − the away team's Away Form) ÷ 2 of the
+      Game's 3 Points. A team with no Played Games at one venue uses its Form from the other; with neither, it counts
+      as {LEAGUE_AVERAGE_POINTS_PER_GAME}.
+    </p>
+  ),
+  elo: (
+    <p>
+      Every team starts the Season on a Rating of {INITIAL_RATING}. After each Played Game, the home team's Rating rises by{" "}
+      {ELO_K} × (the share of the 3 Points it took − the share the Ratings expected) and the away team's falls by the
+      same, so beating a strong team counts for more than beating a weak one. The home team gets a Home Advantage of {ELO_HOME_ADVANTAGE} Rating
+      points. For each Remaining Game, the two current Ratings plus Home Advantage give the home team its expected
+      share of the 3 Points. K and Home Advantage were tuned by Back-Testing the 2024/25 and 2025/26 Regular Seasons.
+    </p>
+  ),
+};
 
 export function App({
   snapshot,
@@ -785,10 +782,10 @@ export function App({
 }: {
   snapshot: Snapshot;
   now: Date;
-  model: ProjectionModel;
+  model: ProjectionModel<ProjectionModelId>;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
-  onModelChange: (model: ProjectionModel) => void;
+  onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
   const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(
@@ -1025,7 +1022,7 @@ export function App({
             <section class="panel explanation">
               <h2>How the projection works: {model.name}</h2>
               <div class="panel-body">
-                <ModelExplanation model={model} />
+                {MODEL_EXPLANATIONS[model.id]}
                 {showProbabilities && (
                   <>
                     <p>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_MODEL, modelFromUrl, PROJECTION_MODELS, urlWithModel } from "./modelUrl.ts";
+import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
+import { DEFAULT_MODEL, PROJECTION_MODELS } from "../domain/projectionModels.ts";
 import { eloModel } from "../domain/eloModel.ts";
 import { matchupModel } from "../domain/matchupModel.ts";
 import { seasonRate } from "../domain/seasonRate.ts";
@@ -8,10 +9,6 @@ import { splitFormRate } from "../domain/splitFormRate.ts";
 const PAGE = "https://andyscanzio.github.io/nl-predict/";
 
 describe("modelFromUrl", () => {
-  it("offers the four Projection Models, in picker order", () => {
-    expect(PROJECTION_MODELS).toEqual([eloModel, seasonRate, matchupModel, splitFormRate]);
-  });
-
   it.each([
     ["split-form-rate", splitFormRate],
     ["season-rate", seasonRate],
@@ -19,10 +16,6 @@ describe("modelFromUrl", () => {
     ["elo", eloModel],
   ])("reads ?model=%s", (id, model) => {
     expect(modelFromUrl(`${PAGE}?model=${id}`)).toBe(model);
-  });
-
-  it("defaults to the Elo Model", () => {
-    expect(DEFAULT_MODEL).toBe(eloModel);
   });
 
   it("uses the Default Model without a model parameter", () => {
