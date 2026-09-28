@@ -1131,6 +1131,36 @@ footer {
   margin: 0.25rem 0;
 }
 
+.what-if-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.what-if-banner button {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  font: 600 0.7rem var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.what-if-banner button:hover {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+.what-if-banner button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
 footer {
   margin-top: 1.5rem;
   padding-top: 1rem;

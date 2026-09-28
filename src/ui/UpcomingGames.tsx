@@ -1,4 +1,4 @@
-import { LOW_SAMPLE_GAMES, type NextRoundDay } from "../domain/project.ts";
+import { LOW_SAMPLE_GAMES, type NextRoundDay, type WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
 import { formatExpectedPoints, formatGameTime, formatMatchDayHeading } from "./format.ts";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
@@ -14,6 +14,17 @@ function outcomesTitle(outcomes: OutcomeProbabilities, home: string, away: strin
     `${away} win in OT/SO ${oneDecimalPercent(outcomes.overtimeOrShootoutLoss)}`,
     `${away} win in regulation ${oneDecimalPercent(outcomes.regulationLoss)}`,
   ].join(" · ");
+}
+
+/** The What-If Result as a visitor reads it, e.g. "HC Davos win in OT/SO". */
+function whatIfLabel(outcome: WhatIfOutcome, home: string, away: string) {
+  const [team, how] = {
+    regulationWin: [home, "regulation"],
+    overtimeOrShootoutWin: [home, "OT/SO"],
+    overtimeOrShootoutLoss: [away, "OT/SO"],
+    regulationLoss: [away, "regulation"],
+  }[outcome];
+  return `${team} win in ${how}`;
 }
 
 /** Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins. */
@@ -47,6 +58,8 @@ export function UpcomingGames({
   teams: Teams;
 }) {
   if (nextRound.length === 0) return null;
+  // Games with a What-If Result have no prediction; the legend explains only what is still shown.
+  const predictions = nextRound.flatMap((day) => day.games.flatMap(({ prediction }) => (prediction ? [prediction] : [])));
   return (
     <section class="panel">
       <h2>Upcoming Games</h2>
@@ -54,12 +67,12 @@ export function UpcomingGames({
         <div class="upcoming-day" key={day.date}>
           <h3 class="upcoming-day-heading">{formatMatchDayHeading(day.date)}</h3>
           <ul class="upcoming-games">
-            {day.games.map(({ game, prediction }) => (
+            {day.games.map(({ game, prediction, whatIf }) => (
               <li
                 key={game.id}
                 class="upcoming-game"
                 title={
-                  prediction.outcomes
+                  prediction?.outcomes
                     ? outcomesTitle(prediction.outcomes, fullTeamName(teams, game.homeTeamId), fullTeamName(teams, game.awayTeamId))
                     : undefined
                 }
@@ -80,7 +93,11 @@ export function UpcomingGames({
                     </span>
                   </span>
                 </div>
-                {prediction.outcomes ? (
+                {whatIf ? (
+                  <p class="upcoming-points">
+                    {whatIfLabel(whatIf, fullTeamName(teams, game.homeTeamId), fullTeamName(teams, game.awayTeamId))}
+                  </p>
+                ) : prediction.outcomes ? (
                   <WinSplitBar outcomes={prediction.outcomes} />
                 ) : (
                   <p class="upcoming-points">
@@ -98,8 +115,9 @@ export function UpcomingGames({
           little data.
         </p>
       )}
+      {predictions.length > 0 && (
       <ul class="legend">
-        {nextRound.some((day) => day.games.some(({ prediction }) => prediction.outcomes)) ? (
+        {predictions.some(({ outcomes }) => outcomes) ? (
           <>
             <li>
               <span class="legend-swatch win-split-side home"></span>{" "}
@@ -127,6 +145,7 @@ export function UpcomingGames({
           <li>Pts – Pts: expected Points for the home – away team</li>
         )}
       </ul>
+      )}
     </section>
   );
 }

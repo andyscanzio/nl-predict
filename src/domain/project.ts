@@ -123,11 +123,19 @@ export interface IntegrityIssue {
   remainingGames: number;
 }
 
-/** An Upcoming Game in the Next Round, with the prediction already computed for the Projected Table. */
-export interface UpcomingGame {
-  game: Game;
-  prediction: GamePrediction;
-}
+/** A What-If Result, from the home side: the four outcomes are the keys of OutcomeProbabilities. */
+export type WhatIfOutcome = keyof OutcomeProbabilities;
+
+/** A visitor's What-If: the What-If Result they set for each Game, by Game id. */
+export type WhatIf = ReadonlyMap<string, WhatIfOutcome>;
+
+/**
+ * An Upcoming Game in the Next Round. It carries the prediction already computed for the Projected Table, or, when a
+ * What-If Result is set for it, that outcome instead and no prediction.
+ */
+export type UpcomingGame =
+  | { game: Game; prediction: GamePrediction; whatIf?: undefined }
+  | { game: Game; whatIf: WhatIfOutcome; prediction?: undefined };
 
 /** One match day of the Next Round: its Swiss calendar date (YYYY-MM-DD) and its Upcoming Games in start order. */
 export interface NextRoundDay {
@@ -149,6 +157,8 @@ export interface Projection {
   anyGamesPlayed: boolean;
   /** The Upcoming Games on the earliest match day, plus each following match day in full, until one full round is included. */
   nextRound: NextRoundDay[];
+  /** The What-If applied: the What-If Results asked for whose Game is in the real Next Round; empty when none. */
+  whatIf: WhatIf;
 }
 
 /** The Match Day of a projection made before any Game has been played. */
@@ -186,8 +196,12 @@ export function isPlayed(game: Game, asOf: Date): game is PlayedGame {
   return game.result !== undefined && new Date(game.startsAt) < asOf;
 }
 
-/** The Season as it stood at the As-Of Date, in the shape a Projection Model predicts from. */
-export function projectionModelInput(games: Game[], asOf: Date): ProjectionModelInput {
+/**
+ * The Season as it stood at the As-Of Date, in the shape a Projection Model predicts from. Games in `alsoPlayed` count as
+ * Played even though they start after it (a What-If Result's Game).
+ */
+export function projectionModelInput(games: Game[], asOf: Date, alsoPlayed: ReadonlySet<string> = new Set()): ProjectionModelInput {
+  const played = (game: Game): game is PlayedGame => game.result !== undefined && (alsoPlayed.has(game.id) || isPlayed(game, asOf));
   const rows = new Map<TeamId, UnrankedRow>();
   const rowFor = (teamId: TeamId) => {
     let row = rows.get(teamId);
@@ -211,7 +225,7 @@ export function projectionModelInput(games: Game[], asOf: Date): ProjectionModel
   for (const game of games) {
     const home = rowFor(game.homeTeamId);
     const away = rowFor(game.awayTeamId);
-    if (!isPlayed(game, asOf)) continue;
+    if (!played(game)) continue;
 
     const { homeGoals, awayGoals, decision } = game.result;
     const [winner, loser] = homeGoals > awayGoals ? [home, away] : [away, home];
@@ -237,8 +251,8 @@ export function projectionModelInput(games: Game[], asOf: Date): ProjectionModel
     .sort(byCurrentTableOrder)
     .map((row, index) => ({ rank: index + 1, ...row }));
 
-  const playedGames = games.filter((game) => isPlayed(game, asOf));
-  const remainingGames = games.filter((game) => !isPlayed(game, asOf));
+  const playedGames = games.filter(played);
+  const remainingGames = games.filter((game) => !played(game));
   const byRecency = [...playedGames].sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
   const formWindows = new Map<TeamId, FormWindows>(
     currentTable.map(({ teamId }) => [
@@ -259,12 +273,7 @@ export function projectionModelInput(games: Game[], asOf: Date): ProjectionModel
  * match day, plus each following match day in full, until at least one full round (half the teams in the Season) is
  * included, or none are left. Games are ordered by start time within a day, ties by Game id.
  */
-function nextRoundOf(
-  remainingGames: Game[],
-  predictions: Map<string, GamePrediction>,
-  asOf: Date,
-  teamCount: number,
-): NextRoundDay[] {
+function nextRoundOf(remainingGames: Game[], asOf: Date, teamCount: number): { date: string; games: Game[] }[] {
   const upcoming = remainingGames.filter((game) => Date.parse(game.startsAt) > asOf.getTime());
 
   const byDay = new Map<string, Game[]>();
@@ -283,14 +292,11 @@ function nextRoundOf(
     }));
 
   const roundSize = Math.floor(teamCount / 2);
-  const nextRound: NextRoundDay[] = [];
+  const nextRound: { date: string; games: Game[] }[] = [];
   let gamesSoFar = 0;
   for (const day of days) {
     if (gamesSoFar >= roundSize) break;
-    nextRound.push({
-      date: day.date,
-      games: day.games.map((game) => ({ game, prediction: predictions.get(game.id)! })),
-    });
+    nextRound.push(day);
     gamesSoFar += day.games.length;
   }
   return nextRound;
@@ -309,14 +315,38 @@ export function matchDayOf(playedGames: readonly PlayedGame[]): string {
   return latest === undefined ? SEASON_START : swissCalendarDay(latest);
 }
 
+/** The Game as it would be Played with a What-If Result: a one-goal win, in regulation or OT/SO. */
+function whatIfGame(game: Game, outcome: WhatIfOutcome): Game {
+  const decision = outcome === "regulationWin" || outcome === "regulationLoss" ? "regulation" : "OT";
+  const homeWins = outcome === "regulationWin" || outcome === "overtimeOrShootoutWin";
+  return { ...game, result: { homeGoals: homeWins ? 1 : 0, awayGoals: homeWins ? 0 : 1, decision } };
+}
+
 /**
  * Projects the Season as it stood at the As-Of Date. The Season Simulation, which runs for models with Outcome
  * Probabilities, is seeded from the projection's Match Day and the model's id (see simulationSeed), so the same Games,
- * As-Of Date and model always give the same numbers, and a refresh with no new results changes nothing.
+ * As-Of Date, model and What-If always give the same numbers, and a refresh with no new results changes nothing.
+ *
+ * With a What-If, every What-If Result whose Game is in the real Next Round is treated as a Played Game won by one goal,
+ * for the Projected Table, Season Simulation and Match Day. The Current Table, integrity issues and the Next Round's
+ * Games stay real. Other What-If Results are ignored quietly.
  */
-export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
-  const input = projectionModelInput(games, asOf);
+export function project(games: Game[], asOf: Date, model: ProjectionModel, whatIf: WhatIf = new Map()): Projection {
+  const realInput = projectionModelInput(games, asOf);
+  const realNextRound = nextRoundOf(realInput.remainingGames, asOf, realInput.currentTable.length);
+
+  const nextRoundIds = new Set(realNextRound.flatMap((day) => day.games.map((game) => game.id)));
+  const applied = new Map([...whatIf].filter(([gameId]) => nextRoundIds.has(gameId)));
+  const input =
+    applied.size === 0
+      ? realInput
+      : projectionModelInput(
+          games.map((game) => (applied.has(game.id) ? whatIfGame(game, applied.get(game.id)!) : game)),
+          asOf,
+          new Set(applied.keys()),
+        );
   const { currentTable, formWindows, playedGames, remainingGames } = input;
+  const realRanks = new Map(realInput.currentTable.map((row) => [row.teamId, row.rank]));
   const matchDay = matchDayOf(playedGames);
 
   const predictions = predictGames(model, input);
@@ -348,8 +378,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
     return {
       rank: index + 1,
       teamId: row.teamId,
-      currentRank: row.rank,
-      movement: row.rank - (index + 1),
+      currentRank: realRanks.get(row.teamId)!,
+      movement: realRanks.get(row.teamId)! - (index + 1),
       cutLine: cutLineFor(index + 1),
       currentPoints: row.points,
       homeForm: formOf(windows.home, row.teamId),
@@ -365,15 +395,30 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel): Proj
     };
   });
 
-  const integrityIssues = currentTable
+  const integrityIssues = realInput.currentTable
     .map(({ teamId, gamesPlayed }) => ({
       teamId,
       playedGames: gamesPlayed,
-      remainingGames: remainingGames.filter((game) => game.homeTeamId === teamId || game.awayTeamId === teamId).length,
+      remainingGames: realInput.remainingGames.filter((game) => game.homeTeamId === teamId || game.awayTeamId === teamId)
+        .length,
     }))
     .filter((issue) => issue.playedGames + issue.remainingGames !== REGULAR_SEASON_GAMES);
 
-  const nextRound = nextRoundOf(remainingGames, predictions, asOf, currentTable.length);
+  const nextRound = realNextRound.map(({ date, games }) => ({
+    date,
+    games: games.map((game): UpcomingGame => {
+      const outcome = applied.get(game.id);
+      return outcome ? { game, whatIf: outcome } : { game, prediction: predictions.get(game.id)! };
+    }),
+  }));
 
-  return { matchDay, currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0, nextRound };
+  return {
+    matchDay,
+    currentTable: realInput.currentTable,
+    projectedTable,
+    integrityIssues,
+    anyGamesPlayed: realInput.playedGames.length > 0,
+    nextRound,
+    whatIf: applied,
+  };
 }

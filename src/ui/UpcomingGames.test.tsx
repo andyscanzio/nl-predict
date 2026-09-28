@@ -115,4 +115,24 @@ describe("UpcomingGames", () => {
     expect(text(panel(nextRound, true))).toContain("Some teams are Low Sample, with fewer than 10 Played Games");
     expect(panel(nextRound, false)).not.toContain("Low Sample");
   });
+
+  it("shows a What-If Result's outcome in place of the win-split bar", () => {
+    const setGame: UpcomingGame = {
+      game: { id: "g1", startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
+      whatIf: "overtimeOrShootoutWin",
+    };
+    const html = panel([day("2026-10-06", setGame, upcomingGame({ id: "g2", home: 3, away: 4 }))]);
+    expect(text(html)).toContain("HC Davos win in OT/SO");
+    expect(html.match(/class="win-split"/g)).toHaveLength(1);
+  });
+
+  it("drops the legend when every Game has a What-If Result", () => {
+    const setGame: UpcomingGame = {
+      game: { id: "g1", startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
+      whatIf: "regulationLoss",
+    };
+    const html = panel([day("2026-10-06", setGame)]);
+    expect(html).not.toContain("legend");
+    expect(text(html)).toContain("SC Bern win in regulation");
+  });
 });
