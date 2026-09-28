@@ -71,13 +71,38 @@ describe("winSplit", () => {
 
   it("flags an exact 0 home win, and the exact 100 away win with it", () => {
     const split = winSplit(outcomes(0, 0, 0.4, 0.6));
-    expect(split.home).toEqual({ label: "0", exact: true });
-    expect(split.away).toEqual({ label: "100", exact: true });
+    expect(split.home).toMatchObject({ label: "0", exact: true });
+    expect(split.away).toMatchObject({ label: "100", exact: true });
   });
 
   it("flags an exact 100 home win, and the exact 0 away win with it", () => {
     const split = winSplit(outcomes(0.6, 0.4, 0, 0));
-    expect(split.home).toEqual({ label: "100", exact: true });
-    expect(split.away).toEqual({ label: "0", exact: true });
+    expect(split.home).toMatchObject({ label: "100", exact: true });
+    expect(split.away).toMatchObject({ label: "0", exact: true });
+  });
+});
+
+describe("winSplit shares", () => {
+  it("gives each side's win share, regulation plus OT/SO", () => {
+    const split = winSplit(outcomes(0.3, 0.1, 0.2, 0.4));
+    expect(split.home.win).toBeCloseTo(0.4);
+    expect(split.away.win).toBeCloseTo(0.6);
+  });
+
+  it("gives each side's OT/SO share of its own wins", () => {
+    const split = winSplit(outcomes(0.3, 0.1, 0.2, 0.4));
+    expect(split.home.overtimeOrShootoutShare).toBeCloseTo(0.25);
+    expect(split.away.overtimeOrShootoutShare).toBeCloseTo(1 / 3);
+  });
+
+  it("gives an OT/SO share of 0 to a side with no chance of winning", () => {
+    const split = winSplit(outcomes(0, 0, 0.4, 0.6));
+    expect(split.home.win).toBe(0);
+    expect(split.home.overtimeOrShootoutShare).toBe(0);
+    expect(split.away.win).toBeCloseTo(1);
+    expect(split.away.overtimeOrShootoutShare).toBeCloseTo(0.4);
+    const reverse = winSplit(outcomes(0.6, 0.4, 0, 0));
+    expect(reverse.away.win).toBe(0);
+    expect(reverse.away.overtimeOrShootoutShare).toBe(0);
   });
 });
