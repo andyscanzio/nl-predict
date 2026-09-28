@@ -33,7 +33,7 @@ A Swiss calendar day on which at least one Regular Season Game is scheduled or w
 _Avoid_: Game day, gameweek
 
 **Next Round**:
-The Upcoming Games on the earliest match day plus each following match day, whole, until at least one full round's worth of Games (half the teams) is included, or none are left.
+The Upcoming Games on the earliest Match Day plus each following Match Day, whole, until at least one full round's worth of Games (half the teams) is included, or none are left.
 _Avoid_: Match day (when more than one day is meant), gameweek
 
 **Decision**:

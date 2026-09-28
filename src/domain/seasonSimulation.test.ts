@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eloModel } from "./eloModel.ts";
-import { matchDayOf, SEASON_START } from "./matchDay.ts";
+import { SEASON_START, simulationSeedAsOf } from "./matchDay.ts";
 import { matchupModel } from "./matchupModel.ts";
 import type { OutcomeProbabilities } from "./outcomes.ts";
 import { project, type ProjectionModel } from "./project.ts";
@@ -195,7 +195,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
       snapshot.games,
       new Date(snapshot.snapshotAt),
       model,
-      simulationSeed(matchDayOf(snapshot.games, new Date(snapshot.snapshotAt)), model.id),
+      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
     );
     expect(projectedTable).toHaveLength(14);
     for (const { probabilities } of projectedTable) {
@@ -213,7 +213,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
       snapshot.games,
       new Date(snapshot.snapshotAt),
       model,
-      simulationSeed(matchDayOf(snapshot.games, new Date(snapshot.snapshotAt)), model.id),
+      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
     );
     for (const { rankDistribution } of projectedTable) {
       expect(rankDistribution).toHaveLength(14);
@@ -232,20 +232,19 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
 describe("Season Simulation seeded by Match Day", () => {
   const snapshot = recordedSnapshot as Snapshot;
   const tableAt = (model: ProjectionModel, asOf: Date) =>
-    project(snapshot.games, asOf, model, simulationSeed(matchDayOf(snapshot.games, asOf), model.id)).projectedTable;
+    project(snapshot.games, asOf, model, simulationSeedAsOf(snapshot.games, asOf, model.id)).projectedTable;
+  const snapshotAt = new Date(snapshot.snapshotAt);
+  // Same Games, no new result: refreshes an hour and a day later.
+  const refreshes = [3_600_000, 86_400_000].map((offset) => new Date(snapshotAt.getTime() + offset));
 
   it.each([seasonRate, matchupModel, eloModel])(
     "gives identical tables under $name for snapshots of the same Games taken at different times",
     (model) => {
-      const snapshotAt = new Date(snapshot.snapshotAt);
-      const later = new Date(snapshotAt.getTime() + 60 * 60 * 1000);
-      expect(matchDayOf(snapshot.games, later)).toBe(matchDayOf(snapshot.games, snapshotAt));
-      expect(tableAt(model, later)).toEqual(tableAt(model, snapshotAt));
+      for (const later of refreshes) expect(tableAt(model, later)).toEqual(tableAt(model, snapshotAt));
     },
   );
 
   it("gives the same numbers on every run", () => {
-    const asOf = new Date(snapshot.snapshotAt);
-    expect(tableAt(eloModel, asOf)).toEqual(tableAt(eloModel, asOf));
+    expect(tableAt(eloModel, snapshotAt)).toEqual(tableAt(eloModel, snapshotAt));
   });
 });
