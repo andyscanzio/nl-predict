@@ -1,3 +1,4 @@
+import { swissCalendarDay } from "../domain/swissDay.ts";
 import type { Game, Snapshot, Team, TeamId } from "../domain/types.ts";
 import {
   matchDaySortKey,
@@ -23,16 +24,10 @@ export type FetchDay = (query: SihfQuery) => Promise<unknown>;
 const RECENT_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const swissDate = new Intl.DateTimeFormat("de-CH", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  timeZone: "Europe/Zurich",
-});
-
-/** The match day (DD.MM.YYYY) of an instant, in Swiss local time. */
+/** The match day (DD.MM.YYYY) of an instant: the Swiss calendar day, in the SIHF response's own date format. */
 function matchDayAt(time: number): string {
-  return swissDate.format(new Date(time));
+  const [year, month, day] = swissCalendarDay(time).split("-");
+  return `${day}.${month}.${year}`;
 }
 
 /**

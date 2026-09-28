@@ -5,6 +5,7 @@ import {
   project,
   REGULAR_SEASON_GAMES,
   type IntegrityIssue,
+  type NextRoundDay,
   type ProjectedTableRow,
   type ProjectionModel,
 } from "../domain/project.ts";
@@ -15,8 +16,9 @@ import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
-import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
+import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
+import { formatPercent, winSplit } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
 
@@ -48,6 +50,25 @@ const gameDate = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Zurich",
 });
 
+const upcomingGameTime = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Europe/Zurich",
+});
+
+/** A Next Round match day's Swiss calendar date (YYYY-MM-DD) as e.g. "Tue 29 Sep"; UTC avoids reinterpreting the date. */
+const matchDayHeading = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+function formatExpectedPoints(points: number) {
+  return points.toFixed(1);
+}
+
 const ordinalRules = new Intl.PluralRules("en-GB", { type: "ordinal" });
 const ORDINAL_SUFFIXES: Partial<Record<Intl.LDMLPluralRule, string>> = { one: "st", two: "nd", few: "rd" };
 
@@ -69,13 +90,6 @@ const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; sho
   { key: "eliminated", label: "Eliminated", short: "Out", title: "Chance of finishing 11–14: eliminated" },
   { key: "first", label: "1st", short: "1st", title: "Chance of finishing first" },
 ];
-
-/** A probability as a whole percent; "<1" and ">99" keep a remote chance from reading as impossible or certain. */
-function formatPercent(probability: number) {
-  if (probability > 0 && probability < 0.005) return "<1";
-  if (probability < 1 && probability > 0.995) return ">99";
-  return String(Math.round(probability * 100));
-}
 
 const CUT_LINE_LABELS: Record<CutLine, string> = {
   playoffs: "Playoffs",
@@ -333,6 +347,104 @@ function IntegrityWarning({
   );
 }
 
+const oneDecimalPercent = (probability: number) => `${(probability * 100).toFixed(1)}%`;
+
+/** Hover text listing a Game's four Outcome Probabilities, each named for the side that wins. */
+function outcomesTitle(outcomes: OutcomeProbabilities, home: string, away: string) {
+  return [
+    `${home} win in regulation ${oneDecimalPercent(outcomes.regulationWin)}`,
+    `${home} win in OT/SO ${oneDecimalPercent(outcomes.overtimeOrShootoutWin)}`,
+    `${away} win in OT/SO ${oneDecimalPercent(outcomes.overtimeOrShootoutLoss)}`,
+    `${away} win in regulation ${oneDecimalPercent(outcomes.regulationLoss)}`,
+  ].join(" · ");
+}
+
+/** Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins. */
+function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
+  const split = winSplit(outcomes);
+  const homeWin = outcomes.regulationWin + outcomes.overtimeOrShootoutWin;
+  const awayWin = outcomes.overtimeOrShootoutLoss + outcomes.regulationLoss;
+  const segment = (side: "home" | "away", win: number, overtimeOrShootoutWin: number) => (
+    <span class={`win-split-side ${side}${split[side].exact ? " none" : ""}`} style={{ flexGrow: win }}>
+      <span class="win-split-otso" style={{ width: `${win > 0 ? (overtimeOrShootoutWin / win) * 100 : 0}%` }} />
+    </span>
+  );
+  return (
+    <div class="win-split">
+      <span class={split.home.exact ? "win-split-pct none" : "win-split-pct"}>{split.home.label}</span>
+      <span class="win-split-bar" aria-hidden="true">
+        {segment("home", homeWin, outcomes.overtimeOrShootoutWin)}
+        {segment("away", awayWin, outcomes.overtimeOrShootoutLoss)}
+      </span>
+      <span class={split.away.exact ? "win-split-pct none" : "win-split-pct"}>{split.away.label}</span>
+    </div>
+  );
+}
+
+/** The Next Round, grouped under match-day subheadings; hidden entirely when there are no Upcoming Games. */
+function UpcomingGamesPanel({
+  nextRound,
+  lowSample,
+  teamCell,
+  teamName,
+}: {
+  nextRound: NextRoundDay[];
+  lowSample: boolean;
+  teamCell: (teamId: TeamId) => ComponentChildren;
+  teamName: (teamId: TeamId) => string;
+}) {
+  if (nextRound.length === 0) return null;
+  return (
+    <section class="panel">
+      <h2>Upcoming Games</h2>
+      {nextRound.map((day) => (
+        <div class="upcoming-day" key={day.date}>
+          <h3 class="upcoming-day-heading">{matchDayHeading.format(new Date(`${day.date}T00:00:00Z`))}</h3>
+          <ul class="upcoming-games">
+            {day.games.map(({ game, prediction }) => (
+              <li
+                key={game.id}
+                class="upcoming-game"
+                title={
+                  prediction.outcomes
+                    ? outcomesTitle(prediction.outcomes, teamName(game.homeTeamId), teamName(game.awayTeamId))
+                    : undefined
+                }
+              >
+                <div class="upcoming-game-main">
+                  <time class="upcoming-time" dateTime={game.startsAt}>
+                    {upcomingGameTime.format(new Date(game.startsAt))}
+                  </time>
+                  <span class="upcoming-teams">
+                    <span class="upcoming-team">{teamCell(game.homeTeamId)}</span>
+                    <span class="upcoming-vs" aria-hidden="true">
+                      vs
+                    </span>
+                    <span class="upcoming-team">{teamCell(game.awayTeamId)}</span>
+                  </span>
+                </div>
+                {prediction.outcomes ? (
+                  <WinSplitBar outcomes={prediction.outcomes} />
+                ) : (
+                  <p class="upcoming-points">
+                    {formatExpectedPoints(prediction.points.home)} Pts – {formatExpectedPoints(prediction.points.away)} Pts
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {lowSample && (
+        <p class="meta panel-body upcoming-note">
+          Some teams are Low Sample, with fewer than {LOW_SAMPLE_GAMES} Played Games, so these predictions rest on
+          little data.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
   return (
     <fieldset class="model-picker">
@@ -430,7 +542,7 @@ export function App({
   onModelChange: (model: ProjectionModel) => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
-  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = useMemo(
+  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(
     () => project(snapshot.games, now, model, simulationSeed(snapshot.snapshotAt, model.id)),
     [snapshot, now, model],
   );
@@ -635,6 +747,13 @@ export function App({
                 )}
               </ul>
             </section>
+
+            <UpcomingGamesPanel
+              nextRound={nextRound}
+              lowSample={projectedTable.some((row) => row.lowSample)}
+              teamCell={teamCell}
+              teamName={teamName}
+            />
 
             <section class="panel explanation">
               <h2>How the projection works: {model.name}</h2>

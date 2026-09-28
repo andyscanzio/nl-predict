@@ -10,6 +10,7 @@ import {
 import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
 import { cutLineFor, type CutLine } from "./cutLines.ts";
 import { simulateSeason, type CutLineProbabilities } from "./seasonSimulation.ts";
+import { swissCalendarDay } from "./swissDay.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -120,6 +121,18 @@ export interface IntegrityIssue {
   remainingGames: number;
 }
 
+/** An Upcoming Game in the Next Round, with the prediction already computed for the Projected Table. */
+export interface UpcomingGame {
+  game: Game;
+  prediction: GamePrediction;
+}
+
+/** One match day of the Next Round: its Swiss calendar date (YYYY-MM-DD) and its Upcoming Games in start order. */
+export interface NextRoundDay {
+  date: string;
+  games: UpcomingGame[];
+}
+
 export interface Projection {
   currentTable: CurrentTableRow[];
   projectedTable: ProjectedTableRow[];
@@ -127,6 +140,8 @@ export interface Projection {
   integrityIssues: IntegrityIssue[];
   /** False before the Season's first Game has been played. */
   anyGamesPlayed: boolean;
+  /** The Upcoming Games on the earliest match day, plus each following match day in full, until one full round is included. */
+  nextRound: NextRoundDay[];
 }
 
 /** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
@@ -229,6 +244,48 @@ export function projectionModelInput(games: Game[], asOf: Date): ProjectionModel
   return { currentTable, formWindows, playedGames: chronological, remainingGames, otsoRate: otsoRate(playedGames) };
 }
 
+/**
+ * The Next Round: the Upcoming Games (Remaining Games starting strictly after the As-Of Date) on the earliest Swiss
+ * match day, plus each following match day in full, until at least one full round (half the teams in the Season) is
+ * included, or none are left. Games are ordered by start time within a day, ties by Game id.
+ */
+function nextRoundOf(
+  remainingGames: Game[],
+  predictions: Map<string, GamePrediction>,
+  asOf: Date,
+  teamCount: number,
+): NextRoundDay[] {
+  const upcoming = remainingGames.filter((game) => Date.parse(game.startsAt) > asOf.getTime());
+
+  const byDay = new Map<string, Game[]>();
+  for (const game of upcoming) {
+    const date = swissCalendarDay(Date.parse(game.startsAt));
+    const day = byDay.get(date);
+    if (day) day.push(game);
+    else byDay.set(date, [game]);
+  }
+
+  const days = [...byDay.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([date, games]) => ({
+      date,
+      games: [...games].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt) || a.id.localeCompare(b.id)),
+    }));
+
+  const roundSize = Math.floor(teamCount / 2);
+  const nextRound: NextRoundDay[] = [];
+  let gamesSoFar = 0;
+  for (const day of days) {
+    if (gamesSoFar >= roundSize) break;
+    nextRound.push({
+      date: day.date,
+      games: day.games.map((game) => ({ game, prediction: predictions.get(game.id)! })),
+    });
+    gamesSoFar += day.games.length;
+  }
+  return nextRound;
+}
+
 /** `seed` drives the Season Simulation, which runs for models with Outcome Probabilities (see simulationSeed). */
 export function project(games: Game[], asOf: Date, model: ProjectionModel, seed = 0): Projection {
   const input = projectionModelInput(games, asOf);
@@ -287,5 +344,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, seed 
     }))
     .filter((issue) => issue.playedGames + issue.remainingGames !== REGULAR_SEASON_GAMES);
 
-  return { currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0 };
+  const nextRound = nextRoundOf(remainingGames, predictions, asOf, currentTable.length);
+
+  return { currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0, nextRound };
 }
