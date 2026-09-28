@@ -684,20 +684,24 @@ tbody th {
   vertical-align: -0.05em;
 }
 
+/* Colour says win or loss; fill says how: solid in regulation, half-filled in OT/SO, empty for a regulation loss.
+   Whole-pixel outlines stay sharp on standard and retina screens alike. */
 .chip-3 {
   background: var(--win);
 }
 
 .chip-2 {
-  background: color-mix(in srgb, var(--win) 45%, transparent);
+  background: linear-gradient(to top, var(--win) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--win);
 }
 
 .chip-1 {
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--loss) 55%, transparent);
+  background: linear-gradient(to top, var(--loss) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1px var(--loss);
 }
 
 .chip-0 {
-  box-shadow: inset 0 0 0 2px var(--loss);
+  box-shadow: inset 0 0 0 1px var(--loss);
 }
 
 /* ───────── Legend ───────── */

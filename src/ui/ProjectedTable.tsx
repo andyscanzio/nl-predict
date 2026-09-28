@@ -111,7 +111,7 @@ function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number];
   );
 }
 
-/** One chip per Form Window Game, newest first: filled for wins, outlined for losses, dimmer for OT/SO. */
+/** One chip per Form Window Game, newest first: green for wins, red for losses, half-filled for OT/SO. */
 function FormChips({
   side,
   form,
