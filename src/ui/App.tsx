@@ -324,9 +324,9 @@ function FormWindowDetail({
   );
 }
 
-/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar. */
-function RankHistogram({ distribution }: { distribution: readonly number[] }) {
-  const bars = rankBars(distribution);
+/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar, with a tick at the projected rank. */
+function RankHistogram({ distribution, projectedRank }: { distribution: readonly number[]; projectedRank: number }) {
+  const bars = rankBars(distribution, projectedRank);
   const summary = rankSummary(distribution);
   return (
     <section class="rank-histogram">
@@ -354,9 +354,11 @@ function RankHistogram({ distribution }: { distribution: readonly number[] }) {
               />
             </span>
             <span class="rank-bar-rank">{bar.rank}</span>
+            {bar.projected && <span class="rank-bar-tick" />}
           </span>
         ))}
       </div>
+      <p class="visually-hidden">Projected rank in the table, by expected Points: {ordinal(projectedRank)}</p>
       <ul class="visually-hidden">
         {bars
           .filter((bar) => bar.height > 0)
@@ -622,6 +624,7 @@ export function App({
     [snapshot, now, model],
   );
   const showProbabilities = model.kind === "outcomes";
+  const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
@@ -726,7 +729,7 @@ export function App({
                               class="expand"
                               aria-expanded={isExpanded}
                               aria-controls={detailId}
-                              title={isExpanded ? "Hide Form Window Games" : "Show Form Window Games"}
+                              title={`${isExpanded ? "Hide" : "Show"} ${expandTarget}`}
                               onClick={() => toggle(row.teamId)}
                             >
                               <span class="chevron" aria-hidden="true">
@@ -769,7 +772,7 @@ export function App({
                           <tr class="detail" id={detailId}>
                             <td colSpan={columns}>
                               <div class="form-windows">
-                                {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} />}
+                                {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />}
                                 <FormWindowDetail
                                   side="home"
                                   form={row.homeForm}
@@ -850,11 +853,16 @@ export function App({
                       Seasons a team finishes 1–6, 7–10 and 11–14; 1st is the share it finishes top. The table itself stays
                       ranked by expected Points. The same data always gives the same numbers.
                     </p>
+                    <p>
+                      A team's Rank Distribution charts how often it finished at each rank across those Seasons, with a tick
+                      at its projected rank. The most likely rank can differ from #, because # ranks teams by expected Points
+                      while the chart counts where the team finished in each simulated Season.
+                    </p>
                   </>
                 )}
                 <p>
-                  Teams level on projected Points keep their Current Table order. Select a team to see the Games in its Form
-                  Windows.
+                  Teams level on projected Points keep their Current Table order. Select a team to see{" "}
+                  {showProbabilities ? "its finishing ranks and the Games in its Form Windows." : "the Games in its Form Windows."}
                 </p>
               </div>
             </section>

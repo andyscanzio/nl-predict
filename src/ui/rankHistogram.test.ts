@@ -30,6 +30,15 @@ describe("rankBars", () => {
     expect(bars.map((bar) => bar.label)).toEqual(["1st: >99%", "2nd: <1%", "3rd: 0%"]);
   });
 
+  it("marks only the bar at the projected rank", () => {
+    const bars = rankBars([0.2, 0.4, 0.1, 0.3], 3);
+    expect(bars.map((bar) => bar.projected)).toEqual([false, false, true, false]);
+  });
+
+  it("marks no bar when no projected rank is given", () => {
+    expect(rankBars([0.5, 0.5]).map((bar) => bar.projected)).toEqual([false, false]);
+  });
+
   it("gives no height to a distribution with no chance anywhere", () => {
     expect(rankBars([0, 0]).map((bar) => bar.height)).toEqual([0, 0]);
   });

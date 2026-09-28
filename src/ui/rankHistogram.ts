@@ -9,6 +9,8 @@ export interface RankBar {
   zone: CutLine;
   /** Height as a share of the team's own highest bar, 0 to 1. */
   height: number;
+  /** Whether this is the team's projected rank (the `#` column), the one the histogram marks with a tick. */
+  projected: boolean;
 }
 
 export function ordinal(rank: number): string {
@@ -17,13 +19,14 @@ export function ordinal(rank: number): string {
   return `${rank}${suffix}`;
 }
 
-/** The bars for a Rank Distribution (index 0 = 1st), each scaled to the team's own highest bar. */
-export function rankBars(distribution: readonly number[]): RankBar[] {
+/** The bars for a Rank Distribution (index 0 = 1st), each scaled to the team's own highest bar, with the projected rank flagged. */
+export function rankBars(distribution: readonly number[], projectedRank?: number): RankBar[] {
   const peak = Math.max(0, ...distribution);
   return distribution.map((probability, index) => ({
     rank: index + 1,
     label: `${ordinal(index + 1)}: ${formatPercent(probability)}%`,
     zone: cutLineFor(index + 1),
     height: peak === 0 ? 0 : probability / peak,
+    projected: index + 1 === projectedRank,
   }));
 }
