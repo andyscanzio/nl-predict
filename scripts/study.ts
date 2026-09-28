@@ -507,21 +507,13 @@ print(`Seasons better: how many Seasons the challenger's pooled difference is ne
 print("A Game's Brier score counts for both its teams, so per-Game Brier intervals are somewhat too narrow. Neither the choice of m nor simulation noise is resampled.");
 print();
 const byName = new Map(compared);
-const [league, flat, team] = matchupFamilies;
 const comparisons: [challenger: string, baseline: string][] = matchupStudy
-  ? [
-      ...matchupFamilies.flatMap((family): [string, string][] => [
-        [heldOutLabel(family, "Rank RPS"), unshrunkName],
-        [heldOutLabel(family, "Brier"), unshrunkName],
+  ? matchupFamilies.flatMap((family) =>
+      [unshrunkName, eloName].flatMap((baseline): [string, string][] => [
+        [heldOutLabel(family, "Rank RPS"), baseline],
+        [heldOutLabel(family, "Brier"), baseline],
       ]),
-      ...matchupFamilies.map((family): [string, string] => [heldOutLabel(family, "Rank RPS"), heldOutLabel(seasonRateFamily, "Rank RPS")]),
-      ...matchupFamilies.map((family): [string, string] => [heldOutLabel(family, "Rank RPS"), eloName]),
-      [heldOutLabel(team!, "Rank RPS"), heldOutLabel(league!, "Rank RPS")],
-      [heldOutLabel(team!, "Rank RPS"), heldOutLabel(flat!, "Rank RPS")],
-      [heldOutLabel(league!, "Rank RPS"), heldOutLabel(flat!, "Rank RPS")],
-      [heldOutLabel(seasonRateFamily, "Rank RPS"), unshrunkName],
-      [heldOutLabel(seasonRateFamily, "Rank RPS"), eloName],
-    ]
+    )
   : [
       ["m=10", "m=0"],
       ["held-out m (by Rank RPS)", "m=0"],
