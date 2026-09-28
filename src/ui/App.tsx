@@ -533,19 +533,17 @@ function outcomesTitle(outcomes: OutcomeProbabilities, home: string, away: strin
 /** Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins. */
 function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
   const split = winSplit(outcomes);
-  const homeWin = outcomes.regulationWin + outcomes.overtimeOrShootoutWin;
-  const awayWin = outcomes.overtimeOrShootoutLoss + outcomes.regulationLoss;
-  const segment = (side: "home" | "away", win: number, overtimeOrShootoutWin: number) => (
-    <span class={`win-split-side ${side}${split[side].exact ? " none" : ""}`} style={{ flexGrow: win }}>
-      <span class="win-split-otso" style={{ width: `${win > 0 ? (overtimeOrShootoutWin / win) * 100 : 0}%` }} />
+  const segment = (side: "home" | "away") => (
+    <span class={`win-split-side ${side}${split[side].exact ? " none" : ""}`} style={{ flexGrow: split[side].win }}>
+      <span class="win-split-otso" style={{ width: `${split[side].overtimeOrShootoutShare * 100}%` }} />
     </span>
   );
   return (
     <div class="win-split">
       <span class={split.home.exact ? "win-split-pct none" : "win-split-pct"}>{split.home.label}</span>
       <span class="win-split-bar" aria-hidden="true">
-        {segment("home", homeWin, outcomes.overtimeOrShootoutWin)}
-        {segment("away", awayWin, outcomes.overtimeOrShootoutLoss)}
+        {segment("home")}
+        {segment("away")}
       </span>
       <span class={split.away.exact ? "win-split-pct none" : "win-split-pct"}>{split.away.label}</span>
     </div>

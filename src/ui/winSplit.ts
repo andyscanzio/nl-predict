@@ -7,14 +7,24 @@ export function formatPercent(probability: number) {
   return String(Math.round(probability * 100));
 }
 
-/** One side of a Game's win split: its printed percent, and whether its chance is exactly 0 or 1 (shown greyed out). */
+/**
+ * One side of a Game's win split: its printed percent, whether its chance is exactly 0 or 1 (shown greyed out),
+ * its chance of winning (regulation or OT/SO), and the OT/SO share of those wins (0 when it cannot win).
+ */
 export interface SideSplit {
   label: string;
   exact: boolean;
+  win: number;
+  overtimeOrShootoutShare: number;
 }
 
 /** Slack for a home win probability summed from two parts to count as exactly 0 or 1. */
 const EXACT_TOLERANCE = 1e-9;
+
+/** A part's share of a whole, 0 when the whole is 0. */
+function share(part: number, whole: number) {
+  return whole > 0 ? part / whole : 0;
+}
 
 /**
  * A Game's win split for printing: the home side's chance of winning (regulation or OT/SO) and the away side's.
@@ -22,8 +32,12 @@ const EXACT_TOLERANCE = 1e-9;
  */
 export function winSplit(outcomes: OutcomeProbabilities): { home: SideSplit; away: SideSplit } {
   const homeWin = outcomes.regulationWin + outcomes.overtimeOrShootoutWin;
+  const awayWin = outcomes.overtimeOrShootoutLoss + outcomes.regulationLoss;
   const exact = homeWin < EXACT_TOLERANCE || homeWin > 1 - EXACT_TOLERANCE;
   const home = exact ? (homeWin < 0.5 ? "0" : "100") : formatPercent(homeWin);
   const away = home === "<1" ? ">99" : home === ">99" ? "<1" : String(100 - Number(home));
-  return { home: { label: home, exact }, away: { label: away, exact } };
+  return {
+    home: { label: home, exact, win: homeWin, overtimeOrShootoutShare: share(outcomes.overtimeOrShootoutWin, homeWin) },
+    away: { label: away, exact, win: awayWin, overtimeOrShootoutShare: share(outcomes.overtimeOrShootoutLoss, awayWin) },
+  };
 }
