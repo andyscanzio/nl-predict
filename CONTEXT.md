@@ -139,7 +139,7 @@ _Avoid_: Scenario, simulation (that is the Season Simulation)
 The projection made with no What-If, from real Played Games only.
 
 **What-If Change**:
-How far a team's projected rank, projected Points or a chance moves from the Real Projection to the What-If projection under the same Projection Model. The What-If projection's Season Simulation reuses the Real Projection's random draws, so a team the What-If Results do not reach shows no What-If Change.
+How far a team's projected rank, projected Points, a chance or its Rank Distribution moves from the Real Projection to the What-If projection under the same Projection Model. The What-If projection's Season Simulation reuses the Real Projection's random draws, so a team the What-If Results do not reach shows no What-If Change.
 _Avoid_: Delta, impact, swing
 
 **Default Model**:

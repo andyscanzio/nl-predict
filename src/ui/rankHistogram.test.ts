@@ -42,4 +42,45 @@ describe("rankBars", () => {
   it("gives no height to a distribution with no chance anywhere", () => {
     expect(rankBars([0, 0]).map((bar) => bar.height)).toEqual([0, 0]);
   });
+
+  describe("against a Real Projection", () => {
+    const whatIf = [0.5, 0.3, 0, 0.2];
+    const real = [0.4, 0.3, 0.1, 0.2];
+
+    it("caps each rank with a real chance and scales both to the higher peak", () => {
+      const bars = rankBars(whatIf, undefined, [0.25, 0.3, 0.1, 0]);
+      expect(bars.map((bar) => bar.height)).toEqual([1, 0.6, 0, 0.4]);
+      expect(bars.map((bar) => bar.cap)).toEqual([0.5, 0.6, 0.2, null]);
+    });
+
+    it("scales to the real peak when it is the higher", () => {
+      const bars = rankBars([0.2, 0.1], undefined, [0.4, 0.1]);
+      expect(bars.map((bar) => bar.height)).toEqual([0.5, 0.25]);
+      expect(bars.map((bar) => bar.cap)).toEqual([1, 0.25]);
+    });
+
+    it("floats a cap over a rank with a What-If chance of 0", () => {
+      expect(rankBars(whatIf, undefined, real)[2]).toMatchObject({ height: 0, cap: 0.2 });
+    });
+
+    it("labels each bar with its real chance, except a rank at 0 in both", () => {
+      const bars = rankBars([0.5, 0.5, 0], undefined, [0.25, 0.75, 0]);
+      expect(bars.map((bar) => bar.label)).toEqual(["1st: 50% (real 25%)", "2nd: 50% (real 75%)", "3rd: 0%"]);
+    });
+
+    it("labels a rank with no real chance", () => {
+      expect(rankBars([0.5, 0.5], undefined, [1, 0])[1]!.label).toBe("2nd: 50% (real 0%)");
+    });
+
+    it("draws no caps, and keeps plain labels and own-peak scaling, when the distributions are equal", () => {
+      const bars = rankBars([0.2, 0.4], undefined, [0.2, 0.4]);
+      expect(bars.map((bar) => bar.cap)).toEqual([null, null]);
+      expect(bars.map((bar) => bar.label)).toEqual(["1st: 20%", "2nd: 40%"]);
+      expect(bars.map((bar) => bar.height)).toEqual([0.5, 1]);
+    });
+
+    it("draws no caps without a real distribution", () => {
+      expect(rankBars(whatIf, undefined, null).every((bar) => bar.cap === null)).toBe(true);
+    });
+  });
 });

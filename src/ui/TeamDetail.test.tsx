@@ -144,6 +144,44 @@ describe("TeamDetail", () => {
       expect(text(html)).toContain("Rank Distribution");
     });
 
+    describe("during a What-If", () => {
+      const note = "Marks show the Real Projection.";
+      const withReal = (rankDistribution: number[] | null) =>
+        panel({
+          whatIfActive: true,
+          row: row({
+            rankDistribution: [0.1, 0.5, 0.3, 0.1],
+            realProjection: { rank: 3, projectedPoints: 28, probabilities: null, rankDistribution },
+          }),
+        });
+
+      it("draws a cap per real chance, the real chance in each label, and the note", () => {
+        const html = withReal([0.2, 0.4, 0.4, 0]);
+        expect(html.match(/class="rank-bar-cap"/g)).toHaveLength(3);
+        expect(html).toContain('title="2nd: 50% (real 40%)"');
+        expect(html).toContain("<li>2nd: 50% (real 40%)</li>");
+        expect(html).toContain("<li>4th: 10% (real 0%)</li>");
+        expect(html).toContain(`<p class="meta history-note">${note}</p>`);
+      });
+
+      it("keeps the summary line to the What-If", () => {
+        const plain = panel({ row: row({ rankDistribution: [0.1, 0.5, 0.3, 0.1] }) });
+        const summary = (html: string) => html.match(/<p class="rank-summary">.*?<\/p>/)![0];
+        expect(summary(withReal([0.2, 0.4, 0.4, 0]))).toBe(summary(plain));
+      });
+
+      it("shows no caps, note or real chances when the distributions are equal", () => {
+        const html = withReal([0.1, 0.5, 0.3, 0.1]);
+        expect(html).not.toContain("rank-bar-cap");
+        expect(html).not.toContain(note);
+        expect(html).not.toContain("real ");
+      });
+
+      it("shows none for a Points-only model", () => {
+        expect(text(withReal(null))).not.toContain(note);
+      });
+    });
+
     it("is left out when the row has none", () => {
       const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null) });
       expect(html).not.toContain("rank-histogram");

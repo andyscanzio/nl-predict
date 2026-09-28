@@ -1069,7 +1069,7 @@ tbody th {
 .rank-bars {
   display: flex;
   gap: 2px;
-  height: 5rem;
+  height: 8rem;
   margin-bottom: 8px;
 }
 
@@ -1082,6 +1082,7 @@ tbody th {
 }
 
 .rank-bar-track {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: flex-end;
@@ -1106,6 +1107,15 @@ tbody th {
 
 .rank-bar-fill.zone-eliminated {
   background: var(--eliminated);
+}
+
+/* The Real Projection's chance under a What-If: a short neutral cap over the bar, floating when the bar is empty. */
+.rank-bar-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--fg);
 }
 
 .rank-bar-rank {

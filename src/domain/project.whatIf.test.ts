@@ -150,7 +150,10 @@ describe("project with a What-If", () => {
               rank: realRows.get(row.teamId)!.rank,
               projectedPoints: realRows.get(row.teamId)!.projectedPoints,
               probabilities: realRows.get(row.teamId)!.probabilities,
+              rankDistribution: realRows.get(row.teamId)!.rankDistribution,
             });
+            if (model.kind === "outcomes") expect(row.realProjection!.rankDistribution).not.toBeNull();
+            else expect(row.realProjection!.rankDistribution).toBeNull();
             if (model.kind === "outcomes") expect(row.realProjection!.probabilities).not.toBeNull();
             else expect(row.realProjection!.probabilities).toBeNull();
           }

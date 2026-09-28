@@ -89,9 +89,19 @@ function FormWindowDetail({
   );
 }
 
-/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar, with a tick at the projected rank. */
-function RankHistogram({ distribution, projectedRank }: { distribution: readonly number[]; projectedRank: number }) {
-  const bars = rankBars(distribution, projectedRank);
+/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar, with a tick at the projected rank and, during a What-If, caps at the Real Projection's chances. */
+function RankHistogram({
+  distribution,
+  projectedRank,
+  real,
+}: {
+  distribution: readonly number[];
+  projectedRank: number;
+  /** The Real Projection's Rank Distribution during a What-If; drawn as caps when it differs from `distribution`. */
+  real?: readonly number[] | null;
+}) {
+  const bars = rankBars(distribution, projectedRank, real);
+  const hasCaps = bars.some((bar) => bar.cap !== null);
   const summary = rankSummary(distribution);
   return (
     <section class="rank-histogram">
@@ -117,16 +127,18 @@ function RankHistogram({ distribution, projectedRank }: { distribution: readonly
                 class={`rank-bar-fill zone-${bar.zone}${bar.height > 0 ? " chance" : ""}`}
                 style={{ height: `${bar.height * 100}%` }}
               />
+              {bar.cap !== null && <span class="rank-bar-cap" style={{ bottom: `${bar.cap * 100}%` }} />}
             </span>
             <span class="rank-bar-rank">{bar.rank}</span>
             {bar.projected && <span class="rank-bar-tick" />}
           </span>
         ))}
       </div>
+      {hasCaps && <p class="meta history-note">Marks show the Real Projection.</p>}
       <p class="visually-hidden">Projected rank in the table, by expected Points: {ordinal(projectedRank)}</p>
       <ul class="visually-hidden">
         {bars
-          .filter((bar) => bar.height > 0)
+          .filter((bar) => bar.height > 0 || bar.cap !== null)
           .map((bar) => (
             <li key={bar.rank}>{bar.label}</li>
           ))}
@@ -282,7 +294,7 @@ export function TeamDetail({
   return (
     <div class="form-windows">
       <div class="rank-row">
-        {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />}
+        {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} real={row.realProjection?.rankDistribution} />}
         <ProjectionHistoryChart
           history={history}
           teamId={row.teamId}
