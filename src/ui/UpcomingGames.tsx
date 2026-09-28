@@ -1,5 +1,6 @@
-import { LOW_SAMPLE_GAMES, type NextRoundDay, type WhatIfOutcome } from "../domain/project.ts";
+import type { NextRoundDay, WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
+import { lowSampleSentence, type LowSampleShare } from "./lowSample.ts";
 import { formatExpectedPoints, formatGameTime, formatMatchDayHeading } from "./format.ts";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
 import { winSplit } from "./winSplit.ts";
@@ -98,7 +99,7 @@ export function UpcomingGames({
   onWhatIfPick,
 }: {
   nextRound: NextRoundDay[];
-  lowSample: boolean;
+  lowSample: LowSampleShare;
   teams: Teams;
   /** Called with a Game's new What-If Result, or undefined when the visitor picks Model. */
   onWhatIfPick: (gameId: string, outcome: WhatIfOutcome | undefined) => void;
@@ -162,11 +163,8 @@ export function UpcomingGames({
           </ul>
         </div>
       ))}
-      {lowSample && (
-        <p class="meta panel-body upcoming-note">
-          Some teams are Low Sample, with fewer than {LOW_SAMPLE_GAMES} Played Games, so these predictions rest on
-          little data.
-        </p>
+      {lowSample !== "none" && (
+        <p class="meta panel-body upcoming-note">{lowSampleSentence(lowSample)}, so these predictions rest on little data.</p>
       )}
       {predictions.length > 0 && (
       <ul class="legend">

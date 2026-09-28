@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { UpcomingGames } from "./UpcomingGames.tsx";
 import type { Teams } from "./TeamName.tsx";
+import type { LowSampleShare } from "./lowSample.ts";
 import type { NextRoundDay, UpcomingGame, WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
 
@@ -29,7 +30,7 @@ function day(date: string, ...games: UpcomingGame[]): NextRoundDay {
   return { date, games };
 }
 
-function panel(nextRound: NextRoundDay[], lowSample = false) {
+function panel(nextRound: NextRoundDay[], lowSample: LowSampleShare = "none") {
   return render(<UpcomingGames nextRound={nextRound} lowSample={lowSample} teams={teams} onWhatIfPick={() => {}} />);
 }
 
@@ -110,10 +111,11 @@ describe("UpcomingGames", () => {
     });
   });
 
-  it("shows the Low Sample note only when a team is Low Sample", () => {
+  it("shows the Low Sample note only when a team is Low Sample, saying whether it is some or all", () => {
     const nextRound = [day("2026-10-06", upcomingGame())];
-    expect(text(panel(nextRound, true))).toContain("Some teams are Low Sample, with fewer than 10 Played Games");
-    expect(panel(nextRound, false)).not.toContain("Low Sample");
+    expect(text(panel(nextRound, "some"))).toContain("Some teams are Low Sample, with fewer than 10 Played Games");
+    expect(text(panel(nextRound, "all"))).toContain("All teams are Low Sample, with fewer than 10 Played Games");
+    expect(panel(nextRound, "none")).not.toContain("Low Sample");
   });
 
   it("shows a What-If Result's outcome in place of the win-split bar", () => {

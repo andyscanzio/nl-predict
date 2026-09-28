@@ -12,6 +12,7 @@ import { CurrentTable } from "./CurrentTable.tsx";
 import { ModelExplanation } from "./ModelExplanation.tsx";
 import { ProjectedTable } from "./ProjectedTable.tsx";
 import { fullTeamName } from "./TeamName.tsx";
+import { lowSampleShare } from "./lowSample.ts";
 import { UpcomingGames } from "./UpcomingGames.tsx";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -226,7 +227,7 @@ export function App({
 
             <UpcomingGames
               nextRound={nextRound}
-              lowSample={projectedTable.some((row) => row.lowSample)}
+              lowSample={lowSampleShare(projectedTable)}
               teams={teams}
               onWhatIfPick={pickWhatIfResult}
             />

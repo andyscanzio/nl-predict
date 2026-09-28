@@ -118,6 +118,21 @@ describe("ProjectedTable", () => {
       expect(low!.html).toContain('class="low-sample"');
       expect(ok!.html).not.toContain("low-sample");
     });
+
+    it("keeps the LS legend entry while only some teams are Low Sample", () => {
+      const html = panel([row({ teamId: 1, lowSample: true }), row({ teamId: 2, lowSample: false })]);
+      expect(text(html)).toContain("LS Low Sample: fewer than 10 Played Games");
+      expect(text(html)).not.toContain("teams are Low Sample");
+    });
+
+    it("hides every badge and says so once in the legend when all teams are Low Sample", () => {
+      const html = panel([row({ teamId: 1, lowSample: true }), row({ teamId: 2, lowSample: true })]);
+      for (const teamRow of teamRows(html)) expect(teamRow.html).not.toContain("low-sample");
+      expect(html).not.toContain('class="low-sample"');
+      expect(text(html)).toContain(
+        "All teams are Low Sample, with fewer than 10 Played Games, so these projections rest on little data.",
+      );
+    });
   });
 
   it("lists the Projection Models in the picker, with the picked one checked", () => {

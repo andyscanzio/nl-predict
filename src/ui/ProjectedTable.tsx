@@ -8,6 +8,7 @@ import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionM
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { ChartMetric } from "./projectionChart.ts";
 import { formatForm, formatGameDate, SIMULATION_RUNS_LABEL } from "./format.ts";
+import { lowSampleSentence, lowSampleShare } from "./lowSample.ts";
 import { SIDES } from "./formSides.ts";
 import { TeamDetail } from "./TeamDetail.tsx";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
@@ -205,6 +206,8 @@ export function ProjectedTable({
   const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
+  // When every team is Low Sample, one legend line says so instead of a badge on every row.
+  const lowSampleTeams = lowSampleShare(rows);
   const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
   // Kept here rather than per chart, so the choice survives switching model and opening another team.
   const [chartMetric, setChartMetric] = useState<ChartMetric>("playoffs");
@@ -278,7 +281,7 @@ export function ProjectedTable({
                       </span>
                       <TeamName teams={teams} teamId={row.teamId} />
                     </button>
-                    {row.lowSample && (
+                    {row.lowSample && lowSampleTeams !== "all" && (
                       <abbr class="low-sample" title={`Low Sample: fewer than ${LOW_SAMPLE_GAMES} Played Games`}>
                         LS
                       </abbr>
@@ -336,9 +339,13 @@ export function ProjectedTable({
           <span class="chip chip-3" /> Win <span class="chip chip-2" /> OT/SO win{" "}
           <span class="chip chip-1" /> OT/SO loss <span class="chip chip-0" /> Loss
         </li>
-        <li>
-          <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
-        </li>
+        {lowSampleTeams === "all" ? (
+          <li>{lowSampleSentence(lowSampleTeams)}, so these projections rest on little data.</li>
+        ) : (
+          <li>
+            <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games
+          </li>
+        )}
         <li>Left: Remaining home · away Games</li>
         {showProbabilities ? (
           <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated Seasons</li>
