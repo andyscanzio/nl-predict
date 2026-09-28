@@ -120,5 +120,14 @@ The Projection Model a visitor sees unless they pick another.
 **Back-Test**:
 Scoring a Projection Model by predicting every Played Game from only the Games played before it and comparing with the actual result.
 
+**Season Simulation Back-Test**:
+Scoring an outcome Projection Model's Rank Distributions over a complete Season against where each team actually finished in the final Current Table, at every Projection History point except the last. Each team at each point gets a Rank RPS, a Cut Line Brier and whether it finished outside the middle 80%. Points-only models have none (ADR 0002).
+
+**Rank RPS**:
+A Rank Distribution's score for one team: the mean, over ranks 1 to K−1 for K teams, of the squared difference between the forecast and actual cumulative rank probabilities (0 is perfect).
+
+**Cut Line Brier**:
+A Rank Distribution's score for one team against its Cut Line: the squared error summed over Playoffs, Play-in and Eliminated (0 is perfect, 2 the worst).
+
 **Cut Lines**:
 The Regular Season boundaries: ranks 1–6 go straight to the playoffs, 7–10 to the play-in, 11–14 are eliminated.

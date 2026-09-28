@@ -300,7 +300,7 @@ function nextRoundOf(
  * The Match Day a projection is as of: the latest Swiss calendar day, as of the As-Of Date, on which a Played Game started
  * (YYYY-MM-DD), or SEASON_START before any Game. Remaining Games never count, however late their start.
  */
-function matchDayOf(playedGames: readonly PlayedGame[]): string {
+export function matchDayOf(playedGames: readonly PlayedGame[]): string {
   let latest: number | undefined;
   for (const game of playedGames) {
     const startsAt = Date.parse(game.startsAt);

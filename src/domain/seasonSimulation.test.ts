@@ -4,7 +4,7 @@ import { matchupModel } from "./matchupModel.ts";
 import type { OutcomeProbabilities } from "./outcomes.ts";
 import { project, SEASON_START, type ProjectionModel } from "./project.ts";
 import { seasonRate } from "./seasonRate.ts";
-import { simulationSeed } from "./seasonSimulation.ts";
+import { SIMULATION_RUNS, simulateSeason, simulationSeed } from "./seasonSimulation.ts";
 import { splitFormRate } from "./splitFormRate.ts";
 import type { Decision, Game, Snapshot } from "./types.ts";
 import recordedSnapshot from "./__fixtures__/snapshot-2026-09-27.json";
@@ -174,6 +174,27 @@ describe("project: Rank Distribution", () => {
     for (const distribution of rankDistributionsByTeam(roundRobin(), splitFormRate).values()) {
       expect(distribution).toBeNull();
     }
+  });
+});
+
+describe("simulateSeason: run count", () => {
+  const coinFlipGame: Game = { id: "g", startsAt: "2026-10-10T19:45:00+02:00", homeTeamId: 1, awayTeamId: 2 };
+  const coinFlip = new Map([
+    ["g", { regulationWin: 0.5, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 0.5 }],
+  ]);
+  const simulate = (runs?: number) =>
+    simulateSeason(new Map([[1, 0], [2, 0]]), [coinFlipGame], coinFlip, 7, runs).get(1)!.rankDistribution;
+
+  it("plays out the given number of Seasons", () => {
+    // Each simulated Season puts team 1 at one rank, so every chance is a whole number of runs over the run count.
+    for (const runs of [1, 3, 4]) {
+      for (const probability of simulate(runs)) expect(Number.isInteger(probability * runs)).toBe(true);
+    }
+    expect(simulate(1).sort()).toEqual([0, 1]);
+  });
+
+  it("plays out SIMULATION_RUNS Seasons when no run count is given", () => {
+    expect(simulate()).toEqual(simulate(SIMULATION_RUNS));
   });
 });
 

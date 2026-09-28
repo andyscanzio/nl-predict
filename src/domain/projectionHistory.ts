@@ -20,6 +20,12 @@ export interface HistoryPoint {
   teams: Record<TeamId, TeamHistoryPoint>;
 }
 
+/** The As-Of Dates of a Season's Projection History points: the start of the Season, then Swiss midnight at the end of every Match Day with a Played Game. */
+export function projectionHistoryAsOfDates(games: readonly Game[]): Date[] {
+  // The epoch is before every Game, so nothing is Played and the Match Day is SEASON_START.
+  return [new Date(0), ...matchDaysPlayed(games).map(swissDayEnd)];
+}
+
 /** The Projection History of one model: a point before the first Game, then one for each Match Day with a Played Game, oldest first. */
 export type ProjectionHistory = HistoryPoint[];
 
@@ -54,7 +60,5 @@ function pointAsOf(games: Game[], asOf: Date, model: ProjectionModel): HistoryPo
  * Season Simulation. Given `now` after every Played Game's start, the last point equals the live projection field for field.
  */
 export function projectionHistory(games: Game[], model: ProjectionModel): ProjectionHistory {
-  // The epoch is before every Game, so nothing is Played and the Match Day is SEASON_START.
-  const seasonStart = new Date(0);
-  return [seasonStart, ...matchDaysPlayed(games).map(swissDayEnd)].map((asOf) => pointAsOf(games, asOf, model));
+  return projectionHistoryAsOfDates(games).map((asOf) => pointAsOf(games, asOf, model));
 }

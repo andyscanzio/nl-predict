@@ -45,7 +45,7 @@ function seededRandom(seed: number): () => number {
 }
 
 /**
- * Season Simulation: plays out every Remaining Game SIMULATION_RUNS times by sampling its Outcome Probabilities, adds the Points
+ * Season Simulation: plays out every Remaining Game `runs` times (SIMULATION_RUNS unless given) by sampling its Outcome Probabilities, adds the Points
  * to each team's current Points, and ranks each simulated Season with final ties broken at random.
  */
 export function simulateSeason(
@@ -53,6 +53,7 @@ export function simulateSeason(
   remainingGames: readonly Game[],
   outcomes: ReadonlyMap<string, OutcomeProbabilities>,
   seed: number,
+  runs: number = SIMULATION_RUNS,
 ): Map<TeamId, SimulationResult> {
   const teamIds = [...currentPoints.keys()];
   const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
@@ -77,7 +78,7 @@ export function simulateSeason(
   const order = teamIds.map((_, index) => index);
   const rankCounts = teamIds.map(() => new Int32Array(teams));
 
-  for (let run = 0; run < SIMULATION_RUNS; run++) {
+  for (let run = 0; run < runs; run++) {
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
     for (let g = 0; g < remainingGames.length; g++) {
       const u = random();
@@ -102,12 +103,12 @@ export function simulateSeason(
         teamId,
         {
           probabilities: {
-            playoffs: zones.playoffs / SIMULATION_RUNS,
-            playIn: zones["play-in"] / SIMULATION_RUNS,
-            eliminated: zones.eliminated / SIMULATION_RUNS,
-            first: counts[0]! / SIMULATION_RUNS,
+            playoffs: zones.playoffs / runs,
+            playIn: zones["play-in"] / runs,
+            eliminated: zones.eliminated / runs,
+            first: counts[0]! / runs,
           },
-          rankDistribution: Array.from(counts, (count) => count / SIMULATION_RUNS),
+          rankDistribution: Array.from(counts, (count) => count / runs),
         },
       ];
     }),

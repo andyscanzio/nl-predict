@@ -1,3 +1,4 @@
+import { middle80 } from "../domain/middle80.ts";
 import { ordinal } from "./rankHistogram.ts";
 
 /** A Rank Distribution boiled down to its most likely rank and its middle 80%. */
@@ -16,25 +17,14 @@ export interface RankSummary {
   around80: { before: string; after: string } | null;
 }
 
-/** Slack for a cumulative probability summed from many parts to count as having reached a percentile. */
+/** Slack for a probability summed from many parts to count as certain. */
 const TOLERANCE = 1e-9;
-
-/** The rank (1 = first) where the running total of `distribution` first reaches `target`. */
-function rankReaching(distribution: readonly number[], target: number): number {
-  let cumulative = 0;
-  for (const [index, probability] of distribution.entries()) {
-    cumulative += probability;
-    if (cumulative >= target - TOLERANCE) return index + 1;
-  }
-  return distribution.length;
-}
 
 /** The most likely rank and middle 80% of a Rank Distribution (index 0 = 1st), with the sentence that says so. */
 export function rankSummary(distribution: readonly number[]): RankSummary {
   const peak = Math.max(0, ...distribution);
   const mostLikely = distribution.indexOf(peak) + 1;
-  const low = rankReaching(distribution, 0.1);
-  const high = rankReaching(distribution, 0.9);
+  const { low, high } = middle80(distribution);
   const share = distribution.slice(low - 1, high).reduce((sum, probability) => sum + probability, 0);
 
   if (peak >= 1 - TOLERANCE) return { mostLikely, low, high, share, text: `${ordinal(mostLikely)} in every simulated Season`, around80: null };
