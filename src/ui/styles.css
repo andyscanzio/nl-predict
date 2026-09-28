@@ -482,7 +482,8 @@ table {
 
 th,
 td {
-  padding: 0.45rem 0.5rem;
+  /* Tight sides: with full team names, a 3-digit Proj and the % columns, the Projected Table only just fits 60rem. */
+  padding: 0.45rem 0.4rem;
   border-top: 1px solid var(--line);
   text-align: left;
   white-space: nowrap;
