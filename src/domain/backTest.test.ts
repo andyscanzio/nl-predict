@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backTest } from "./backTest.ts";
+import { backTest, gameBriers } from "./backTest.ts";
 import type { ProjectionModel } from "./project.ts";
 import { splitFormRate } from "./splitFormRate.ts";
 import type { Game } from "./types.ts";
@@ -45,6 +45,15 @@ describe("backTest", () => {
     // g2: team 1 Home Form 3, team 2 Away Form 0, predicted 3 – 0 against 1 – 2: errors 2 + 2
     expect(backTest(games, asOf, [splitFormRate])).toEqual([
       { model: "Split Form Rate", games: 2, brierScore: null, pointsMae: 7 / 4 },
+    ]);
+  });
+});
+
+describe("gameBriers", () => {
+  it("scores each Played Game's Outcome Probabilities by Brier score, and gives Points-only models none", () => {
+    expect(gameBriers(games, asOf, [coinFlip, splitFormRate])).toEqual([
+      new Map([["g1", 0.5], ["g2", 1.5]]),
+      new Map(),
     ]);
   });
 });

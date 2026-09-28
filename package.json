@@ -12,7 +12,9 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "snapshot": "node scripts/snapshot.ts",
-    "backtest": "node scripts/backtest.ts"
+    "backtest": "node scripts/backtest.ts",
+    "study": "node scripts/study.ts",
+    "study:matchup": "node scripts/study.ts --study matchup"
   },
   "dependencies": {
     "@fontsource-variable/oxanium": "^5.3.0",

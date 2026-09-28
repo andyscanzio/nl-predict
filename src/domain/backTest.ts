@@ -31,13 +31,9 @@ function brier(predicted: OutcomeProbabilities, actual: OutcomeProbabilities): n
   );
 }
 
-/**
- * Back-Test: predicts every Game Played by the As-Of Date from only the Games played before it started, and scores
- * each Projection Model against the actual results.
- */
-export function backTest(games: Game[], asOf: Date, models: readonly ProjectionModel[]): BackTestScore[] {
+/** Each Played Game by the As-Of Date with what was known before it started. Games starting together share it. */
+function playedGameInputs(games: Game[], asOf: Date) {
   const played = projectionModelInput(games, asOf).playedGames;
-  // Games starting together share what was known before them, so each start time is predicted once.
   const byStart = new Map<string, PlayedGame[]>();
   for (const game of played) byStart.set(game.startsAt, [...(byStart.get(game.startsAt) ?? []), game]);
 
@@ -45,6 +41,15 @@ export function backTest(games: Game[], asOf: Date, models: readonly ProjectionM
     startingGames,
     input: projectionModelInput(games, new Date(startsAt)),
   }));
+  return { played, inputs };
+}
+
+/**
+ * Back-Test: predicts every Game Played by the As-Of Date from only the Games played before it started, and scores
+ * each Projection Model against the actual results.
+ */
+export function backTest(games: Game[], asOf: Date, models: readonly ProjectionModel[]): BackTestScore[] {
+  const { played, inputs } = playedGameInputs(games, asOf);
 
   return models.map((model) => {
     let brierSum = 0;
@@ -64,5 +69,20 @@ export function backTest(games: Game[], asOf: Date, models: readonly ProjectionM
       brierScore: model.kind === "outcomes" ? brierSum / played.length : null,
       pointsMae: errorSum / (2 * played.length),
     };
+  });
+}
+
+/** Each Played Game's Brier score by Game id, per model, predicted as in backTest(); empty for Points-only models. */
+export function gameBriers(games: Game[], asOf: Date, models: readonly ProjectionModel[]): Map<string, number>[] {
+  const { inputs } = playedGameInputs(games, asOf);
+
+  return models.map((model) => {
+    const briers = new Map<string, number>();
+    if (model.kind !== "outcomes") return briers;
+    for (const { startingGames, input } of inputs) {
+      const predictions = predictGames(model, input);
+      for (const game of startingGames) briers.set(game.id, brier(predictions.get(game.id)!.outcomes!, actualOutcomes(game)));
+    }
+    return briers;
   });
 }

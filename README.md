@@ -49,6 +49,8 @@ npm run snapshot -- --out path/to.json    # write somewhere else
 
 npm run backtest                          # score every model against data/games.json
 npm run backtest -- --in path/to.json     # score against another snapshot
+npm run study                             # Season Rate shrinkage study, with bootstrap intervals, over data/local/seasons; report in data/local/
+npm run study:matchup                     # Matchup Model shrinkage variants (league, flat, team centre) next to Season Rate and Elo, same reports
 ```
 
 `data/local/` is gitignored and holds past Season snapshots and study outputs.
@@ -59,7 +61,7 @@ npm run backtest -- --in path/to.json     # score against another snapshot
 src/domain/     projection models, Season Simulation, Back-Test, tables
 src/snapshot/   turning SIHF API responses into a snapshot
 src/ui/         Preact page
-scripts/        snapshot and backtest CLIs, build-time Projection History plugin
+scripts/        snapshot, backtest and study CLIs, build-time Projection History plugin
 data/           the committed Games snapshot
 docs/adr/       architecture decision records
 ```
