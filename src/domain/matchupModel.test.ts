@@ -142,3 +142,38 @@ describe("createMatchupModel", () => {
     expect(points[2]).toBeCloseTo(3 + 3 - share);
   });
 });
+
+describe("createMatchupModel: team centre", () => {
+  const model = (priorGames: number, homePointsPerGame: number) =>
+    createMatchupModel({ priorGames, homePointsPerGame, centre: "team" });
+
+  it("shrinks each venue toward the team's shrunk Season Rate ± (home average − 1.5)", () => {
+    const games = [played(1, 3, 3, 0), played(1, 4, 3, 0), played(2, 3, 0, 3), scheduled(1, 2)];
+    // Season Rate at m = 10: 1 has 6 Points in 2 Games, (6 + 15) / 12 = 1.75; 2 has 0 in 1, 15 / 11
+    const rate1 = 21 / 12;
+    const rate2 = 15 / 11;
+    // 1 at home: (6 + (1.75 + 0.24) · 5) / 7; 2 away has no Games, so its away prior is 15/11 − 0.24
+    const home = (6 + (rate1 + 0.24) * 5) / 7;
+    const away = rate2 - 0.24;
+    const share = (home + (3 - away)) / 2;
+    const points = projectedPoints(games, model(5, 1.74));
+    expect(points[1]).toBeCloseTo(6 + share);
+    expect(points[2]).toBeCloseTo(3 - share);
+  });
+
+  it("rates an empty Form Window at exactly the team's prior", () => {
+    const games = [played(3, 1, 0, 3), scheduled(1, 2)];
+    // 1 has Season Rate (3 + 15) / 11 but no home Games, so at home it is that + 0.24; 2 has no Games: 1.5 − 0.24 away
+    const home = 18 / 11 + 0.24;
+    const away = 1.5 - 0.24;
+    const share = (home + (3 - away)) / 2;
+    const points = projectedPoints(games, model(5, 1.74));
+    expect(points[1]).toBeCloseTo(3 + share);
+    expect(points[2]).toBeCloseTo(3 - share);
+  });
+
+  it("with priorGames 0 has no effect", () => {
+    const games = [played(3, 1, 0, 3), played(1, 4, 3, 0), scheduled(1, 2)];
+    expect(projectedPoints(games, model(0, 1.74))).toEqual(projectedPoints(games));
+  });
+});

@@ -15,6 +15,13 @@ export interface SeasonRateParameters {
   priorGames: number;
 }
 
+/** Points per Game over `gamesPlayed` Games, shrunk toward 1.5 as if `priorGames` more Games had been played at it. */
+export function shrunkSeasonRate(points: number, gamesPlayed: number, priorGames: number): number {
+  return gamesPlayed + priorGames === 0
+    ? LEAGUE_AVERAGE_POINTS_PER_GAME
+    : (points + LEAGUE_AVERAGE_POINTS_PER_GAME * priorGames) / (gamesPlayed + priorGames);
+}
+
 /**
  * Each team keeps earning its Points per Game over its Played Games, ignoring venue and opponent strength, shrunk toward
  * the league-average 1.5 as if it had also played priorGames (m) Games at that rate:
@@ -28,12 +35,7 @@ export function createSeasonRate({ priorGames }: SeasonRateParameters): Projecti
     kind: "outcomes",
     predictOutcomes({ currentTable, remainingGames, otsoRate }) {
       const rates = new Map<TeamId, number>(
-        currentTable.map((row) => [
-          row.teamId,
-          row.gamesPlayed + priorGames === 0
-            ? LEAGUE_AVERAGE_POINTS_PER_GAME
-            : (row.points + LEAGUE_AVERAGE_POINTS_PER_GAME * priorGames) / (row.gamesPlayed + priorGames),
-        ]),
+        currentTable.map((row) => [row.teamId, shrunkSeasonRate(row.points, row.gamesPlayed, priorGames)]),
       );
       return new Map<string, OutcomeProbabilities>(
         remainingGames.map((game) => [
