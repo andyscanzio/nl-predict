@@ -9,7 +9,7 @@ const PAGE = "https://andyscanzio.github.io/nl-predict/";
 
 describe("modelFromUrl", () => {
   it("offers the four Projection Models, in picker order", () => {
-    expect(PROJECTION_MODELS).toEqual([splitFormRate, seasonRate, matchupModel, eloModel]);
+    expect(PROJECTION_MODELS).toEqual([eloModel, seasonRate, matchupModel, splitFormRate]);
   });
 
   it.each([
