@@ -43,10 +43,10 @@ function labelledIndexes(count: number): number[] {
   return [...new Set([0, Math.round((count - 1) / 2), count - 1])];
 }
 
-function summaryOf(now: number, previous: number, start: number): string {
-  const change = Math.round((now - previous) * 100);
+function summaryOf(start: number, previous: number, latest: number): string {
+  const change = Math.round((latest - previous) * 100);
   const since = change === 0 ? "unchanged" : `${change > 0 ? "up" : "down"} ${Math.abs(change)} pts`;
-  return `Playoff chance ${formatPercent(now)}% now, ${formatPercent(start)}% at the start of the Season, ${since} since the previous Match Day.`;
+  return `Playoff chance ${formatPercent(latest)}% now, ${formatPercent(start)}% at the start of the Season, ${since} since the previous Match Day.`;
 }
 
 /**
@@ -59,16 +59,17 @@ export function projectionChart(history: ProjectionHistory, teamId: TeamId): Pro
   const teamIds = Object.keys(history[0]!.teams).map(Number);
   if (teamIds.some((id) => chances(id).includes(null))) return null;
 
+  const xOf = (index: number) => index / (history.length - 1);
   const lineOf = (id: TeamId): ChartLine => ({
     teamId: id,
     chosen: id === teamId,
-    points: chances(id).map((chance, index) => ({ x: index / (history.length - 1), y: 1 - chance! })),
+    points: chances(id).map((chance, index) => ({ x: xOf(index), y: 1 - chance! })),
   });
   const chosen = chances(teamId) as number[];
   return {
     lines: [...teamIds.filter((id) => id !== teamId).map(lineOf), lineOf(teamId)],
     guideY: 0.5,
-    xLabels: labelledIndexes(history.length).map((index) => ({ x: index / (history.length - 1), text: dateLabel(history[index]!.matchDay) })),
-    summary: summaryOf(chosen.at(-1)!, chosen.at(-2)!, chosen[0]!),
+    xLabels: labelledIndexes(history.length).map((index) => ({ x: xOf(index), text: dateLabel(history[index]!.matchDay) })),
+    summary: summaryOf(chosen[0]!, chosen.at(-2)!, chosen.at(-1)!),
   };
 }

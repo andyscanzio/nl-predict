@@ -33,7 +33,7 @@ describe("projectionHistory", () => {
     }
   });
 
-  it("has one point per Swiss day with a Played Game, oldest first", () => {
+  it("has one point per Match Day with a Played Game, oldest first", () => {
     expect(historyOf(eloModel).map((point) => point.matchDay)).toEqual([SEASON_START, ...RECORDED_DAYS]);
   });
 
@@ -64,7 +64,7 @@ describe("projectionHistory", () => {
   });
 
   for (const model of MODELS) {
-    it(`ends, under ${model.name}, on exactly what the live projection gives`, () => {
+    it(`ends, under ${model.name}, on exactly what the live projection gives once "now" is after the last Played Game`, () => {
       const live = project(snapshot.games, now, model, simulationSeedAsOf(snapshot.games, now, model.id));
       const last = historyOf(model).at(-1)!;
       expect(last.matchDay).toBe("2026-09-27");

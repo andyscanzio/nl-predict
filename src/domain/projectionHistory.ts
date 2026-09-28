@@ -20,10 +20,10 @@ export interface HistoryPoint {
   teams: Record<TeamId, TeamHistoryPoint>;
 }
 
-/** The Projection History of one model: a point before the first Game, then one for each Swiss day with a Played Game, oldest first. */
+/** The Projection History of one model: a point before the first Game, then one for each Match Day with a Played Game, oldest first. */
 export type ProjectionHistory = HistoryPoint[];
 
-/** The Swiss days on which at least one Game with a result started, oldest first. */
+/** The Match Days on which at least one Played Game started, oldest first (YYYY-MM-DD). */
 function matchDaysPlayed(games: readonly Game[]): string[] {
   const days = new Set<string>();
   for (const game of games) if (game.result) days.add(swissCalendarDay(Date.parse(game.startsAt)));
@@ -51,6 +51,7 @@ function pointAsOf(games: Game[], asOf: Date, model: ProjectionModel): HistoryPo
  * Game's start, the last point equals the live projection field for field.
  */
 export function projectionHistory(games: Game[], model: ProjectionModel): ProjectionHistory {
+  // The epoch is before every Game, so nothing is Played and the Match Day is SEASON_START.
   const seasonStart = new Date(0);
   return [seasonStart, ...matchDaysPlayed(games).map(swissDayEnd)].map((asOf) => pointAsOf(games, asOf, model));
 }
