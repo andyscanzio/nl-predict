@@ -1069,7 +1069,7 @@ tbody th {
 .rank-bars {
   display: flex;
   gap: 2px;
-  height: 5rem;
+  height: 8rem;
   margin-bottom: 8px;
 }
 
