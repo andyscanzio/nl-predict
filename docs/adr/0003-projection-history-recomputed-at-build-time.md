@@ -13,4 +13,5 @@ Every Season Simulation, the live table's included, is seeded from the Match Day
 
 - Changing a Projection Model rewrites its whole Projection History; the chart shows what the current model would have said, not what the page showed at the time.
 - The build gets roughly 10 s slower. The result is cached on disk (gitignored `.cache/`) by a hash of the snapshot plus a hash of the domain source, so dev restarts stay fast and tuning a model in dev never serves a stale history. CI builds start cold and always compute.
+- `project()` derives the seed itself, so no caller can opt out.
 - Reseeding moved the live table's percentages once, by Monte Carlo noise (about ±0.5 points), when this shipped.

@@ -103,7 +103,7 @@ A Projection Model's prediction for one Game: the probability of each of the fou
 The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
 
 **Season Simulation**:
-Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution.
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. Its random draws are fixed by the latest Match Day with a Played Game as of the As-Of Date and the Projection Model, so projecting again with no new results gives the same numbers.
 _Avoid_: Monte Carlo Model
 
 **Rank Distribution**:
