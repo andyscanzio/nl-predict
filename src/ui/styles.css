@@ -171,6 +171,62 @@ body {
   color: var(--amber);
 }
 
+/* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins. */
+.win-split {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  padding-left: calc(2.9rem + 0.6rem); /* lines up under the teams, past the start time column */
+  font: 700 0.8rem var(--display);
+}
+
+.win-split-pct {
+  flex: 0 0 2.1rem;
+  color: var(--fg);
+}
+
+.win-split-pct:first-child {
+  text-align: right;
+}
+
+.win-split-pct.none {
+  color: var(--muted);
+}
+
+.win-split-bar {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 2px;
+  height: 0.6rem;
+  min-width: 0;
+}
+
+.win-split-side {
+  display: flex;
+  min-width: 2px;
+  background: var(--inset);
+}
+
+.win-split-side.home {
+  background: var(--amber);
+  justify-content: flex-start;
+}
+
+.win-split-side.away {
+  background: var(--playoffs);
+  justify-content: flex-end;
+}
+
+.win-split-side.none {
+  background: var(--eliminated);
+}
+
+.win-split-otso {
+  height: 100%;
+  background: rgb(255 255 255 / 0.4);
+}
+
 .upcoming-note {
   border-top: 1px solid var(--line);
 }
