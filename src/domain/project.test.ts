@@ -82,9 +82,64 @@ describe("project: Current Table", () => {
     expect(currentTableOrder(games)[0]).toBe(1);
   });
 
-  it("breaks Current Table ties on Points per Game by goal difference", () => {
+  // Art. 6.2, "Weisungen für den Spielbetrieb der National League, Saison 2026/27" (02.09.2026), official step 1.
+  it("breaks a two-team tie on Points and Points per Game by Points in Direct Games, even against the overall goal difference", () => {
+    const games = [
+      played(1, 2, 1, 0), // Direct Game: 1 beats 2, so 1 leads the Direct Games Points despite the worse overall goal difference below
+      played(1, 3, 0, 5), // 1's other Game: a heavy loss, GD -5
+      played(2, 4, 5, 0), // 2's other Game: a heavy win, GD +5
+    ];
+    // Overall goal difference favours 2 (+4) over 1 (-4); Direct Games Points (1 beat 2) still settles it for 1.
+    expect(currentTableOrder(games)).toEqual([3, 1, 2, 4]);
+  });
+
+  // Art. 6.2, official step 1: three or more level teams are ranked by a mini-table of their Direct Games.
+  it("ranks three teams level on Points and Points per Game by a mini-table of their Direct Games", () => {
+    const games = [
+      // The mini-table among 1, 2 and 3: 1 beats both, 2 beats 3 — a clear order of Direct Games Points 6, 2, 1.
+      played(1, 2, 3, 0),
+      played(1, 3, 4, 0),
+      played(2, 3, 2, 1, "OT"),
+      // Other Games bring all three to 6 Points in 4 Games (Points per Game 1.5), so the mini-table alone decides.
+      played(4, 1, 5, 0),
+      played(5, 1, 5, 0),
+      played(2, 6, 3, 0),
+      played(7, 2, 2, 1, "OT"),
+      played(3, 8, 4, 0),
+      played(3, 9, 3, 2, "OT"),
+    ];
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([1, 2, 3]);
+  });
+
+  // Art. 6.2, official steps 1-2: Direct Games level on Points fall through to goal difference over all Games.
+  it("falls through a Direct Games tie on Points to goal difference over all Games", () => {
+    const games = [
+      played(1, 2, 3, 0), // Direct Games: 1 wins the home leg, 2 wins the away leg — level at 3 Points each
+      played(2, 1, 3, 0),
+      played(1, 3, 5, 0), // 1's other Game: a 5-0 win, GD +5
+      played(4, 2, 1, 5), // 2's other Game: a 5-1 win, GD +4
+    ];
+    // Both level on Points in Direct Games (3 each) and on overall goals for (8 each); goal difference (5 vs 4) decides.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
+  });
+
+  // Art. 6.2, official steps 1-3: teams with no Direct Games skip straight to goal difference, then goals for.
+  // Outcome unchanged from before Direct Games were added: 1 and 3 have never met, so Points in Direct Games decides nothing.
+  it("breaks Current Table ties on Points per Game by goal difference, when the tied teams have no Direct Games", () => {
     const games = [played(1, 2, 1, 0), played(3, 4, 5, 0)];
     expect(currentTableOrder(games)).toEqual([3, 1, 2, 4]);
+  });
+
+  // Points per Game runs ahead of the official Art. 6.2 steps, even when the tied teams have met each other.
+  it("breaks Current Table ties on Points per Game before Points in Direct Games, when Games played differ", () => {
+    const games = [
+      played(2, 1, 3, 0), // their only meeting: 2 beats 1 — Direct Games alone would favour team 2
+      played(1, 3, 5, 0), // 1's other Game lifts it to 1.5 Points per Game over 2 Games
+      played(4, 2, 3, 0), // 2's other Games keep it at 1.0 Points per Game over 3 Games
+      played(5, 2, 3, 0),
+    ];
+    // Team 1's higher Points per Game (1.5 vs 1.0) settles it before Direct Games are even considered.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
   });
 
   it("breaks Current Table ties on goal difference by goals for", () => {

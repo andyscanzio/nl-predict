@@ -192,26 +192,61 @@ function groupBy(rows: Group, key: (row: UnrankedRow) => number): Group[] {
   return [...byKey.entries()].sort(([a], [b]) => b - a).map(([, group]) => group);
 }
 
-/** Narrows every still-tied Group (more than one team) by `key`; a settled Group (one team) is left untouched. */
-function narrow(groups: Group[], key: (row: UnrankedRow) => number): Group[] {
-  return groups.flatMap((group) => (group.length <= 1 ? [group] : groupBy(group, key)));
+/** A step settles a still-tied Group by a `key`, computed from that Group's own teams and Played Games. */
+type GroupStep = (group: Group, playedGames: readonly PlayedGame[]) => (row: UnrankedRow) => number;
+
+/** Narrows every still-tied Group (more than one team) by `step`; a settled Group (one team) is left untouched. */
+function narrow(groups: Group[], step: GroupStep, playedGames: readonly PlayedGame[]): Group[] {
+  return groups.flatMap((group) => (group.length <= 1 ? [group] : groupBy(group, step(group, playedGames))));
 }
 
-const GROUP_STEPS: ((row: UnrankedRow) => number)[] = [
-  goalDifference,
-  (row) => row.goalsFor,
-  (row) => row.regulationWins,
-  (row) => -row.teamId,
+/**
+ * The Played Games among the teams of `group`: its Direct Games (see CONTEXT.md). Direct Games are fixed when a
+ * Group is first formed and kept even after some of its teams are separated, so `group` must be the original tied
+ * Group a GroupStep receives, never a Group already narrowed by an earlier step. This ticket assumes every pair in
+ * the Group has met equally often; #87 handles unequal meetings by dropping the earliest legs.
+ */
+function directGamesOf(group: Group, playedGames: readonly PlayedGame[]): PlayedGame[] {
+  const teamIds = new Set(group.map((row) => row.teamId));
+  return playedGames.filter((game) => teamIds.has(game.homeTeamId) && teamIds.has(game.awayTeamId));
+}
+
+/**
+ * Points in the Group's Direct Games: official step 1 of Art. 6.2, "Weisungen für den Spielbetrieb der National
+ * League, Saison 2026/27" (02.09.2026). A team with no Direct Games, or Direct Games it took no Points from, scores
+ * 0, same as every other team still level here, so the step decides nothing and the Group falls through untouched.
+ */
+const directGamePoints: GroupStep = (group, playedGames) => {
+  const directGames = directGamesOf(group, playedGames);
+  const points = new Map<TeamId, number>();
+  for (const game of directGames) {
+    points.set(game.homeTeamId, (points.get(game.homeTeamId) ?? 0) + pointsFor(game, game.homeTeamId));
+    points.set(game.awayTeamId, (points.get(game.awayTeamId) ?? 0) + pointsFor(game, game.awayTeamId));
+  }
+  return (row) => points.get(row.teamId) ?? 0;
+};
+
+/** A GroupStep that ignores the Group and its Played Games, settling purely by a per-row `key`. */
+function byKey(key: (row: UnrankedRow) => number): GroupStep {
+  return () => key;
+}
+
+const GROUP_STEPS: GroupStep[] = [
+  directGamePoints,
+  byKey(goalDifference),
+  byKey((row) => row.goalsFor),
+  byKey((row) => row.regulationWins),
+  byKey((row) => -row.teamId),
 ];
 
 /**
- * Settles a Group of teams level on Points and Points per Game, using the Played Games available to it. Today that's
- * goal difference, goals for and regulation wins over all Played Games, then a fixed team order as the last resort,
- * so the order is always total. The official National League head-to-head steps of Art. 6.2 will narrow further
- * here, using the Group's Direct Games, once added (#22).
+ * Settles a Group of teams level on Points and Points per Game, using the Played Games available to it: Points in
+ * the Group's Direct Games (Art. 6.2 official step 1), then goal difference and goals for over all Played Games
+ * (official steps 2–3, where Direct Games decide nothing), then regulation wins and a fixed team order as our own
+ * last resort, so the order is always total. #86 adds the remaining official steps on the original tied Group.
  */
 function settleGroup(group: Group, playedGames: readonly PlayedGame[]): Group {
-  return GROUP_STEPS.reduce((groups, key) => narrow(groups, key), [group]).flat();
+  return GROUP_STEPS.reduce((groups, step) => narrow(groups, step, playedGames), [group]).flat();
 }
 
 /**
