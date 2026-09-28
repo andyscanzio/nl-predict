@@ -495,7 +495,8 @@ function whatIfGame(game: Game, outcome: WhatIfOutcome): Game {
  * As-Of Date, model and What-If always give the same numbers, and a refresh with no new results changes nothing.
  *
  * With a What-If, every What-If Result whose Game is in the real Next Round is treated as a Played Game won by one goal,
- * for the Projected Table, Season Simulation and Match Day. The Current Table, integrity issues and the Next Round's
+ * for the Projected Table and Season Simulation. The Match Day and the Season Simulation's random draws stay those of the
+ * Real Projection: a What-If Game skips its draw and never counts toward the seed. The Current Table, integrity issues and the Next Round's
  * Games stay real. Other What-If Results are ignored quietly.
  */
 export function project(games: Game[], asOf: Date, model: ProjectionModel, whatIf: WhatIf = new Map()): Projection {
@@ -512,9 +513,9 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
           asOf,
           new Set(applied.keys()),
         );
-  const { currentTable, formWindows, playedGames, remainingGames } = input;
+  const { currentTable, formWindows, remainingGames } = input;
   const realRanks = new Map(realInput.currentTable.map((row) => [row.teamId, row.rank]));
-  const matchDay = matchDayOf(playedGames);
+  const matchDay = matchDayOf(realInput.playedGames);
 
   const predictions = predictGames(model, input);
   const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
@@ -531,6 +532,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
           remainingGames,
           new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
           simulationSeed(matchDay, model.id),
+          undefined,
+          realInput.remainingGames,
         )
       : null;
 

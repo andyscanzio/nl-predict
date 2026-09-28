@@ -47,6 +47,10 @@ function seededRandom(seed: number): () => number {
 /**
  * Season Simulation: plays out every Remaining Game `runs` times (SIMULATION_RUNS unless given) by sampling its Outcome Probabilities, adds the Points
  * to each team's current Points, and ranks each simulated Season with final ties broken at random.
+ *
+ * Each run draws one number per Game of `drawLayout` (the real Remaining Games; `remainingGames` unless given), in that order, then one per team
+ * for the final ties. A Game of `remainingGames` takes the draw at its place in the layout; a layout Game not in `remainingGames` (it has a What-If
+ * Result) has its draw skipped, so every other Game draws what it draws in the Real Projection.
  */
 export function simulateSeason(
   currentPoints: ReadonlyMap<TeamId, number>,
@@ -54,6 +58,7 @@ export function simulateSeason(
   outcomes: ReadonlyMap<string, OutcomeProbabilities>,
   seed: number,
   runs: number = SIMULATION_RUNS,
+  drawLayout: readonly Game[] = remainingGames,
 ): Map<TeamId, SimulationResult> {
   const teamIds = [...currentPoints.keys()];
   const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
@@ -61,6 +66,9 @@ export function simulateSeason(
   const startingPoints = teamIds.map((teamId) => currentPoints.get(teamId)!);
 
   // Per Game: home index, away index, then the cumulative thresholds of regulation win, OT/SO win and OT/SO loss.
+  const drawIndexOf = new Map(drawLayout.map((game, index) => [game.id, index]));
+  const draws = new Float64Array(drawLayout.length);
+  const drawAt = Int32Array.from(remainingGames, (game) => drawIndexOf.get(game.id)!);
   const homes = new Int32Array(remainingGames.length);
   const aways = new Int32Array(remainingGames.length);
   const thresholds = new Float64Array(remainingGames.length * 3);
@@ -80,8 +88,9 @@ export function simulateSeason(
 
   for (let run = 0; run < runs; run++) {
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
+    for (let d = 0; d < draws.length; d++) draws[d] = random();
     for (let g = 0; g < remainingGames.length; g++) {
-      const u = random();
+      const u = draws[drawAt[g]!]!;
       const homePoints =
         u < thresholds[3 * g]! ? 3 : u < thresholds[3 * g + 1]! ? 2 : u < thresholds[3 * g + 2]! ? 1 : 0;
       points[homes[g]!] = points[homes[g]!]! + homePoints;
