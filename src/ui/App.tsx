@@ -23,6 +23,7 @@ import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { chartMetrics, nearestMatchDay, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
+import { applyTheme, readTheme, storeTheme, THEMES, type Theme } from "./theme.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -659,6 +660,38 @@ function UpcomingGamesPanel({
   );
 }
 
+const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
+
+/** Light, dark, or whatever the system says; remembered in this browser. index.html applies it before first paint. */
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => readTheme(localStorageOrUndefined()));
+  const pick = (next: Theme) => {
+    applyTheme(document.documentElement, next);
+    storeTheme(localStorageOrUndefined(), next);
+    setTheme(next);
+  };
+  return (
+    <fieldset class="theme-toggle">
+      <legend class="visually-hidden">Colour theme</legend>
+      {THEMES.map((option) => (
+        <label key={option}>
+          <input type="radio" name="theme" value={option} checked={option === theme} onChange={() => pick(option)} />
+          <span>{THEME_LABELS[option]}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+/** Reading `localStorage` itself throws where site data is blocked. */
+function localStorageOrUndefined() {
+  try {
+    return localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
   return (
     <fieldset class="model-picker">
@@ -802,12 +835,15 @@ export function App({
           </h1>
           <p class="subtitle">National League {season} · Regular Season</p>
         </div>
-        <p class="as-of">
-          <span class="as-of-label">Data as of</span>
-          <time dateTime={snapshot.snapshotAt} title={`${snapshotTime.format(snapshotAt)} (Swiss time)`}>
-            {formatScoreboardTime(snapshotAt)}
-          </time>
-        </p>
+        <div class="scoreboard-side">
+          <ThemeToggle />
+          <p class="as-of">
+            <span class="as-of-label">Data as of</span>
+            <time dateTime={snapshot.snapshotAt} title={`${snapshotTime.format(snapshotAt)} (Swiss time)`}>
+              {formatScoreboardTime(snapshotAt)}
+            </time>
+          </p>
+        </div>
       </header>
       <main>
         {integrityIssues.length > 0 && <IntegrityWarning issues={integrityIssues} teamName={teamName} />}

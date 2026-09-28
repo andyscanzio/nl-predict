@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>NL Predict</title>
+    <script>
+      // Apply a stored light or dark theme before first paint, so the page doesn't flash; key as in src/ui/theme.ts.
+      try {
+        const theme = localStorage.getItem("nl-predict-theme");
+        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="app"></div>
