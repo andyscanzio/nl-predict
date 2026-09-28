@@ -35,7 +35,7 @@ function brier(predicted: OutcomeProbabilities, actual: OutcomeProbabilities): n
  * Back-Test: predicts every Game Played by the As-Of Date from only the Games played before it started, and scores
  * each Projection Model against the actual results.
  */
-export function backTest(games: Game[], asOf: Date, models: ProjectionModel[]): BackTestScore[] {
+export function backTest(games: Game[], asOf: Date, models: readonly ProjectionModel[]): BackTestScore[] {
   const played = projectionModelInput(games, asOf).playedGames;
   // Games starting together share what was known before them, so each start time is predicted once.
   const byStart = new Map<string, PlayedGame[]>();

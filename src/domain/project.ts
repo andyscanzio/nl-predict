@@ -42,10 +42,10 @@ export interface ProjectionModelInput {
  * Models give Outcome Probabilities per Game, except Points-only models such as Split Form Rate, which predict each
  * side's Points independently and so cannot give coherent probabilities (ADR 0002).
  */
-export type ProjectionModel =
+export type ProjectionModel<Id extends string = string> =
   | {
       /** Stable identifier, e.g. for seeding the Season Simulation. */
-      id: string;
+      id: Id;
       name: string;
       kind: "outcomes";
       /** Outcome Probabilities for every Remaining Game, by Game id. */
@@ -53,7 +53,7 @@ export type ProjectionModel =
     }
   | {
       /** Stable identifier, e.g. for seeding the Season Simulation. */
-      id: string;
+      id: Id;
       name: string;
       kind: "points";
       /** Expected Points of each side for every Remaining Game, by Game id. */

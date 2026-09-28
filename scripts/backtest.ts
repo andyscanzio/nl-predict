@@ -7,17 +7,14 @@
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { backTest } from "../src/domain/backTest.ts";
-import { eloModel } from "../src/domain/eloModel.ts";
-import { matchupModel } from "../src/domain/matchupModel.ts";
-import { seasonRate } from "../src/domain/seasonRate.ts";
-import { splitFormRate } from "../src/domain/splitFormRate.ts";
+import { PROJECTION_MODELS } from "../src/domain/projectionModels.ts";
 import type { Snapshot } from "../src/domain/types.ts";
 import { seasonLabel } from "../src/domain/season.ts";
 
 const { values } = parseArgs({ options: { in: { type: "string", default: "data/games.json" } } });
 const snapshot = JSON.parse(await readFile(values.in, "utf8")) as Snapshot;
 
-const scores = backTest(snapshot.games, new Date(snapshot.snapshotAt), [splitFormRate, seasonRate, matchupModel, eloModel]);
+const scores = backTest(snapshot.games, new Date(snapshot.snapshotAt), PROJECTION_MODELS);
 if (scores[0]?.games === 0) {
   console.log(`No Played Games in ${values.in} yet; nothing to Back-Test.`);
   process.exit(0);

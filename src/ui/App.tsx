@@ -17,7 +17,7 @@ import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
-import { PROJECTION_MODELS } from "./modelUrl.ts";
+import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { chartMetrics, nearestMatchDay, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
@@ -691,7 +691,13 @@ function localStorageOrUndefined() {
   }
 }
 
-function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
+function ModelPicker({
+  model,
+  onChange,
+}: {
+  model: ProjectionModel<ProjectionModelId>;
+  onChange: (model: ProjectionModel<ProjectionModelId>) => void;
+}) {
   return (
     <fieldset class="model-picker">
       <legend class="visually-hidden">Projection Model</legend>
@@ -719,7 +725,7 @@ function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (m
 const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
 
 /** How a Projection Model turns Played Games into projected Points, by model id. */
-function ModelExplanation({ model }: { model: ProjectionModel }) {
+function ModelExplanation({ model }: { model: ProjectionModel<ProjectionModelId> }) {
   switch (model.id) {
     case "split-form-rate":
       return (
@@ -785,10 +791,10 @@ export function App({
 }: {
   snapshot: Snapshot;
   now: Date;
-  model: ProjectionModel;
+  model: ProjectionModel<ProjectionModelId>;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
-  onModelChange: (model: ProjectionModel) => void;
+  onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
   const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(

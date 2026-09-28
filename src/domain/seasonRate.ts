@@ -7,7 +7,7 @@ import type { TeamId } from "./types.ts";
  * with no Played Games counts as the league-average 1.5. A Game's 3 Points are split between the two rates (see
  * outcomesFromRates) through the OT/SO Rate.
  */
-export const seasonRate: ProjectionModel = {
+export const seasonRate: ProjectionModel<"season-rate"> = {
   id: "season-rate",
   name: "Season Rate",
   kind: "outcomes",

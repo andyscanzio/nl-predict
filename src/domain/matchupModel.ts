@@ -8,7 +8,7 @@ import type { TeamId } from "./types.ts";
  * between them (see outcomesFromRates) through the OT/SO Rate. An empty Form Window falls back to the team's
  * other-venue Form, as under Split Form Rate; with neither, the league-average 1.5.
  */
-export const matchupModel: ProjectionModel = {
+export const matchupModel: ProjectionModel<"matchup"> = {
   id: "matchup",
   name: "Matchup Model",
   kind: "outcomes",

@@ -8,7 +8,7 @@ import type { TeamId } from "./types.ts";
  * away team its Away Form. When one Form Window is empty the other Form stands in for both; with neither, the team
  * earns nothing. The two sides are predicted independently, so a Game need not hand out 3 Points: Points-only.
  */
-export const splitFormRate: ProjectionModel = {
+export const splitFormRate: ProjectionModel<"split-form-rate"> = {
   id: "split-form-rate",
   name: "Split Form Rate",
   kind: "points",
