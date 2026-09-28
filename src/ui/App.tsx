@@ -12,6 +12,7 @@ import {
 import { SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
+import { splitFormRatesOf } from "../domain/splitFormRate.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
@@ -274,13 +275,11 @@ function FormWindowDetail({
   showProjectedRate: boolean;
 }) {
   const labels = SIDES[side];
-  // Mirrors Split Form Rate: an empty Form Window borrows the other Form, or earns nothing without either.
-  const rate =
-    form !== null
-      ? `${formatForm(form)} per Game`
-      : otherForm !== null
-        ? `${formatForm(otherForm)} per Game (${labels.other})`
-        : "0 per Game";
+  const borrowed = form === null && otherForm !== null;
+  const rates = side === "home" ? splitFormRatesOf(form, otherForm) : splitFormRatesOf(otherForm, form);
+  const projectedRate = rates[side];
+  // Neither Form exists: the rate is a bare 0, not a formatted Form.
+  const rate = `${form === null && otherForm === null ? "0" : formatForm(projectedRate)} per Game${borrowed ? ` (${labels.other})` : ""}`;
   return (
     <section class="form-window">
       <h3>

@@ -1,7 +1,15 @@
-import { venueFormsOf, type VenueForms } from "./form.ts";
+import { venueFormsFrom, venueFormsOf, type VenueForms } from "./form.ts";
 import type { ExpectedPoints } from "./outcomes.ts";
 import type { ProjectionModel } from "./project.ts";
 import type { TeamId } from "./types.ts";
+
+/**
+ * The rate Split Form Rate projects a team's Remaining Games at, per venue: each venue its own Form; an empty Form Window
+ * (null) borrows the other venue's Form, or earns 0 with neither.
+ */
+export function splitFormRatesOf(homeForm: number | null, awayForm: number | null): VenueForms {
+  return venueFormsFrom(homeForm, awayForm, 0);
+}
 
 /**
  * Each side of a Remaining Game earns its own Form for the venue, ignoring opponents: the home team its Home Form, the

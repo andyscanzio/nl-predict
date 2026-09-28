@@ -30,11 +30,14 @@ export interface VenueForms {
   away: number;
 }
 
-/** A team's Home and Away Form, an empty Form Window taking the other venue's Form, and `fallback` with neither. */
-export function venueFormsOf(windows: FormWindows, teamId: TeamId, fallback: number): VenueForms {
-  const homeForm = formOf(windows.home, teamId);
-  const awayForm = formOf(windows.away, teamId);
+/** Home and Away Form as venue Forms, an empty Form Window (null) taking the other venue's Form, and `fallback` with neither. */
+export function venueFormsFrom(homeForm: number | null, awayForm: number | null, fallback: number): VenueForms {
   return { home: homeForm ?? awayForm ?? fallback, away: awayForm ?? homeForm ?? fallback };
+}
+
+/** A team's Home and Away Form as venue Forms, with `fallback` for an empty Form Window and no Form at the other venue. */
+export function venueFormsOf(windows: FormWindows, teamId: TeamId, fallback: number): VenueForms {
+  return venueFormsFrom(formOf(windows.home, teamId), formOf(windows.away, teamId), fallback);
 }
 
 /** A Form Window Game seen from one team's side. */
