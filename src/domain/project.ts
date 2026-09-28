@@ -213,12 +213,56 @@ function narrow(groups: Group[], step: GroupStep, context: SettleContext): Group
 }
 
 /**
- * The Played Games among the teams of `group`: its Direct Games (see CONTEXT.md). This ticket assumes every pair in
- * the Group has met equally often; #87 handles unequal meetings by dropping the earliest legs.
+ * The Played Games among the teams of `group`: its Direct Games (see CONTEXT.md). Art. 6.2, "Weisungen für den
+ * Spielbetrieb der National League, Saison 2026/27" (02.09.2026): when the teams have met each other unequally
+ * often, only the smallest number of meetings between any two of them counts, for all of them — a smallest count of
+ * 0 means the Group has no Direct Games at all, so the head-to-head steps decide nothing.
  */
 function directGamesOf(group: Group, playedGames: readonly PlayedGame[]): PlayedGame[] {
-  const teamIds = new Set(group.map((row) => row.teamId));
-  return playedGames.filter((game) => teamIds.has(game.homeTeamId) && teamIds.has(game.awayTeamId));
+  const teamIds = [...new Set(group.map((row) => row.teamId))];
+  if (teamIds.length < 2) return [];
+
+  const pairings = teamIds.flatMap((a, i) =>
+    teamIds.slice(i + 1).map((b) => ({
+      a,
+      b,
+      games: playedGames.filter(
+        (game) =>
+          (game.homeTeamId === a && game.awayTeamId === b) || (game.homeTeamId === b && game.awayTeamId === a),
+      ),
+    })),
+  );
+
+  const smallestMeetingCount = Math.min(...pairings.map((pairing) => pairing.games.length));
+  if (smallestMeetingCount === 0) return [];
+
+  return pairings.flatMap((pairing) => trimToSmallestMeetingCount(pairing.a, pairing.b, pairing.games, smallestMeetingCount));
+}
+
+/**
+ * Trims one pairing's Games to `keep` (the Group's smallest meeting count), dropping its earliest home Games and
+ * earliest away Games by start date first (Art. 6.2, 2026/27 edition): whichever club currently has more home legs
+ * in the pairing loses its earliest one, drop by drop, so the two legs shrink together. When `keep` is odd, the two
+ * legs cannot end up equal; the club with more home Games in the pairing to begin with (or, level, the club later in
+ * the fixed team order) is the one still short a leg when dropping stops, so the extra home Game dropped is its
+ * earliest — never the other club's.
+ */
+function trimToSmallestMeetingCount(a: TeamId, b: TeamId, games: readonly PlayedGame[], keep: number): PlayedGame[] {
+  if (games.length === keep) return [...games];
+
+  const byDateAsc = (x: PlayedGame, y: PlayedGame) => Date.parse(x.startsAt) - Date.parse(y.startsAt);
+  const aHome = games.filter((game) => game.homeTeamId === a).sort(byDateAsc);
+  const bHome = games.filter((game) => game.homeTeamId === b).sort(byDateAsc);
+  const clubWithMoreHomeGames = aHome.length !== bHome.length ? (aHome.length > bHome.length ? a : b) : a > b ? a : b;
+
+  let drops = aHome.length + bHome.length - keep;
+  while (drops > 0) {
+    const dropA = aHome.length > bHome.length || (aHome.length === bHome.length && clubWithMoreHomeGames === a);
+    (dropA ? aHome : bHome).shift();
+    drops--;
+  }
+
+  return [...aHome, ...bHome];
 }
 
 /** Each team's Points from `games`, 0 for a team that plays none of them. */

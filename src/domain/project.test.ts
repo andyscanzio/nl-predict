@@ -111,6 +111,82 @@ describe("project: Current Table", () => {
     expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([1, 2, 3]);
   });
 
+  // Art. 6.2, official step 1: teams that have met each other unequally often count only the Group's smallest number
+  // of meetings, for every pairing — dropping 1 and 2's earliest home and away legs changes who leads the mini-table.
+  it("trims a pairing that met more often than the rest of the Group to the smallest number of meetings", () => {
+    const games = [
+      // 1 and 2 meet 4 times, twice as many as either meets 3: the Group's smallest count (2) governs, so only 1's
+      // later home leg (a 2 win) and 2's later away leg (also a 2 win) count for 1 vs 2, worth 0 Points to 1, 6 to 2.
+      played(1, 2, 5, 0, "regulation", "2026-09-01T19:45:00+02:00"), // earliest home leg: dropped
+      played(2, 1, 0, 5, "regulation", "2026-09-02T19:45:00+02:00"), // earliest away leg: dropped
+      played(1, 2, 0, 3, "regulation", "2026-09-20T19:45:00+02:00"), // latest home leg: kept, 2 wins
+      played(2, 1, 3, 0, "regulation", "2026-09-21T19:45:00+02:00"), // latest away leg: kept, 2 wins
+      // 1 vs 3, once each way: 3 Points each, so 3 in Direct Games so far.
+      played(1, 3, 3, 0, "regulation", "2026-09-05T19:45:00+02:00"),
+      played(3, 1, 3, 0, "regulation", "2026-09-06T19:45:00+02:00"),
+      // 2 vs 3, once each way: 3 Points each too.
+      played(2, 3, 3, 0, "regulation", "2026-09-07T19:45:00+02:00"),
+      played(3, 2, 3, 0, "regulation", "2026-09-08T19:45:00+02:00"),
+      // Filler Games bring all three to 9 Points in 6 Games (Points per Game 1.5).
+      played(3, 10, 3, 0),
+      played(11, 3, 3, 0),
+    ];
+    // Trimmed Direct Games Points: 2 gets 3 (vs 3) + 6 (vs 1, kept legs only) = 9; 3 gets 3 + 3 = 6; 1 gets
+    // 3 (vs 3) + 0 (vs 2, kept legs only) = 3. Counting all 4 Games against 1 vs 2 would instead tie 1 and 2 at 9.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([2, 3, 1]);
+  });
+
+  // Art. 6.2, official step 1: when the Group's smallest number of meetings is odd, the two legs kept for a pairing
+  // can't split evenly; the extra home Game dropped is the earliest of the club with more home Games in the pairing.
+  it("drops the extra home Game of the club with more home Games, when the smallest meeting count is odd", () => {
+    const games = [
+      // 1 hosts 2 three times, 2 hosts 1 only twice: 1 is the club with more home Games in this pairing. The Group's
+      // smallest count (3, from 1 vs 3 and 2 vs 3 below) trims this pairing from 5 to 3, dropping 1's two earliest
+      // home legs — both, since the count to keep is odd, so the two legs can't split evenly (1 vs 2 home each).
+      played(1, 2, 5, 0, "regulation", "2026-09-01T19:45:00+02:00"), // 1's earliest home leg: dropped
+      played(1, 2, 5, 0, "regulation", "2026-09-05T19:45:00+02:00"), // 1's 2nd-earliest home leg: dropped
+      played(1, 2, 0, 3, "regulation", "2026-09-25T19:45:00+02:00"), // 1's latest home leg: kept, 2 wins
+      played(2, 1, 3, 0, "regulation", "2026-09-10T19:45:00+02:00"), // 2's home leg: kept, 2 wins
+      played(2, 1, 3, 0, "regulation", "2026-09-15T19:45:00+02:00"), // 2's home leg: kept, 2 wins
+      // 1 vs 3, three Games: 1 wins the home leg, 3 wins both away legs.
+      played(1, 3, 3, 0, "regulation", "2026-09-02T19:45:00+02:00"),
+      played(3, 1, 3, 0, "regulation", "2026-09-03T19:45:00+02:00"),
+      played(3, 1, 3, 0, "regulation", "2026-09-04T19:45:00+02:00"),
+      // 2 vs 3, three Games: 2 wins one, 3 wins the other two.
+      played(2, 3, 3, 0, "regulation", "2026-09-06T19:45:00+02:00"),
+      played(3, 2, 3, 0, "regulation", "2026-09-07T19:45:00+02:00"),
+      played(3, 2, 0, 3, "regulation", "2026-09-08T19:45:00+02:00"),
+      // Filler Games bring all three to 15 Points in 10 Games (Points per Game 1.5).
+      played(1, 30, 3, 0),
+      played(31, 1, 0, 3),
+      played(2, 32, 0, 3),
+      played(33, 2, 3, 0),
+      played(3, 34, 3, 0),
+      played(35, 3, 0, 3),
+      played(3, 36, 0, 3),
+      played(37, 3, 3, 0),
+    ];
+    // Trimmed, 1 gets 0 (all 3 kept legs against 2 are losses) + 3 (vs 3) = 3; 2 gets 9 (all 3 kept legs against 1
+    // are wins) + 6 (vs 3) = 15; 3 gets 6 (vs 1) + 3 (vs 2) = 9. Counting all 5 Games against 1 vs 2 would instead
+    // tie all three at 9, since 1's two dropped home losses are exactly offset by its two dropped-Game absences.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([2, 3, 1]);
+  });
+
+  // Art. 6.2, official step 1: a Group containing a team that has met none of the others has a smallest meeting
+  // count of 0, so Points in Direct Games decides nothing for anyone in the Group, not only for the pair that hasn't met.
+  it("decides a Group without head-to-head when one team has met none of the others", () => {
+    const games = [
+      played(1, 2, 5, 0, "regulation", "2026-09-01T19:45:00+02:00"), // 1 beats 2 — would favour 1 if it counted
+      played(3, 1, 5, 0, "regulation", "2026-09-02T19:45:00+02:00"), // 3 beats 1 — would favour 3 if it counted
+      // 2 and 3 never meet, so the Group's smallest meeting count is 0 and Direct Games Points settles nothing.
+      played(2, 40, 3, 0), // brings 2 to 3 Points in 2 Games (Points per Game 1.5), GD -5 + 3 = -2
+      played(41, 3, 3, 0), // brings 3 to 3 Points in 2 Games (Points per Game 1.5), GD +5 - 3 = +2
+    ];
+    // 1: 3 Points in 2 Games, GD +5 - 5 = 0; 2: GD -2; 3: GD +2. Goal difference over all Games settles it: 3, 1, 2 —
+    // not the 1-over-2, 3-over-1 order the two head-to-head results would each suggest on their own.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([3, 1, 2]);
+  });
+
   // Art. 6.2, official steps 1-2: Direct Games level on Points fall through to goal difference over all Games.
   it("falls through a Direct Games tie on Points to goal difference over all Games", () => {
     const games = [
