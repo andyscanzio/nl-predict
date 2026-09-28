@@ -5,6 +5,7 @@ import {
   project,
   REGULAR_SEASON_GAMES,
   type IntegrityIssue,
+  type NextRoundDay,
   type ProjectedTableRow,
   type ProjectionModel,
 } from "../domain/project.ts";
@@ -47,6 +48,25 @@ const gameDate = new Intl.DateTimeFormat("en-GB", {
   month: "short",
   timeZone: "Europe/Zurich",
 });
+
+const upcomingGameTime = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Europe/Zurich",
+});
+
+/** A Next Round match day's Swiss calendar date (YYYY-MM-DD) as e.g. "Tue 29 Sep"; UTC avoids reinterpreting the date. */
+const matchDayHeading = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+function formatExpectedPoints(points: number) {
+  return points.toFixed(1);
+}
 
 const ordinalRules = new Intl.PluralRules("en-GB", { type: "ordinal" });
 const ORDINAL_SUFFIXES: Partial<Record<Intl.LDMLPluralRule, string>> = { one: "st", two: "nd", few: "rd" };
@@ -333,6 +353,56 @@ function IntegrityWarning({
   );
 }
 
+/** The Next Round, grouped under match-day subheadings; hidden entirely when there are no Upcoming Games. */
+function UpcomingGamesPanel({
+  nextRound,
+  lowSample,
+  teamCell,
+}: {
+  nextRound: NextRoundDay[];
+  lowSample: boolean;
+  teamCell: (teamId: TeamId) => ComponentChildren;
+}) {
+  if (nextRound.length === 0) return null;
+  return (
+    <section class="panel">
+      <h2>Upcoming Games</h2>
+      {nextRound.map((day) => (
+        <div class="upcoming-day" key={day.date}>
+          <h3 class="upcoming-day-heading">{matchDayHeading.format(new Date(`${day.date}T00:00:00Z`))}</h3>
+          <ul class="upcoming-games">
+            {day.games.map(({ game, prediction }) => (
+              <li key={game.id} class="upcoming-game">
+                <div class="upcoming-game-main">
+                  <time class="upcoming-time" dateTime={game.startsAt}>
+                    {upcomingGameTime.format(new Date(game.startsAt))}
+                  </time>
+                  <span class="upcoming-teams">
+                    <span class="upcoming-team">{teamCell(game.homeTeamId)}</span>
+                    <span class="upcoming-vs" aria-hidden="true">
+                      vs
+                    </span>
+                    <span class="upcoming-team">{teamCell(game.awayTeamId)}</span>
+                  </span>
+                </div>
+                <p class="upcoming-points">
+                  {formatExpectedPoints(prediction.points.home)} Pts – {formatExpectedPoints(prediction.points.away)} Pts
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {lowSample && (
+        <p class="meta panel-body upcoming-note">
+          Some teams are Low Sample, with fewer than {LOW_SAMPLE_GAMES} Played Games, so these predictions rest on
+          little data.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ModelPicker({ model, onChange }: { model: ProjectionModel; onChange: (model: ProjectionModel) => void }) {
   return (
     <fieldset class="model-picker">
@@ -430,7 +500,7 @@ export function App({
   onModelChange: (model: ProjectionModel) => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
-  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed } = useMemo(
+  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(
     () => project(snapshot.games, now, model, simulationSeed(snapshot.snapshotAt, model.id)),
     [snapshot, now, model],
   );
@@ -635,6 +705,12 @@ export function App({
                 )}
               </ul>
             </section>
+
+            <UpcomingGamesPanel
+              nextRound={nextRound}
+              lowSample={projectedTable.some((row) => row.lowSample)}
+              teamCell={teamCell}
+            />
 
             <section class="panel explanation">
               <h2>How the projection works: {model.name}</h2>

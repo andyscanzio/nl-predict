@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { eloModel } from "./eloModel.ts";
 import { project } from "./project.ts";
 import { splitFormRate } from "./splitFormRate.ts";
 import type { Decision, Game } from "./types.ts";
@@ -443,5 +444,144 @@ describe("project: data integrity", () => {
       projectedTable: [],
       integrityIssues: [],
     });
+  });
+});
+
+describe("project: Next Round", () => {
+  // 4 teams, so one full round (half the teams) is 2 Games.
+  function nextRoundDates(games: Game[]) {
+    return project(games, asOf, splitFormRate).nextRound.map((day) => day.date);
+  }
+
+  function nextRoundGameIds(games: Game[]) {
+    return project(games, asOf, splitFormRate).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
+  }
+
+  it("extends a match day with only some teams playing by the next match day in full", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 2, "2026-10-05T19:45:00+02:00"), // day 1: only 2 of 4 teams
+      scheduled(1, 3, "2026-10-06T18:00:00+02:00"), // day 2: full round, taken in full
+      scheduled(2, 4, "2026-10-06T19:45:00+02:00"),
+    ];
+    expect(nextRoundDates(games)).toEqual(["2026-10-05", "2026-10-06"]);
+    expect(nextRoundGameIds(games)).toHaveLength(3);
+  });
+
+  it("shows a full-round match day on its own", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 3, "2026-10-05T18:00:00+02:00"), // day 1: full round already
+      scheduled(2, 4, "2026-10-05T19:45:00+02:00"),
+      scheduled(1, 4, "2026-10-12T19:45:00+02:00"), // day 2: left out
+      scheduled(2, 3, "2026-10-12T19:45:00+02:00"),
+    ];
+    expect(nextRoundDates(games)).toEqual(["2026-10-05"]);
+    expect(nextRoundGameIds(games)).toHaveLength(2);
+  });
+
+  it("leaves out a past-dated Remaining Game, such as one postponed", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 3, "2026-09-25T19:45:00+02:00"), // postponed: past-dated, no result
+      scheduled(2, 4, "2026-10-05T19:45:00+02:00"),
+    ];
+    expect(nextRoundGameIds(games)).toEqual([games[3]!.id]);
+  });
+
+  it("leaves out a Game that started before the As-Of Date on the same Swiss day", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 3, "2026-10-01T08:00:00+02:00"), // same Swiss day as As-Of, but already started
+      scheduled(2, 4, "2026-10-01T19:45:00+02:00"), // same Swiss day, still ahead
+    ];
+    expect(nextRoundGameIds(games)).toEqual([games[3]!.id]);
+  });
+
+  it("includes a Game with a result that starts after the As-Of Date, still Remaining", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      played(1, 3, 5, 1, "regulation", "2026-10-05T19:45:00+02:00"), // after As-Of: Remaining despite its result
+    ];
+    expect(nextRoundGameIds(games)).toEqual([games[2]!.id]);
+  });
+
+  it("shows fewer than a full round when that's all that's left", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 3, "2026-10-05T19:45:00+02:00"),
+    ];
+    expect(nextRoundGameIds(games)).toEqual([games[2]!.id]);
+  });
+
+  it("gives an empty Next Round when there are no Upcoming Games", () => {
+    const games = [played(1, 2, 4, 2), played(3, 4, 1, 2)];
+    expect(project(games, asOf, splitFormRate).nextRound).toEqual([]);
+  });
+
+  it("groups Games on the same Swiss day but different UTC dates together", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      // 23:30 UTC on the 5th is 01:30 on the 6th in Swiss summer time (UTC+2).
+      scheduled(1, 3, "2026-10-05T23:30:00Z"),
+      scheduled(2, 4, "2026-10-06T18:00:00+02:00"),
+    ];
+    expect(nextRoundDates(games)).toEqual(["2026-10-06"]);
+    expect(nextRoundGameIds(games)).toHaveLength(2);
+  });
+
+  it("carries the model's own predictions for a Points-only model: expected Points, no Outcome Probabilities", () => {
+    const games = [
+      played(1, 2, 4, 2), // team 1's Home Form: 3
+      played(3, 4, 1, 2), // team 3's Home Form: 0, no away Games played
+      scheduled(1, 3, "2026-10-05T19:45:00+02:00"),
+    ];
+    const { nextRound } = project(games, asOf, splitFormRate);
+    const upcoming = nextRound[0]!.games[0]!;
+    expect(upcoming.prediction.outcomes).toBeNull();
+    // team 3's empty away Form Window falls back to its Home Form (0).
+    expect(upcoming.prediction.points).toEqual({ home: 3, away: 0 });
+  });
+
+  it("carries the model's own predictions for an outcome model: Outcome Probabilities", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(1, 3, "2026-10-05T19:45:00+02:00"),
+    ];
+    const { nextRound } = project(games, asOf, eloModel);
+    const upcoming = nextRound[0]!.games[0]!;
+    expect(upcoming.prediction.outcomes).not.toBeNull();
+    const sum = Object.values(upcoming.prediction.outcomes!).reduce((a, b) => a + b, 0);
+    expect(sum).toBeCloseTo(1);
+  });
+
+  it("orders Upcoming Games within a match day by start time", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(2, 4, "2026-10-05T19:45:00+02:00"),
+      scheduled(1, 3, "2026-10-05T18:00:00+02:00"),
+    ];
+    const [earlier, later] = [games[3]!, games[2]!];
+    expect(nextRoundGameIds(games)).toEqual([earlier.id, later.id]);
+  });
+
+  it("breaks a same-time tie within a match day by Game id", () => {
+    const games = [
+      played(1, 2, 4, 2),
+      played(3, 4, 1, 2),
+      scheduled(2, 4, "2026-10-05T19:45:00+02:00"),
+      scheduled(1, 3, "2026-10-05T19:45:00+02:00"),
+    ];
+    const byId = [games[2]!, games[3]!].sort((a, b) => a.id.localeCompare(b.id));
+    expect(nextRoundGameIds(games)).toEqual(byId.map((g) => g.id));
   });
 });
