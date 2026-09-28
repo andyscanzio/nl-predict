@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { eloModel } from "./eloModel.ts";
-import { project } from "./project.ts";
+import { matchupModel } from "./matchupModel.ts";
+import { seasonRate } from "./seasonRate.ts";
+import { project, SEASON_START } from "./project.ts";
 import { splitFormRate } from "./splitFormRate.ts";
 import type { Decision, Game } from "./types.ts";
 
@@ -583,5 +585,52 @@ describe("project: Next Round", () => {
     ];
     const byId = [games[2]!, games[3]!].sort((a, b) => a.id.localeCompare(b.id));
     expect(nextRoundGameIds(games)).toEqual(byId.map((g) => g.id));
+  });
+});
+
+describe("project: matchDay", () => {
+  const matchDayAt = (games: Game[], at = asOf) => project(games, at, splitFormRate).matchDay;
+  const playedAt = (startsAt: string) => played(1, 2, 3, 2, "regulation", startsAt);
+
+  it("gives the Season-start token before any Game has been played", () => {
+    expect(matchDayAt([])).toBe(SEASON_START);
+    expect(matchDayAt([scheduled(1, 2, "2026-10-10T19:45:00+02:00")])).toBe(SEASON_START);
+    expect(matchDayAt([playedAt("2026-10-01T19:45:00+02:00")])).toBe(SEASON_START);
+  });
+
+  it("gives the latest Swiss calendar day a Played Game started on", () => {
+    const games = [playedAt("2026-09-25T19:45:00+02:00"), playedAt("2026-09-30T19:45:00+02:00"), playedAt("2026-09-27T15:00:00+02:00")];
+    expect(matchDayAt(games)).toBe("2026-09-30");
+  });
+
+  it("counts a late-evening Game on its Swiss day, not its UTC day", () => {
+    // 23:30 UTC on the 30th is 01:30 on 1 October in Swiss summer time.
+    expect(matchDayAt([playedAt("2026-09-30T23:30:00Z")], new Date("2026-10-01T12:00:00Z"))).toBe("2026-10-01");
+    // 21:59 UTC on the 30th is still the 30th in Switzerland.
+    expect(matchDayAt([playedAt("2026-09-30T21:59:00Z")])).toBe("2026-09-30");
+  });
+
+  it("ignores a Remaining Game that has started or was postponed", () => {
+    const games = [
+      playedAt("2026-09-28T19:45:00+02:00"),
+      scheduled(1, 2, "2026-09-30T19:45:00+02:00"), // started, awaiting a result
+      scheduled(1, 2, "2026-09-29T19:45:00+02:00"), // postponed without a new date
+    ];
+    expect(matchDayAt(games)).toBe("2026-09-28");
+  });
+
+  it("ignores a Game with a result that starts after the As-Of Date", () => {
+    expect(matchDayAt([playedAt("2026-09-28T19:45:00+02:00"), playedAt("2026-10-05T19:45:00+02:00")])).toBe("2026-09-28");
+  });
+
+  it("does not depend on Game order", () => {
+    const games = [playedAt("2026-09-25T19:45:00+02:00"), playedAt("2026-09-30T19:45:00+02:00")];
+    expect(matchDayAt([...games].reverse())).toBe(matchDayAt(games));
+  });
+
+  it.each([splitFormRate, seasonRate, matchupModel, eloModel])("is set under $name", (model) => {
+    const games = [playedAt("2026-09-28T19:45:00+02:00")];
+    expect(project(games, asOf, model).matchDay).toBe("2026-09-28");
+    expect(project([], asOf, model).matchDay).toBe(SEASON_START);
   });
 });

@@ -27,7 +27,7 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-/** The seed for a Season Simulation: the same Match Day (see matchDayOf) and model always give the same numbers. */
+/** The seed `project()` gives a Season Simulation: the same Match Day (see Projection.matchDay) and model always give the same numbers. */
 export function simulationSeed(matchDay: string, modelId: string): number {
   return hash(`${matchDay}|${modelId}`);
 }

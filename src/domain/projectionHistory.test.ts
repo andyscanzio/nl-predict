@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eloModel } from "./eloModel.ts";
-import { SEASON_START, simulationSeedAsOf } from "./matchDay.ts";
 import { matchupModel } from "./matchupModel.ts";
-import { project, type ProjectionModel } from "./project.ts";
+import { project, SEASON_START, type ProjectionModel } from "./project.ts";
 import { projectionHistory } from "./projectionHistory.ts";
 import { seasonRate } from "./seasonRate.ts";
 import { splitFormRate } from "./splitFormRate.ts";
@@ -65,7 +64,7 @@ describe("projectionHistory", () => {
 
   for (const model of MODELS) {
     it(`ends, under ${model.name}, on exactly what the live projection gives once "now" is after the last Played Game`, () => {
-      const live = project(snapshot.games, now, model, simulationSeedAsOf(snapshot.games, now, model.id));
+      const live = project(snapshot.games, now, model);
       const last = historyOf(model).at(-1)!;
       expect(last.matchDay).toBe("2026-09-27");
       for (const row of live.projectedTable) {

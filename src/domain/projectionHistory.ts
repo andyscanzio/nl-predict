@@ -1,4 +1,3 @@
-import { matchDayOf, simulationSeedAsOf } from "./matchDay.ts";
 import { project, type ProjectionModel } from "./project.ts";
 import { swissCalendarDay, swissDayEnd } from "./swissDay.ts";
 import type { Game, TeamId } from "./types.ts";
@@ -31,7 +30,7 @@ function matchDaysPlayed(games: readonly Game[]): string[] {
 }
 
 function pointAsOf(games: Game[], asOf: Date, model: ProjectionModel): HistoryPoint {
-  const { projectedTable, currentTable } = project(games, asOf, model, simulationSeedAsOf(games, asOf, model.id));
+  const { matchDay, projectedTable, currentTable } = project(games, asOf, model);
   const gamesPlayed = new Map(currentTable.map((row) => [row.teamId, row.gamesPlayed]));
   const teams: Record<TeamId, TeamHistoryPoint> = {};
   for (const row of projectedTable) {
@@ -42,13 +41,13 @@ function pointAsOf(games: Game[], asOf: Date, model: ProjectionModel): HistoryPo
       first: row.probabilities?.first ?? null,
     };
   }
-  return { matchDay: matchDayOf(games, asOf), teams };
+  return { matchDay, teams };
 }
 
 /**
  * The Projection History under one model: `project()` as of the start of the Season, then as of Swiss midnight at the end of
- * every Match Day with a Played Game, each seeded by its Match Day (see simulationSeedAsOf). Given `now` after every Played
- * Game's start, the last point equals the live projection field for field.
+ * every Match Day with a Played Game. Each point is labelled with the Match Day `project()` reports, which also seeds its
+ * Season Simulation. Given `now` after every Played Game's start, the last point equals the live projection field for field.
  */
 export function projectionHistory(games: Game[], model: ProjectionModel): ProjectionHistory {
   // The epoch is before every Game, so nothing is Played and the Match Day is SEASON_START.

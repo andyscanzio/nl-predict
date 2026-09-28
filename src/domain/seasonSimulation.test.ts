@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { eloModel } from "./eloModel.ts";
-import { SEASON_START, simulationSeedAsOf } from "./matchDay.ts";
 import { matchupModel } from "./matchupModel.ts";
 import type { OutcomeProbabilities } from "./outcomes.ts";
-import { project, type ProjectionModel } from "./project.ts";
+import { project, SEASON_START, type ProjectionModel } from "./project.ts";
 import { seasonRate } from "./seasonRate.ts";
 import { simulationSeed } from "./seasonSimulation.ts";
 import { splitFormRate } from "./splitFormRate.ts";
@@ -53,14 +52,14 @@ function fixedModel(outcomes: OutcomeProbabilities): ProjectionModel {
 
 const homeAlwaysWins = fixedModel({ regulationWin: 1, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 0 });
 
-function probabilitiesByTeam(games: Game[], model: ProjectionModel, seed = 1) {
-  return new Map(project(games, asOf, model, seed).projectedTable.map((row) => [row.teamId, row.probabilities]));
+function probabilitiesByTeam(games: Game[], model: ProjectionModel) {
+  return new Map(project(games, asOf, model).projectedTable.map((row) => [row.teamId, row.probabilities]));
 }
 
 describe("project: Season Simulation", () => {
-  it("gives the same probabilities for the same seed", () => {
+  it("gives the same probabilities for the same Games, As-Of Date and model", () => {
     const games = roundRobin();
-    expect(probabilitiesByTeam(games, seasonRate, 42)).toEqual(probabilitiesByTeam(games, seasonRate, 42));
+    expect(probabilitiesByTeam(games, seasonRate)).toEqual(probabilitiesByTeam(games, seasonRate));
   });
 
   it("gives every team Cut Line zone probabilities summing to 1, and 1st probabilities summing to 1 across teams", () => {
@@ -104,7 +103,7 @@ describe("project: Season Simulation", () => {
   });
 
   it("keeps the Projected Table ranked by expected Points", () => {
-    const { projectedTable } = project(roundRobin(), asOf, seasonRate, 1);
+    const { projectedTable } = project(roundRobin(), asOf, seasonRate);
     const points = projectedTable.map((row) => row.projectedPoints);
     expect(points).toEqual([...points].sort((a, b) => b - a));
   });
@@ -116,8 +115,8 @@ describe("project: Season Simulation", () => {
   });
 });
 
-function rankDistributionsByTeam(games: Game[], model: ProjectionModel, seed = 1) {
-  return new Map(project(games, asOf, model, seed).projectedTable.map((row) => [row.teamId, row.rankDistribution]));
+function rankDistributionsByTeam(games: Game[], model: ProjectionModel) {
+  return new Map(project(games, asOf, model).projectedTable.map((row) => [row.teamId, row.rankDistribution]));
 }
 
 /** The Rank Distribution entries from rank `from` to rank `to` (1-based, inclusive), summed. */
@@ -138,7 +137,7 @@ describe("project: Rank Distribution", () => {
   });
 
   it("sums, over each Cut Line zone, to the team's Playoffs / Play-in / Eliminated, and its 1st entry to its 1st", () => {
-    for (const { rankDistribution, probabilities } of project(roundRobin(), asOf, seasonRate, 7).projectedTable) {
+    for (const { rankDistribution, probabilities } of project(roundRobin(), asOf, seasonRate).projectedTable) {
       const distribution = rankDistribution!;
       expect(chanceOfRanks(distribution, 1, 6)).toBeCloseTo(probabilities!.playoffs, 12);
       expect(chanceOfRanks(distribution, 7, 10)).toBeCloseTo(probabilities!.playIn, 12);
@@ -191,12 +190,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
   const snapshot = recordedSnapshot as Snapshot;
 
   it.each([seasonRate, matchupModel, eloModel])("gives plausible probabilities under $name", (model) => {
-    const { projectedTable } = project(
-      snapshot.games,
-      new Date(snapshot.snapshotAt),
-      model,
-      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
-    );
+    const { projectedTable } = project(snapshot.games, new Date(snapshot.snapshotAt), model);
     expect(projectedTable).toHaveLength(14);
     for (const { probabilities } of projectedTable) {
       for (const probability of Object.values(probabilities!)) {
@@ -209,12 +203,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
   });
 
   it.each([seasonRate, matchupModel, eloModel])("gives valid Rank Distributions under $name", (model) => {
-    const { projectedTable } = project(
-      snapshot.games,
-      new Date(snapshot.snapshotAt),
-      model,
-      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
-    );
+    const { projectedTable } = project(snapshot.games, new Date(snapshot.snapshotAt), model);
     for (const { rankDistribution } of projectedTable) {
       expect(rankDistribution).toHaveLength(14);
       for (const probability of rankDistribution!) {
@@ -232,7 +221,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
 describe("Season Simulation seeded by Match Day", () => {
   const snapshot = recordedSnapshot as Snapshot;
   const tableAt = (model: ProjectionModel, asOf: Date) =>
-    project(snapshot.games, asOf, model, simulationSeedAsOf(snapshot.games, asOf, model.id)).projectedTable;
+    project(snapshot.games, asOf, model).projectedTable;
   const snapshotAt = new Date(snapshot.snapshotAt);
   // Same Games, no new result: refreshes an hour and a day later.
   const refreshes = [3_600_000, 86_400_000].map((offset) => new Date(snapshotAt.getTime() + offset));

@@ -9,7 +9,6 @@ import {
   type ProjectedTableRow,
   type ProjectionModel,
 } from "../domain/project.ts";
-import { simulationSeedAsOf } from "../domain/matchDay.ts";
 import { SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
@@ -793,7 +792,7 @@ export function App({
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
   const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(
-    () => project(snapshot.games, now, model, simulationSeedAsOf(snapshot.games, now, model.id)),
+    () => project(snapshot.games, now, model),
     [snapshot, now, model],
   );
   const showProbabilities = model.kind === "outcomes";

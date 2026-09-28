@@ -9,7 +9,7 @@ import {
 } from "./form.ts";
 import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
 import { cutLineFor, type CutLine } from "./cutLines.ts";
-import { simulateSeason, type CutLineProbabilities } from "./seasonSimulation.ts";
+import { simulateSeason, simulationSeed, type CutLineProbabilities } from "./seasonSimulation.ts";
 import { swissCalendarDay } from "./swissDay.ts";
 import type { Game, TeamId } from "./types.ts";
 
@@ -136,6 +136,11 @@ export interface NextRoundDay {
 }
 
 export interface Projection {
+  /**
+   * The Match Day the projection is as of: the Swiss calendar day (YYYY-MM-DD) of the latest Played Game up to the As-Of
+   * Date, or SEASON_START before any Game has been played. It seeds the Season Simulation (see simulationSeed).
+   */
+  matchDay: string;
   currentTable: CurrentTableRow[];
   projectedTable: ProjectedTableRow[];
   /** Teams whose Games do not add up to REGULAR_SEASON_GAMES, in Current Table order; empty when the data is complete. */
@@ -145,6 +150,9 @@ export interface Projection {
   /** The Upcoming Games on the earliest match day, plus each following match day in full, until one full round is included. */
   nextRound: NextRoundDay[];
 }
+
+/** The Match Day of a projection made before any Game has been played. */
+export const SEASON_START = "season-start";
 
 /** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
 const PROJECTED_TIE_TOLERANCE = 1e-9;
@@ -288,10 +296,28 @@ function nextRoundOf(
   return nextRound;
 }
 
-/** `seed` drives the Season Simulation, which runs for models with Outcome Probabilities (see simulationSeed). */
-export function project(games: Game[], asOf: Date, model: ProjectionModel, seed = 0): Projection {
+/**
+ * The Match Day a projection is as of: the latest Swiss calendar day, as of the As-Of Date, on which a Played Game started
+ * (YYYY-MM-DD), or SEASON_START before any Game. Remaining Games never count, however late their start.
+ */
+function matchDayOf(playedGames: readonly PlayedGame[]): string {
+  let latest: number | undefined;
+  for (const game of playedGames) {
+    const startsAt = Date.parse(game.startsAt);
+    if (latest === undefined || startsAt > latest) latest = startsAt;
+  }
+  return latest === undefined ? SEASON_START : swissCalendarDay(latest);
+}
+
+/**
+ * Projects the Season as it stood at the As-Of Date. The Season Simulation, which runs for models with Outcome
+ * Probabilities, is seeded from the projection's Match Day and the model's id (see simulationSeed), so the same Games,
+ * As-Of Date and model always give the same numbers, and a refresh with no new results changes nothing.
+ */
+export function project(games: Game[], asOf: Date, model: ProjectionModel): Projection {
   const input = projectionModelInput(games, asOf);
   const { currentTable, formWindows, playedGames, remainingGames } = input;
+  const matchDay = matchDayOf(playedGames);
 
   const predictions = predictGames(model, input);
   const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
@@ -307,7 +333,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, seed 
           new Map(currentTable.map((row) => [row.teamId, row.points])),
           remainingGames,
           new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
-          seed,
+          simulationSeed(matchDay, model.id),
         )
       : null;
 
@@ -349,5 +375,5 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, seed 
 
   const nextRound = nextRoundOf(remainingGames, predictions, asOf, currentTable.length);
 
-  return { currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0, nextRound };
+  return { matchDay, currentTable, projectedTable, integrityIssues, anyGamesPlayed: playedGames.length > 0, nextRound };
 }
