@@ -147,18 +147,112 @@ describe("project: Current Table", () => {
     expect(currentTableOrder(games)).toEqual([3, 1, 4, 2]);
   });
 
+  // Art. 6.2, official step 4: a Direct Games tie on goal difference and goals for over all Games falls to goal
+  // difference in the Group's Direct Games.
+  it("breaks a Current Table tie on goal difference and goals for over all Games by goal difference in Direct Games", () => {
+    const games = [
+      played(1, 2, 3, 0), // Direct Games: 1 wins the home leg 3-0, 2 wins the away leg 1-0 — level at 3 Points each
+      played(2, 1, 1, 0),
+      // Filler Games bring both to 6 Points in 3 Games with identical overall goal difference (+1) and goals for (9),
+      // so steps 2-3 decide nothing; only the Direct Games goal difference (+2 for 1, -2 for 2) is left to settle it.
+      played(1, 3, 12, 4),
+      played(2, 4, 14, 2),
+    ];
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
+  });
+
+  // Art. 6.2, official step 5: a Direct Games tie on goal difference (as well as Points, and goal difference and
+  // goals for over all Games) falls to goals for in Direct Games.
+  it("breaks a Current Table tie on goal difference in Direct Games by goals for in Direct Games", () => {
+    const games = [
+      // The three-team Group's Direct Games: each of 1, 2 and 3 beats one and loses to the other, level at 3 Points
+      // in Direct Games (step 1) each.
+      played(1, 2, 3, 0),
+      played(3, 1, 5, 1),
+      played(2, 3, 3, 1),
+      // Filler Games bring all three to 6 Points in 4 Games, level on overall goal difference (+2) and goals for (9)
+      // too (steps 2-3 decide nothing).
+      played(1, 20, 5, 0),
+      played(21, 1, 2, 0),
+      played(2, 22, 6, 0),
+      played(23, 2, 3, 0),
+      played(3, 24, 3, 0),
+      played(25, 3, 3, 0),
+    ];
+    // 3's Direct Games goal difference (+2) separates it first (step 4); 1 and 2 stay level on Direct Games goal
+    // difference (-1 each), so their Direct Games goals for (4 vs 3) settles it for 1 (step 5).
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([3, 1, 2]);
+  });
+
+  // Art. 6.2, official step 6: a tie through Direct Games, and goal difference and goals for over all Games, falls
+  // to away goals over all Games — the goals a team scored as the away team.
+  it("breaks a Current Table tie on goal difference and goals for over all Games by away goals over all Games", () => {
+    const games = [
+      played(1, 2, 3, 0), // Direct Games: 1 wins the home leg, 2 wins the away leg — level at 3 Points, 0 GD, 4 GF
+      played(2, 1, 4, 1),
+      played(1, 9, 5, 0), // 1's other Game: a home win, no away goals for 1
+      played(10, 2, 0, 5), // 2's other Game: an away win, 5 away goals for 2
+    ];
+    // 1's only away goal (in the Direct Game above) is 1; 2's away goals are 0 (Direct) + 5 (filler) = 5.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([2, 1]);
+  });
+
+  // Art. 6.2, official step 7, the last of the official steps: a tie through away goals over all Games falls to away
+  // goals in Direct Games.
+  it("breaks a Current Table tie on away goals over all Games by away goals in Direct Games", () => {
+    const games = [
+      played(1, 2, 3, 0), // Direct Games: 1 wins the home leg, 2 wins the away leg — level at 3 Points, 0 GD, 4 GF
+      played(2, 1, 4, 1), // 1 scores 1 away goal here; 2 scores 0 away goals in the other Direct leg
+      played(5, 1, 1, 0, "OT"), // Filler Games equalise Points, overall GD (+2), GF (7) and away goals (1) for both
+      played(1, 6, 3, 0),
+      played(7, 2, 0, 1, "OT"),
+      played(2, 8, 2, 1, "OT"),
+    ];
+    // Both score 1 away goal overall; but of that, 1's came in its Direct Games (against 2) and 2's came from a
+    // filler Game, so 2 has 0 away goals in Direct Games against 1's 1.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
+  });
+
+  // Art. 6.2: a Group partly separated by an earlier step keeps using the original Group's Direct Games for a later
+  // step — "(gemäss Kriterien aus Punkt 1)" — never a fresh mini-league of just the teams still tied.
+  it("settles the two teams a Group's overall goal difference leaves tied by the original Group's Direct Games", () => {
+    const games = [
+      // The original three-team Group's Direct Games: each of 1, 2 and 3 beats one and loses to the other, all level
+      // at 3 Points in Direct Games (official step 1 decides nothing).
+      played(1, 2, 1, 0),
+      played(3, 1, 6, 0),
+      played(2, 3, 4, 0),
+      // Filler Games bring all three to 6 Points in 4 Games (Points per Game 1.5), entering one Group. Team 3's
+      // overall goal difference (+2) separates it from 1 and 2, who stay level (-2 each) over all Games.
+      played(1, 4, 4, 0),
+      played(5, 1, 1, 0),
+      played(2, 6, 1, 0),
+      played(7, 2, 6, 0),
+      played(3, 8, 3, 0),
+      played(9, 3, 3, 0),
+    ];
+    // 1 and 2 are settled by the original three-team Group's Direct Games goal difference (1: -5, 2: +3), so 2 ranks
+    // above 1 — the opposite of what a fresh two-team head-to-head on their one meeting (1 wins 1-0) would give.
+    expect(currentTableOrder(games).filter((id) => id === 1 || id === 2 || id === 3)).toEqual([3, 2, 1]);
+  });
+
+  // Art. 6.2: 1 and 2 never meet, so every Direct Games step (1, 4, 5, 7) decides nothing; they are also level on
+  // overall goal difference, goals for and away goals (steps 2, 3, 6), so all seven official steps fall through to
+  // regulation wins, our own step after them.
   it("breaks Current Table ties on goals for by regulation wins", () => {
     const games = [
-      // team 2: OT win + OT loss = 3 Points, 3:3 goals, no regulation win
+      // team 2: OT win + OT loss = 3 Points, 3:3 goals, 1 away goal, no regulation win
       played(2, 5, 2, 1, "OT"),
       played(6, 2, 2, 1, "OT"),
-      // team 1: regulation win + regulation loss = 3 Points, 3:3 goals, one regulation win
+      // team 1: regulation win + regulation loss = 3 Points, 3:3 goals, 1 away goal, one regulation win
       played(1, 7, 2, 1),
       played(8, 1, 2, 1),
     ];
     expect(currentTableOrder(games).filter((id) => id === 1 || id === 2)).toEqual([1, 2]);
   });
 
+  // Art. 6.2: with no Played Games, all seven official steps and regulation wins are level for every team, so our
+  // own last resort, a fixed team order, is what settles the table.
   it("breaks Current Table ties on every criterion by a fixed team order (ascending team id)", () => {
     const games = [scheduled(5, 2, "2026-10-05T19:45:00+02:00"), scheduled(6, 4, "2026-10-05T19:45:00+02:00")];
     // No Played Games, so all four teams are level on every criterion; insertion order would give 5, 2, 6, 4.

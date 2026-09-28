@@ -77,7 +77,7 @@ The real standings built from Played Games up to the As-Of Date, ordered by Poin
 _Avoid_: Leaderboard, standings (when ambiguous)
 
 **Direct Games**:
-The Played Games among a group of teams level on Points, fixed when the group is first formed and kept even after some of them are separated. When the teams have met each other unequally often, only the smallest number counts for all of them, dropping each pairing's earliest home and away Games by date.
+The Played Games among a group of teams level on Points and Points per Game, fixed when the group is first formed and kept even after some of them are separated. When the teams have met each other unequally often, only the smallest number counts for all of them, dropping each pairing's earliest home and away Games by date.
 _Avoid_: Head-to-head games, mini-league
 
 **Projected Table**:

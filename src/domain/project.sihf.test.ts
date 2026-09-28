@@ -21,7 +21,7 @@ describe("project: Current Table against the official SIHF standings", () => {
     const { currentTable } = project(snapshot.games, new Date(snapshot.snapshotAt), splitFormRate);
     const computed = currentTable.map((row) => `${row.rank} ${acronyms.get(row.teamId)}`);
 
-    // On failure the diff lists each rank where our tie-break approximation disagrees with SIHF.
+    // On failure the diff lists each rank where our official Art. 6.2 order (Points per Game first) disagrees with SIHF.
     expect(computed).toEqual(officialRanks());
   });
 });

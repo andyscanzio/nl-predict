@@ -192,18 +192,28 @@ function groupBy(rows: Group, key: (row: UnrankedRow) => number): Group[] {
   return [...byKey.entries()].sort(([a], [b]) => b - a).map(([, group]) => group);
 }
 
-/** A step settles a still-tied Group by a `key`, computed from that Group's own teams and Played Games. */
-type GroupStep = (group: Group, playedGames: readonly PlayedGame[]) => (row: UnrankedRow) => number;
+/** The Played Games available to a settling Group: all Played Games, and the original Group's Direct Games. */
+interface SettleContext {
+  playedGames: readonly PlayedGame[];
+  /**
+   * The Played Games among the teams of the Group as it first formed at official step 1 (see CONTEXT.md). Fixed for
+   * every step, so teams left level after some of the Group has been separated still use the original Group's
+   * Direct Games, never a fresh mini-league of just the teams still tied ("gemäss Kriterien aus Punkt 1").
+   */
+  directGames: readonly PlayedGame[];
+}
+
+/** A step settles a still-tied Group by a `key`, computed from the Group's SettleContext. */
+type GroupStep = (context: SettleContext) => (row: UnrankedRow) => number;
 
 /** Narrows every still-tied Group (more than one team) by `step`; a settled Group (one team) is left untouched. */
-function narrow(groups: Group[], step: GroupStep, playedGames: readonly PlayedGame[]): Group[] {
-  return groups.flatMap((group) => (group.length <= 1 ? [group] : groupBy(group, step(group, playedGames))));
+function narrow(groups: Group[], step: GroupStep, context: SettleContext): Group[] {
+  const key = step(context);
+  return groups.flatMap((group) => (group.length <= 1 ? [group] : groupBy(group, key)));
 }
 
 /**
- * The Played Games among the teams of `group`: its Direct Games (see CONTEXT.md). Direct Games are fixed when a
- * Group is first formed and kept even after some of its teams are separated, so `group` must be the original tied
- * Group a GroupStep receives, never a Group already narrowed by an earlier step. This ticket assumes every pair in
+ * The Played Games among the teams of `group`: its Direct Games (see CONTEXT.md). This ticket assumes every pair in
  * the Group has met equally often; #87 handles unequal meetings by dropping the earliest legs.
  */
 function directGamesOf(group: Group, playedGames: readonly PlayedGame[]): PlayedGame[] {
@@ -211,42 +221,78 @@ function directGamesOf(group: Group, playedGames: readonly PlayedGame[]): Played
   return playedGames.filter((game) => teamIds.has(game.homeTeamId) && teamIds.has(game.awayTeamId));
 }
 
+/** Each team's Points from `games`, 0 for a team that plays none of them. */
+function pointsIn(games: readonly PlayedGame[]): (row: UnrankedRow) => number {
+  const points = new Map<TeamId, number>();
+  for (const game of games) {
+    points.set(game.homeTeamId, (points.get(game.homeTeamId) ?? 0) + pointsFor(game, game.homeTeamId));
+    points.set(game.awayTeamId, (points.get(game.awayTeamId) ?? 0) + pointsFor(game, game.awayTeamId));
+  }
+  return (row) => points.get(row.teamId) ?? 0;
+}
+
+/** Each team's goal difference and goals for from `games`, 0 for a team that plays none of them. */
+function goalTotalsIn(games: readonly PlayedGame[]): { goalDifference: (row: UnrankedRow) => number; goalsFor: (row: UnrankedRow) => number } {
+  const goalsFor = new Map<TeamId, number>();
+  const goalsAgainst = new Map<TeamId, number>();
+  for (const game of games) {
+    const { homeGoals, awayGoals } = game.result;
+    goalsFor.set(game.homeTeamId, (goalsFor.get(game.homeTeamId) ?? 0) + homeGoals);
+    goalsAgainst.set(game.homeTeamId, (goalsAgainst.get(game.homeTeamId) ?? 0) + awayGoals);
+    goalsFor.set(game.awayTeamId, (goalsFor.get(game.awayTeamId) ?? 0) + awayGoals);
+    goalsAgainst.set(game.awayTeamId, (goalsAgainst.get(game.awayTeamId) ?? 0) + homeGoals);
+  }
+  return {
+    goalDifference: (row) => (goalsFor.get(row.teamId) ?? 0) - (goalsAgainst.get(row.teamId) ?? 0),
+    goalsFor: (row) => goalsFor.get(row.teamId) ?? 0,
+  };
+}
+
+/** Each team's goals scored as the away side in `games`, 0 for a team that plays none of them as away side. */
+function awayGoalsIn(games: readonly PlayedGame[]): (row: UnrankedRow) => number {
+  const awayGoals = new Map<TeamId, number>();
+  for (const game of games) awayGoals.set(game.awayTeamId, (awayGoals.get(game.awayTeamId) ?? 0) + game.result.awayGoals);
+  return (row) => awayGoals.get(row.teamId) ?? 0;
+}
+
 /**
  * Points in the Group's Direct Games: official step 1 of Art. 6.2, "Weisungen für den Spielbetrieb der National
  * League, Saison 2026/27" (02.09.2026). A team with no Direct Games, or Direct Games it took no Points from, scores
  * 0, same as every other team still level here, so the step decides nothing and the Group falls through untouched.
  */
-const directGamePoints: GroupStep = (group, playedGames) => {
-  const directGames = directGamesOf(group, playedGames);
-  const points = new Map<TeamId, number>();
-  for (const game of directGames) {
-    points.set(game.homeTeamId, (points.get(game.homeTeamId) ?? 0) + pointsFor(game, game.homeTeamId));
-    points.set(game.awayTeamId, (points.get(game.awayTeamId) ?? 0) + pointsFor(game, game.awayTeamId));
-  }
-  return (row) => points.get(row.teamId) ?? 0;
-};
+const directGamePoints: GroupStep = ({ directGames }) => pointsIn(directGames);
 
-/** A GroupStep that ignores the Group and its Played Games, settling purely by a per-row `key`. */
+/** A GroupStep that ignores the SettleContext, settling purely by a per-row `key`. */
 function byKey(key: (row: UnrankedRow) => number): GroupStep {
   return () => key;
 }
 
 const GROUP_STEPS: GroupStep[] = [
   directGamePoints,
+  // Official steps 2-3, Art. 6.2: goal difference, then goals for, over all Played Games.
   byKey(goalDifference),
   byKey((row) => row.goalsFor),
+  // Official steps 4-5, Art. 6.2: goal difference, then goals for, in the Group's Direct Games.
+  ({ directGames }) => goalTotalsIn(directGames).goalDifference,
+  ({ directGames }) => goalTotalsIn(directGames).goalsFor,
+  // Official steps 6-7, Art. 6.2: away goals, over all Played Games, then in the Group's Direct Games.
+  ({ playedGames }) => awayGoalsIn(playedGames),
+  ({ directGames }) => awayGoalsIn(directGames),
+  // Our own last resort, so the order is always total: regulation wins, then a fixed team order.
   byKey((row) => row.regulationWins),
   byKey((row) => -row.teamId),
 ];
 
 /**
- * Settles a Group of teams level on Points and Points per Game, using the Played Games available to it: Points in
- * the Group's Direct Games (Art. 6.2 official step 1), then goal difference and goals for over all Played Games
- * (official steps 2–3, where Direct Games decide nothing), then regulation wins and a fixed team order as our own
- * last resort, so the order is always total. #86 adds the remaining official steps on the original tied Group.
+ * Settles a Group of teams level on Points and Points per Game by the full official Art. 6.2 order: Points, goal
+ * difference and goals for in the Group's Direct Games and over all Played Games, then away goals the same way, and
+ * finally our own last resort (regulation wins, then a fixed team order) so the order is always total. Direct Games
+ * are fixed once from the Group as it first forms (see SettleContext), so teams left level after part of the Group
+ * has been separated still use the original Group's Direct Games for every later step.
  */
 function settleGroup(group: Group, playedGames: readonly PlayedGame[]): Group {
-  return GROUP_STEPS.reduce((groups, step) => narrow(groups, step, playedGames), [group]).flat();
+  const context: SettleContext = { playedGames, directGames: directGamesOf(group, playedGames) };
+  return GROUP_STEPS.reduce((groups, step) => narrow(groups, step, context), [group]).flat();
 }
 
 /**
