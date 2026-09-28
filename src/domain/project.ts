@@ -91,6 +91,8 @@ export interface RealProjectionRow {
   rank: number;
   projectedPoints: number;
   probabilities: CutLineProbabilities | null;
+  /** The team's real Rank Distribution; null for Points-only models. */
+  rankDistribution: number[] | null;
 }
 
 export interface ProjectedTableRow {
@@ -113,7 +115,7 @@ export interface ProjectedTableRow {
   remainingAwayGames: number;
   projectedPoints: number;
   /**
-   * The team's Real Projection rank and projected Points, so the UI can show its What-If Change. Present only when a
+   * The team's Real Projection rank, projected Points, chances and Rank Distribution, so the UI can show its What-If Change. Present only when a
    * non-empty What-If is applied; absent otherwise.
    */
   realProjection?: RealProjectionRow;
@@ -557,7 +559,11 @@ export function project(
       : new Map(
           (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
             row.teamId,
-            { rank: row.rank, projectedPoints: row.projectedPoints, probabilities: row.probabilities },
+            { rank: row.rank,
+              projectedPoints: row.projectedPoints,
+              probabilities: row.probabilities,
+              rankDistribution: row.rankDistribution,
+            },
           ]),
         );
 

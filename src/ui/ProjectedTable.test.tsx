@@ -152,7 +152,7 @@ describe("ProjectedTable", () => {
 
   describe("What-If Change", () => {
     const changed = (overrides: Partial<ProjectedTableRow>, realRank: number, realPoints: number) =>
-      row({ realProjection: { rank: realRank, projectedPoints: realPoints, probabilities: null }, ...overrides });
+      row({ realProjection: { rank: realRank, projectedPoints: realPoints, probabilities: null, rankDistribution: null }, ...overrides });
     const projCell = (html: string) => /<td class="num projected-points">(.*?)<\/td>/.exec(teamRows(html)[0]!.html)![1]!;
 
     it("shows a signed Proj change with a real minus sign, green up and red down", () => {
@@ -206,7 +206,7 @@ describe("ProjectedTable", () => {
       const withChances = (now: Partial<typeof REAL>, real: Partial<typeof REAL> = {}) =>
         row({
           probabilities: { ...REAL, ...now },
-          realProjection: { rank: 1, projectedPoints: 30, probabilities: { ...REAL, ...real } },
+          realProjection: { rank: 1, projectedPoints: 30, probabilities: { ...REAL, ...real }, rankDistribution: null },
         });
       /** The four % cells of the first team's row. */
       const pctCells = (html: string) => [...teamRows(html)[0]!.html.matchAll(/<td class="num pct[^"]*">(.*?)<\/td>/g)].map((m) => m[1]!);
