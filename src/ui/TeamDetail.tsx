@@ -138,7 +138,7 @@ function RankHistogram({
       <p class="visually-hidden">Projected rank in the table, by expected Points: {ordinal(projectedRank)}</p>
       <ul class="visually-hidden">
         {bars
-          .filter((bar) => bar.height > 0)
+          .filter((bar) => bar.height > 0 || bar.cap !== null)
           .map((bar) => (
             <li key={bar.rank}>{bar.label}</li>
           ))}

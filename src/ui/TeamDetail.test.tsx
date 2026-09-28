@@ -160,6 +160,7 @@ describe("TeamDetail", () => {
         expect(html.match(/class="rank-bar-cap"/g)).toHaveLength(3);
         expect(html).toContain('title="2nd: 50% (real 40%)"');
         expect(html).toContain("<li>2nd: 50% (real 40%)</li>");
+        expect(html).toContain("<li>4th: 10% (real 0%)</li>");
         expect(html).toContain(`<p class="meta history-note">${note}</p>`);
       });
 
