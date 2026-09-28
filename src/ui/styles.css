@@ -893,6 +893,57 @@ tbody th {
   stroke-width: 2.5;
 }
 
+.history-low-sample rect {
+  fill: var(--muted);
+  fill-opacity: 0.12;
+}
+
+.history-low-sample text {
+  fill: var(--muted);
+  font: 500 7px var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Wide and invisible so a fingertip can find the line; horizontal drags scrub it, vertical ones still scroll the page. */
+.history-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.history-tip-rule {
+  stroke: var(--muted);
+  stroke-opacity: 0.6;
+  stroke-dasharray: 2 2;
+}
+
+.history-tip-dot {
+  fill: var(--playoffs);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.history-tip rect {
+  fill: var(--panel);
+  stroke: var(--line);
+}
+
+.history-tip text {
+  fill: var(--fg);
+  font: 500 8.5px var(--display);
+}
+
+.history-tip text.history-tip-date {
+  fill: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .form-window h3,
 .rank-histogram h3,
 .history-chart h3 {

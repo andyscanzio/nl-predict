@@ -1,5 +1,6 @@
 import { SEASON_START } from "../domain/matchDay.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
+import { LOW_SAMPLE_GAMES } from "../domain/project.ts";
 import type { TeamId } from "../domain/types.ts";
 import { formatPercent } from "./winSplit.ts";
 
@@ -26,6 +27,12 @@ export interface ChartTick {
   text: string;
 }
 
+/** What the tooltip says about one Match Day of the chosen team, anchored at that point of its line. */
+export interface ChartTooltip extends ChartPoint {
+  /** The date, the value, the 1st-place chance (where the model has one) and the signed change since the previous Match Day (from the second point on). */
+  lines: string[];
+}
+
 /** Everything the Projection History chart draws, in shares of the plot so the component picks its own size. */
 export interface ProjectionChart {
   /** One line per team; the chosen team's comes last, so it is drawn on top. */
@@ -36,6 +43,10 @@ export interface ProjectionChart {
   yTicks: ChartTick[];
   /** Sparse date labels for the x-axis. */
   xLabels: { x: number; text: string }[];
+  /** One tooltip per Match Day, on the chosen team's line only; index i belongs to point i. */
+  tooltips: ChartTooltip[];
+  /** The stretch of the plot, as x shares, where the chosen team had fewer than ten Played Games (Low Sample); null when never. */
+  lowSample: { from: number; to: number } | null;
   /** A text version for screen readers. */
   summary: string;
 }
@@ -52,6 +63,23 @@ function dateLabel(matchDay: string): string {
 /** The point indexes to label: the first, the middle and the last. */
 function labelledIndexes(count: number): number[] {
   return [...new Set([0, Math.round((count - 1) / 2), count - 1])];
+}
+
+/** The date of a tooltip: the Season-start point has no day of its own. */
+function tooltipDate(matchDay: string): string {
+  return matchDay === SEASON_START ? "Season start" : dateLabel(matchDay);
+}
+
+/** A signed change with a true minus sign, e.g. "+4 pts" or "−1.2 Points"; a change that rounds to nothing carries no sign. */
+function signedChange(change: number, unit: string, decimals: number): string {
+  const rounded = Number(change.toFixed(decimals));
+  const text = `${Math.abs(rounded).toFixed(decimals)} ${unit}`;
+  return rounded === 0 ? text : `${rounded > 0 ? "+" : "−"}${text}`;
+}
+
+/** The index of the Match Day nearest a share of the plot's width, for pointing at the chart. */
+export function nearestMatchDay(share: number, count: number): number {
+  return Math.min(count - 1, Math.max(0, Math.round(share * (count - 1))));
 }
 
 function changeText(change: number, unit: string, decimals: number): string {
@@ -117,11 +145,27 @@ export function projectionChart(history: ProjectionHistory, teamId: TeamId, metr
     points: values(id).map((value, index) => ({ x: xOf(index), y: yOf(value) })),
   });
   const chosen = values(teamId);
+  const chosenLine = lineOf(teamId);
+  const tooltips = history.map((entry, index): ChartTooltip => {
+    const { first } = entry.teams[teamId]!;
+    const value = metric === "playoffs" ? `Playoffs ${formatPercent(chosen[index]!)}%` : `Points ${chosen[index]!.toFixed(1)}`;
+    const change =
+      index === 0
+        ? []
+        : [metric === "playoffs" ? signedChange((chosen[index]! - chosen[index - 1]!) * 100, "pts", 0) : signedChange(chosen[index]! - chosen[index - 1]!, "Points", 1)];
+    return {
+      ...chosenLine.points[index]!,
+      lines: [tooltipDate(entry.matchDay), value, ...(first === null ? [] : [`1st place ${formatPercent(first)}%`]), ...change],
+    };
+  });
+  const lastLowSample = history.findLastIndex((entry) => entry.teams[teamId]!.gamesPlayed < LOW_SAMPLE_GAMES);
   return {
-    lines: [...teamIds.filter((id) => id !== teamId).map(lineOf), lineOf(teamId)],
+    lines: [...teamIds.filter((id) => id !== teamId).map(lineOf), chosenLine],
     guideY,
     yTicks,
     xLabels: labelledIndexes(history.length).map((index) => ({ x: xOf(index), text: dateLabel(history[index]!.matchDay) })),
+    tooltips,
+    lowSample: lastLowSample < 0 ? null : { from: 0, to: xOf(lastLowSample) },
     summary: (metric === "playoffs" ? playoffsSummary : pointsSummary)(chosen[0]!, chosen.at(-2)!, chosen.at(-1)!),
   };
 }

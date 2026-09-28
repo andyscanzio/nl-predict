@@ -1,15 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { SEASON_START } from "../domain/matchDay.ts";
 import type { HistoryPoint, ProjectionHistory } from "../domain/projectionHistory.ts";
-import { chartMetrics, projectionChart, shownMetric } from "./projectionChart.ts";
+import { LOW_SAMPLE_GAMES } from "../domain/project.ts";
+import { chartMetrics, nearestMatchDay, projectionChart, shownMetric } from "./projectionChart.ts";
 
-function point(matchDay: string, playoffs: Record<number, number | null>, projectedPoints: Record<number, number> = {}): HistoryPoint {
+function point(
+  matchDay: string,
+  playoffs: Record<number, number | null>,
+  projectedPoints: Record<number, number> = {},
+  gamesPlayed: Record<number, number> = {},
+): HistoryPoint {
   return {
     matchDay,
     teams: Object.fromEntries(
       Object.entries(playoffs).map(([teamId, chance]) => [
         teamId,
-        { projectedPoints: projectedPoints[Number(teamId)] ?? 60, gamesPlayed: 0, playoffs: chance, first: chance === null ? null : 0.1 },
+        { projectedPoints: projectedPoints[Number(teamId)] ?? 60, gamesPlayed: gamesPlayed[Number(teamId)] ?? 0, playoffs: chance, first: chance === null ? null : 0.1 },
       ]),
     ),
   };
@@ -152,6 +158,88 @@ describe("projectionChart, projected Points", () => {
     expect(projectionChart(points, 3, "points")!.summary).toBe("Projected Points 70.0 now, 60.0 at the start of the Season, up 9.0 since the previous Match Day.");
     const flat = [point(SEASON_START, { 1: 0.5 }, { 1: 60 }), point("2026-09-15", { 1: 0.5 }, { 1: 60 })];
     expect(projectionChart(flat, 1, "points")!.summary).toBe("Projected Points 60.0 now, 60.0 at the start of the Season, unchanged since the previous Match Day.");
+  });
+});
+
+describe("projectionChart tooltips", () => {
+  const tipped: ProjectionHistory = [
+    point(SEASON_START, { 1: 0.5, 2: 0.5 }, { 1: 60, 2: 60 }),
+    point("2026-09-15", { 1: 0.54, 2: 0.4 }, { 1: 61.2, 2: 58 }),
+    point("2026-09-18", { 1: 0.53, 2: 0.3 }, { 1: 60, 2: 52 }),
+  ];
+
+  it("has one tooltip per Match Day, on the chosen team's line only", () => {
+    const chart = projectionChart(tipped, 1, "playoffs")!;
+    const chosen = chart.lines.find((line) => line.chosen)!;
+    expect(chart.tooltips.map(({ x, y }) => ({ x, y }))).toEqual(chosen.points);
+  });
+
+  it("shows the date, the playoff chance, the 1st-place chance and the signed change", () => {
+    const chart = projectionChart(tipped, 1, "playoffs")!;
+    expect(chart.tooltips[1]!.lines).toEqual(["15 Sep", "Playoffs 54%", "1st place 10%", "+4 pts"]);
+    expect(chart.tooltips[2]!.lines).toEqual(["18 Sep", "Playoffs 53%", "1st place 10%", "−1 pts"]);
+  });
+
+  it("shows the projected Points in the Points view, with the change in Points", () => {
+    const chart = projectionChart(tipped, 1, "points")!;
+    expect(chart.tooltips[1]!.lines).toEqual(["15 Sep", "Points 61.2", "1st place 10%", "+1.2 Points"]);
+    expect(chart.tooltips[2]!.lines.at(-1)).toBe("−1.2 Points");
+  });
+
+  it("gives the first point no change, and names it the Season start", () => {
+    expect(projectionChart(tipped, 1, "playoffs")!.tooltips[0]!.lines).toEqual(["Season start", "Playoffs 50%", "1st place 10%"]);
+  });
+
+  it("leaves out the 1st-place chance for a Points-only model", () => {
+    const pointsOnly = [point(SEASON_START, { 1: null }, { 1: 60 }), point("2026-09-15", { 1: null }, { 1: 63 })];
+    expect(projectionChart(pointsOnly, 1, "points")!.tooltips.map((tip) => tip.lines)).toEqual([
+      ["Season start", "Points 60.0"],
+      ["15 Sep", "Points 63.0", "+3.0 Points"],
+    ]);
+  });
+
+  it("shows a change that rounds to nothing as 0", () => {
+    const flat = [point(SEASON_START, { 1: 0.5 }, { 1: 60 }), point("2026-09-15", { 1: 0.502 }, { 1: 60.01 })];
+    expect(projectionChart(flat, 1, "playoffs")!.tooltips[1]!.lines.at(-1)).toBe("0 pts");
+    expect(projectionChart(flat, 1, "points")!.tooltips[1]!.lines.at(-1)).toBe("0.0 Points");
+  });
+});
+
+describe("nearestMatchDay", () => {
+  it("picks the Match Day nearest a share of the plot's width", () => {
+    expect(nearestMatchDay(0, 5)).toBe(0);
+    expect(nearestMatchDay(0.13, 5)).toBe(1);
+    expect(nearestMatchDay(0.62, 5)).toBe(2);
+    expect(nearestMatchDay(0.63, 5)).toBe(3);
+    expect(nearestMatchDay(1, 5)).toBe(4);
+  });
+
+  it("clamps a share outside the plot", () => {
+    expect(nearestMatchDay(-0.2, 5)).toBe(0);
+    expect(nearestMatchDay(1.4, 5)).toBe(4);
+  });
+});
+
+describe("projectionChart Low Sample shading", () => {
+  const played = (games: number[]) =>
+    games.map((gamesPlayed, index) => point(index === 0 ? SEASON_START : `2026-10-${String(index).padStart(2, "0")}`, { 1: 0.5, 2: 0.5 }, {}, { 1: gamesPlayed, 2: 40 }));
+
+  it("runs from the left edge to the chosen team's last point with fewer than 10 Played Games", () => {
+    const chart = projectionChart(played([0, 4, 9, LOW_SAMPLE_GAMES, 12]), 1, "playoffs")!;
+    expect(chart.lowSample).toEqual({ from: 0, to: 0.5 });
+  });
+
+  it("follows the chosen team, not the field", () => {
+    expect(projectionChart(played([0, 4, 9, 10, 12]), 2, "playoffs")!.lowSample).toBeNull();
+  });
+
+  it("covers the whole chart while the team is still Low Sample", () => {
+    expect(projectionChart(played([0, 3, 6]), 1, "points")!.lowSample).toEqual({ from: 0, to: 1 });
+  });
+
+  it("is absent when no point is Low Sample", () => {
+    const chart = projectionChart(played([10, 11, 12]), 1, "playoffs")!;
+    expect(chart.lowSample).toBeNull();
   });
 });
 
