@@ -12,9 +12,9 @@ export const SEASON_RATE_PRIOR_GAMES = 10;
 
 /**
  * Each team keeps earning its Points per Game over its Played Games, ignoring venue and opponent strength, shrunk toward
- * the league-average 1.5 as if it had also played SEASON_RATE_PRIOR_GAMES Games at that rate:
- * (Points + 1.5 · m) / (Games Played + m). A game-less team is rated 1.5 by the formula itself. A Game's 3 Points are
- * split between the two rates (see outcomesFromRates) through the OT/SO Rate.
+ * the league-average 1.5 as if it had also played SEASON_RATE_PRIOR_GAMES (m) Games at that rate:
+ * (Points + 1.5 · m) / (Played Games + m). A team with no Played Games is rated 1.5 by the formula itself. A Game's 3
+ * Points are split between the two rates (see outcomesFromRates) through the OT/SO Rate.
  */
 export const seasonRate: ProjectionModel<"season-rate"> = {
   id: "season-rate",
