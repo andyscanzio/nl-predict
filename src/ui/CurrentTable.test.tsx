@@ -26,7 +26,7 @@ function row(overrides: Partial<CurrentTableRow> = {}): CurrentTableRow {
 }
 
 function panel(rows: CurrentTableRow[]) {
-  return render(<CurrentTable rows={rows} teams={teams} />);
+  return render(<CurrentTable rows={rows} teams={teams} whatIfActive={false} />);
 }
 
 /** Each team row's inner HTML, without the header row. */

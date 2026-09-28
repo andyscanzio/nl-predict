@@ -150,12 +150,14 @@ function ProjectionHistoryChart({
   teamName,
   metric: chosenMetric,
   onMetricChange,
+  whatIfActive,
 }: {
   history: ProjectionHistory;
   teamId: TeamId;
   teamName: string;
   metric: ChartMetric;
   onMetricChange: (metric: ChartMetric) => void;
+  whatIfActive: boolean;
 }) {
   // The Match Day being pointed at, on the chosen team's line: hovered with a mouse, or tapped on a phone.
   const [active, setActive] = useState<number | null>(null);
@@ -251,6 +253,7 @@ function ProjectionHistoryChart({
           onPointerLeave={(event) => event.pointerType === "mouse" && setActive(null)}
         />
       </svg>
+      {whatIfActive && <p class="meta history-note">Projection History ignores the What-If.</p>}
     </section>
   );
 }
@@ -263,6 +266,7 @@ export function TeamDetail({
   showProbabilities,
   chartMetric,
   onChartMetricChange,
+  whatIfActive,
 }: {
   row: ProjectedTableRow;
   history: ProjectionHistory;
@@ -271,6 +275,8 @@ export function TeamDetail({
   showProbabilities: boolean;
   chartMetric: ChartMetric;
   onChartMetricChange: (metric: ChartMetric) => void;
+  /** A What-If is applied to the row; the chart stays real and says so. */
+  whatIfActive: boolean;
 }) {
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   return (
@@ -283,6 +289,7 @@ export function TeamDetail({
           teamName={teamName(row.teamId)}
           metric={chartMetric}
           onMetricChange={onChartMetricChange}
+          whatIfActive={whatIfActive}
         />
       </div>
       <FormWindowDetail

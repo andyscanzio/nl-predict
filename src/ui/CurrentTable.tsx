@@ -2,10 +2,19 @@ import type { CurrentTableRow } from "../domain/project.ts";
 import { TeamName, type Teams } from "./TeamName.tsx";
 
 /** The Season's standings as they stand today, with the note on how ties are broken. */
-export function CurrentTable({ rows, teams }: { rows: CurrentTableRow[]; teams: Teams }) {
+export function CurrentTable({
+  rows,
+  teams,
+  whatIfActive,
+}: {
+  rows: CurrentTableRow[];
+  teams: Teams;
+  /** A What-If is applied elsewhere on the page; this table stays real and says so. */
+  whatIfActive: boolean;
+}) {
   return (
     <section class="panel">
-      <h2>Current Table</h2>
+      <h2>{whatIfActive ? "Current Table (real results)" : "Current Table"}</h2>
       <div class="table-scroll">
         <table class="current">
           <thead>

@@ -547,9 +547,9 @@ describe("project: Next Round", () => {
     ];
     const { nextRound } = project(games, asOf, splitFormRate);
     const upcoming = nextRound[0]!.games[0]!;
-    expect(upcoming.prediction.outcomes).toBeNull();
+    expect(upcoming.prediction!.outcomes).toBeNull();
     // team 3's empty away Form Window falls back to its Home Form (0).
-    expect(upcoming.prediction.points).toEqual({ home: 3, away: 0 });
+    expect(upcoming.prediction!.points).toEqual({ home: 3, away: 0 });
   });
 
   it("carries the model's own predictions for an outcome model: Outcome Probabilities", () => {
@@ -560,8 +560,8 @@ describe("project: Next Round", () => {
     ];
     const { nextRound } = project(games, asOf, eloModel);
     const upcoming = nextRound[0]!.games[0]!;
-    expect(upcoming.prediction.outcomes).not.toBeNull();
-    const sum = Object.values(upcoming.prediction.outcomes!).reduce((a, b) => a + b, 0);
+    expect(upcoming.prediction!.outcomes).not.toBeNull();
+    const sum = Object.values(upcoming.prediction!.outcomes!).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(1);
   });
 

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import { project, REGULAR_SEASON_GAMES, type IntegrityIssue, type ProjectionModel } from "../domain/project.ts";
+import { project, REGULAR_SEASON_GAMES, type IntegrityIssue, type ProjectionModel, type WhatIf, type WhatIfOutcome } from "../domain/project.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
@@ -42,12 +42,12 @@ function HeadlineSentence({
 }
 
 /** Scrolls the headline like a scoreboard crawl; pauses on hover, focus or the button, and stands still for reduced motion. */
-function Ticker({ children }: { children: ComponentChildren }) {
+function Ticker({ whatIfActive, children }: { whatIfActive: boolean; children: ComponentChildren }) {
   const [paused, setPaused] = useState(false);
   return (
     <section class={paused ? "ticker paused" : "ticker"} aria-label="Projection headline">
       <span class="ticker-tag" aria-hidden="true">
-        Projection
+        {whatIfActive ? "What-if" : "Projection"}
       </span>
       <div class="ticker-rail">
         <div class="ticker-track">
@@ -103,6 +103,26 @@ function IntegrityWarning({
   );
 }
 
+/** Tells the visitor the tables and headline assume their What-If Results, and lets them go back to the real projection. */
+function WhatIfBanner({ count, onReset }: { count: number; onReset: () => void }) {
+  return (
+    <div class="warning what-if-banner" role="status">
+      <p>
+        <strong>What-if:</strong> {count} {count === 1 ? "result" : "results"} set. The Projected Table, chances and
+        headline assume them.
+      </p>
+      <button type="button" onClick={onReset}>
+        Reset
+      </button>
+    </div>
+  );
+}
+
+/** Whether two What-Ifs hold the same What-If Results. */
+function sameWhatIf(a: WhatIf, b: WhatIf): boolean {
+  return a.size === b.size && [...a].every(([gameId, outcome]) => b.get(gameId) === outcome);
+}
+
 const THEME_LABELS: Record<Theme, string> = { system: "System", light: "Light", dark: "Dark" };
 
 /** Light, dark, or whatever the system says; remembered in this browser. index.html applies it before first paint. */
@@ -140,25 +160,51 @@ export function App({
   now,
   model,
   history,
+  whatIf,
   onModelChange,
+  onWhatIfChange,
 }: {
   snapshot: Snapshot;
   now: Date;
   model: ProjectionModel<ProjectionModelId>;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
+  /** The What-If asked for, e.g. by the URL; only its Results for the real Next Round's Games are applied. */
+  whatIf: WhatIf;
   onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
+  /**
+   * Called to `replace` the What-If asked for with the one applied, when stale entries were dropped, or to `push` a new
+   * one chosen by the visitor (Reset).
+   */
+  onWhatIfChange: (whatIf: WhatIf, mode: "push" | "replace") => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
-  const { currentTable, projectedTable, integrityIssues, anyGamesPlayed, nextRound } = useMemo(
-    () => project(snapshot.games, now, model),
-    [snapshot, now, model],
-  );
+  const {
+    currentTable,
+    projectedTable,
+    integrityIssues,
+    anyGamesPlayed,
+    nextRound,
+    whatIf: appliedWhatIf,
+  } = useMemo(() => project(snapshot.games, now, model, whatIf), [snapshot, now, model, whatIf]);
+  // Entries that did not apply (Played, out of the Next Round, unknown) must not linger in the URL.
+  const stale = !sameWhatIf(whatIf, appliedWhatIf);
+  useEffect(() => {
+    if (stale) onWhatIfChange(appliedWhatIf, "replace");
+  }, [stale, appliedWhatIf]);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
   const snapshotAt = new Date(snapshot.snapshotAt);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
+  // While active, the Projected Table and headline follow the What-If; the Current Table and Projection History stay real.
+  const whatIfActive = appliedWhatIf.size > 0;
+  const pickWhatIfResult = (gameId: string, outcome: WhatIfOutcome | undefined) => {
+    const next = new Map(appliedWhatIf);
+    if (outcome) next.set(gameId, outcome);
+    else next.delete(gameId);
+    onWhatIfChange(next, "push");
+  };
 
   return (
     <>
@@ -184,23 +230,32 @@ export function App({
         {anyGamesPlayed ? (
           <>
             {headline && (
-              <Ticker>
+              <Ticker whatIfActive={whatIfActive}>
                 <HeadlineSentence headline={headline} modelName={model.name} teamName={teamName} />
               </Ticker>
+            )}
+            {whatIfActive && (
+              <WhatIfBanner count={appliedWhatIf.size} onReset={() => onWhatIfChange(new Map(), "push")} />
             )}
             <ProjectedTable
               rows={projectedTable}
               model={model}
               history={history}
+              whatIfActive={whatIfActive}
               teams={teams}
               onModelChange={onModelChange}
             />
 
-            <UpcomingGames nextRound={nextRound} lowSample={projectedTable.some((row) => row.lowSample)} teams={teams} />
+            <UpcomingGames
+              nextRound={nextRound}
+              lowSample={projectedTable.some((row) => row.lowSample)}
+              teams={teams}
+              onWhatIfPick={pickWhatIfResult}
+            />
 
             <ModelExplanation model={model} />
 
-            <CurrentTable rows={currentTable} teams={teams} />
+            <CurrentTable rows={currentTable} teams={teams} whatIfActive={whatIfActive} />
           </>
         ) : (
           <section class="panel empty-state">

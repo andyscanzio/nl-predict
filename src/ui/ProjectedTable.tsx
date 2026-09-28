@@ -146,6 +146,7 @@ export function ProjectedTable({
   rows,
   model,
   history,
+  whatIfActive,
   teams,
   onModelChange,
 }: {
@@ -153,6 +154,8 @@ export function ProjectedTable({
   model: ProjectionModel<ProjectionModelId>;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
+  /** A What-If is applied to `rows`; the Projection History in each team's detail ignores it and says so. */
+  whatIfActive: boolean;
   teams: Teams;
   onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
 }) {
@@ -272,6 +275,7 @@ export function ProjectedTable({
                       <TeamDetail
                         row={row}
                         history={history}
+                        whatIfActive={whatIfActive}
                         teams={teams}
                         showProbabilities={showProbabilities}
                         chartMetric={chartMetric}
