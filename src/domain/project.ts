@@ -174,7 +174,7 @@ function byCurrentTableOrder(a: UnrankedRow, b: UnrankedRow): number {
 }
 
 /** A Game is Played once it has a final result and started before the As-Of Date. */
-function isPlayed(game: Game, asOf: Date): game is PlayedGame {
+export function isPlayed(game: Game, asOf: Date): game is PlayedGame {
   return game.result !== undefined && new Date(game.startsAt) < asOf;
 }
 
