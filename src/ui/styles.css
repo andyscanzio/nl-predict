@@ -171,7 +171,7 @@ body {
   color: var(--amber);
 }
 
-/* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins. */
+/* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle. */
 .win-split {
   display: flex;
   align-items: center;
@@ -210,12 +210,12 @@ body {
 
 .win-split-side.home {
   background: var(--amber);
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .win-split-side.away {
   background: var(--playoffs);
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .win-split-side.none {
@@ -225,6 +225,15 @@ body {
 .win-split-otso {
   height: 100%;
   background: rgb(255 255 255 / 0.4);
+}
+
+/* A panel-coloured seam between a side's regulation wins and its lighter OT/SO slice. */
+.win-split-bar .win-split-side.home .win-split-otso {
+  box-shadow: -2px 0 0 var(--panel);
+}
+
+.win-split-bar .win-split-side.away .win-split-otso {
+  box-shadow: 2px 0 0 var(--panel);
 }
 
 .upcoming-note {
@@ -744,6 +753,13 @@ tbody th {
 .legend-bar {
   display: inline-block;
   width: 2.5rem;
+}
+
+.legend-swatch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 0.6rem;
 }
 
 .legend .low-sample {

@@ -441,6 +441,35 @@ function UpcomingGamesPanel({
           little data.
         </p>
       )}
+      <ul class="legend">
+        {nextRound.some((day) => day.games.some(({ prediction }) => prediction.outcomes)) ? (
+          <>
+            <li>
+              <span class="legend-swatch win-split-side home"></span>{" "}
+              Home win
+            </li>
+            <li>
+              <span class="legend-swatch win-split-side home">
+                <span class="win-split-otso" style={{ width: "100%" }} />
+              </span>{" "}
+              Home win in OT/SO
+            </li>
+            <li>
+              <span class="legend-swatch win-split-side away">
+                <span class="win-split-otso" style={{ width: "100%" }} />
+              </span>{" "}
+              Away win in OT/SO
+            </li>
+            <li>
+              <span class="legend-swatch win-split-side away"></span>{" "}
+              Away win
+            </li>
+            <li>Percentages are the chance of winning, in regulation or OT/SO</li>
+          </>
+        ) : (
+          <li>Pts – Pts: expected Points for the home – away team</li>
+        )}
+      </ul>
     </section>
   );
 }
