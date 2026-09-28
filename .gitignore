@@ -1,3 +1,6 @@
 node_modules
 dist
 .cache
+
+# Local-only data: past Season snapshots and study outputs, never pushed
+/data/local/
