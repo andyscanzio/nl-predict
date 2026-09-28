@@ -19,6 +19,8 @@ import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
+import type { ProjectionHistory } from "../domain/projectionHistory.ts";
+import { projectionChart } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
@@ -371,6 +373,57 @@ function RankHistogram({ distribution, projectedRank }: { distribution: readonly
   );
 }
 
+/** Plot area of the Projection History chart, in SVG units; the SVG scales to its box, so the aspect ratio stays fixed. */
+const CHART = { width: 320, height: 130, left: 34, right: 8, top: 8, bottom: 20 };
+
+/** A team's playoff chance over the Season: its line bold, the other teams' faint, on a fixed 0–100% scale with a 50% guide. */
+function ProjectionHistoryChart({ history, teamId, teamName }: { history: ProjectionHistory; teamId: TeamId; teamName: string }) {
+  const chart = projectionChart(history, teamId);
+  if (!chart) return null;
+  const plotWidth = CHART.width - CHART.left - CHART.right;
+  const plotHeight = CHART.height - CHART.top - CHART.bottom;
+  const x = (share: number) => (CHART.left + share * plotWidth).toFixed(1);
+  const y = (share: number) => (CHART.top + share * plotHeight).toFixed(1);
+  return (
+    <section class="history-chart">
+      <h3>Playoff chance over the Season</h3>
+      <svg viewBox={`0 0 ${CHART.width} ${CHART.height}`} role="img" aria-label={`${teamName}: ${chart.summary}`}>
+        {[0, 1].map((share) => (
+          <line key={share} class="history-edge" x1={x(0)} x2={x(1)} y1={y(share)} y2={y(share)} />
+        ))}
+        <line class="history-guide" x1={x(0)} x2={x(1)} y1={y(chart.guideY)} y2={y(chart.guideY)} />
+        {[
+          { share: 0, text: "100%" },
+          { share: chart.guideY, text: "50%" },
+          { share: 1, text: "0%" },
+        ].map(({ share, text }) => (
+          <text key={text} class="history-label" x={CHART.left - 4} y={y(share)} text-anchor="end" dominant-baseline="middle">
+            {text}
+          </text>
+        ))}
+        {chart.xLabels.map(({ x: share, text }, index) => (
+          <text
+            key={index}
+            class="history-label"
+            x={x(share)}
+            y={CHART.height - 4}
+            text-anchor={index === 0 ? "start" : index === chart.xLabels.length - 1 ? "end" : "middle"}
+          >
+            {text}
+          </text>
+        ))}
+        {chart.lines.map((line) => (
+          <polyline
+            key={line.teamId}
+            class={line.chosen ? "history-line chosen" : "history-line"}
+            points={line.points.map((point) => `${x(point.x)},${y(point.y)}`).join(" ")}
+          />
+        ))}
+      </svg>
+    </section>
+  );
+}
+
 function IntegrityWarning({
   issues,
   teamName,
@@ -612,11 +665,14 @@ export function App({
   snapshot,
   now,
   model,
+  history,
   onModelChange,
 }: {
   snapshot: Snapshot;
   now: Date;
   model: ProjectionModel;
+  /** The picked model's Projection History, computed while the site was built. */
+  history: ProjectionHistory;
   onModelChange: (model: ProjectionModel) => void;
 }) {
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
@@ -773,7 +829,12 @@ export function App({
                           <tr class="detail" id={detailId}>
                             <td colSpan={columns}>
                               <div class="form-windows">
-                                {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />}
+                                {row.rankDistribution && (
+                                  <div class="rank-row">
+                                    <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />
+                                    <ProjectionHistoryChart history={history} teamId={row.teamId} teamName={teamName(row.teamId)} />
+                                  </div>
+                                )}
                                 <FormWindowDetail
                                   side="home"
                                   form={row.homeForm}

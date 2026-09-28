@@ -782,7 +782,8 @@ tbody th {
 }
 
 .form-window,
-.rank-histogram {
+.rank-histogram,
+.history-chart {
   min-width: 0;
   padding: 0.5rem 0.75rem;
   background: var(--inset);
@@ -794,12 +795,53 @@ tbody th {
   overflow-x: auto;
 }
 
-.rank-histogram {
+/* The Rank Distribution and the Projection History share a row, and stack when it is too narrow for both. */
+.rank-row {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.history-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.history-edge {
+  stroke: var(--line);
+}
+
+.history-guide {
+  stroke: var(--muted);
+  stroke-opacity: 0.5;
+  stroke-dasharray: 3 3;
+}
+
+.history-label {
+  fill: var(--muted);
+  font: 500 9px var(--display);
+}
+
+.history-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.history-line.chosen {
+  stroke: var(--playoffs);
+  stroke-opacity: 1;
+  stroke-width: 2.5;
 }
 
 .form-window h3,
-.rank-histogram h3 {
+.rank-histogram h3,
+.history-chart h3 {
   margin: 0 0 0.25rem;
   font: 600 0.72rem var(--display);
   letter-spacing: 0.08em;
