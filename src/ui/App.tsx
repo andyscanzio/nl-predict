@@ -8,15 +8,13 @@ import {
   type ProjectedTableRow,
   type ProjectionModel,
 } from "../domain/project.ts";
-import { SIMULATION_RUNS, type CutLineProbabilities } from "../domain/seasonSimulation.ts";
+import type { CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
 import { splitFormRatesOf } from "../domain/splitFormRate.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Decision, Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
-import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
-import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
@@ -24,8 +22,9 @@ import { chartMetrics, projectionChart, shownMetric, type ChartMetric } from "./
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { applyTheme, readTheme, storeTheme, THEMES, type Theme } from "./theme.ts";
-import { formatForm, formatGameDate, formatScoreboardTime, formatSnapshotTime, ordinal } from "./format.ts";
+import { formatForm, formatGameDate, formatScoreboardTime, formatSnapshotTime, ordinal, SIMULATION_RUNS_LABEL } from "./format.ts";
 import { CurrentTable } from "./CurrentTable.tsx";
+import { ModelExplanation } from "./ModelExplanation.tsx";
 import { fullTeamName, TeamName } from "./TeamName.tsx";
 import { UpcomingGames } from "./UpcomingGames.tsx";
 import { formatPercent } from "./winSplit.ts";
@@ -526,58 +525,6 @@ function ModelPicker({
   );
 }
 
-const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
-
-/** How each Projection Model turns Played Games into projected Points; a model without an entry fails type-checking. */
-const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
-  "split-form-rate": (
-    <>
-      <p>
-        Each team keeps the Points it has today and earns its Home Form on every Remaining home Game and its Away Form
-        on every Remaining away Game. Home Form is the Points per Game over the team's home Form Window, its up to{" "}
-        {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is the same over its away Form Window. Projected
-        Points = current Points + Remaining home Games × Home Form + Remaining away Games × Away Form.
-      </p>
-      <p>
-        Opponents are ignored, so a team in good form is assumed to keep it up against anyone. A team with no Played
-        home Games yet uses its Away Form for its Remaining home Games, and the reverse; with neither, it stays on its
-        current Points.
-      </p>
-      <p>
-        <strong>No percentages.</strong> Split Form Rate predicts each side of a Game on its own, so a Game's two
-        predictions need not add up to its 3 Points and there are no Outcome Probabilities to play the Season out from.
-        Pick another model to see each team's Playoffs, Play-in, Eliminated and 1st chances.
-      </p>
-    </>
-  ),
-  "season-rate": (
-    <p>
-      Each team keeps earning its Points per Game over all its Played Games this Season, whatever the venue or
-      opponent; a team with no Played Games counts as {LEAGUE_AVERAGE_POINTS_PER_GAME}, half of a Game's 3 Points. A
-      Remaining Game's 3 Points can't honour both teams' rates at once, so the home team expects the mean of its own
-      rate and what the away team's rate leaves it: (home rate + 3 − away rate) ÷ 2.
-    </p>
-  ),
-  matchup: (
-    <p>
-      Each Remaining Game weighs the home team's Home Form against the away team's Away Form. Home Form is the Points
-      per Game over a team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is
-      the same over its away Form Window. The home team expects (Home Form + 3 − the away team's Away Form) ÷ 2 of the
-      Game's 3 Points. A team with no Played Games at one venue uses its Form from the other; with neither, it counts
-      as {LEAGUE_AVERAGE_POINTS_PER_GAME}.
-    </p>
-  ),
-  elo: (
-    <p>
-      Every team starts the Season on a Rating of {INITIAL_RATING}. After each Played Game, the home team's Rating rises by{" "}
-      {ELO_K} × (the share of the 3 Points it took − the share the Ratings expected) and the away team's falls by the
-      same, so beating a strong team counts for more than beating a weak one. The home team gets a Home Advantage of {ELO_HOME_ADVANTAGE} Rating
-      points. For each Remaining Game, the two current Ratings plus Home Advantage give the home team its expected
-      share of the 3 Points. K and Home Advantage were tuned by Back-Testing the 2024/25 and 2025/26 Regular Seasons.
-    </p>
-  ),
-};
-
 export function App({
   snapshot,
   now,
@@ -810,38 +757,7 @@ export function App({
 
             <UpcomingGames nextRound={nextRound} lowSample={projectedTable.some((row) => row.lowSample)} teams={teams} />
 
-            <section class="panel explanation">
-              <h2>How the projection works: {model.name}</h2>
-              <div class="panel-body">
-                {MODEL_EXPLANATIONS[model.id]}
-                {showProbabilities && (
-                  <>
-                    <p>
-                      That expectation becomes Outcome Probabilities (regulation win, OT/SO win, OT/SO loss, regulation
-                      loss), with Games going to overtime or a shootout at the OT/SO Rate: the league-wide share of Played
-                      Games decided that way. A team's projected Points are its current Points plus its expected Points over
-                      its Remaining Games.
-                    </p>
-                    <p>
-                      The percentages come from a Season Simulation: every Remaining Game is played out {SIMULATION_RUNS_LABEL}{" "}
-                      times by drawing its result from the model's Outcome Probabilities, and each simulated Season's final
-                      table is ranked by Points, with ties broken at random. Playoffs, Play-in and Eliminated are the share of
-                      Seasons a team finishes 1–6, 7–10 and 11–14; 1st is the share it finishes top. The table itself stays
-                      ranked by expected Points. The same data always gives the same numbers.
-                    </p>
-                    <p>
-                      A team's Rank Distribution charts how often it finished at each rank across those Seasons, with a tick
-                      at its projected rank. The most likely rank can differ from #, because # ranks teams by expected Points
-                      while the chart counts where the team finished in each simulated Season.
-                    </p>
-                  </>
-                )}
-                <p>
-                  Teams level on projected Points keep their Current Table order. Select a team to see{" "}
-                  {showProbabilities ? "its finishing ranks and the Games in its Form Windows." : "the Games in its Form Windows."}
-                </p>
-              </div>
-            </section>
+            <ModelExplanation model={model} />
 
             <CurrentTable rows={currentTable} teams={teams} />
           </>

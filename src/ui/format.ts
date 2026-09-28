@@ -1,3 +1,5 @@
+import { SIMULATION_RUNS } from "../domain/seasonSimulation.ts";
+
 /** How the page prints dates, times, Form, expected Points and ranks, so every panel formats them the same way. */
 
 const snapshotTime = new Intl.DateTimeFormat("en-GB", {
@@ -79,3 +81,6 @@ const ORDINAL_SUFFIXES: Partial<Record<Intl.LDMLPluralRule, string>> = { one: "s
 export function ordinal(n: number) {
   return `${n}${ORDINAL_SUFFIXES[ordinalRules.select(n)] ?? "th"}`;
 }
+
+/** The Season Simulation's run count as the page prints it, e.g. "10,000". */
+export const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
