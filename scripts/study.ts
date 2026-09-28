@@ -1,13 +1,20 @@
 /**
- * Shrinkage study: scores a grid of Season Rate models, and the Elo Model for context, over several Seasons with
- * leave-one-season-out, then writes a text report under data/local/ so study results never end up in the repo.
+ * Shrinkage study: scores a grid of Season Rate models, or of Matchup Model variants next to Season Rate, and the Elo
+ * Model for context, over several Seasons with leave-one-season-out, then writes a text report under data/local/ so
+ * study results never end up in the repo.
  *
- *   npm run study                          2022/23–2025/26 from data/local/seasons/, grid at 2,000 simulation runs
+ *   npm run study                          Season Rate, 2022/23–2025/26 from data/local/seasons/, grid at 2,000 simulation runs
+ *   npm run study:matchup                  the Matchup Model's league, flat and team centres, Season Rate and the Elo Model
  *   npm run study -- --rescore 0,10        also re-score m = 0 and m = 10 (and the Elo Model) at 10,000 runs
  *   npm run study -- --dir d --seasons 2024,2025 --runs 500 --out report.txt
  *
  * Per Season and model it runs the per-Game Back-Test and the Season Simulation Back-Test. Each held-out Season is
  * scored with the m that scored best on the other Seasons, twice: chosen by per-Game Brier and by Rank RPS.
+ *
+ * The Matchup Model variants are the league centre (shrunk toward the league's home and away Points per Game), the flat
+ * control (toward 1.5 at both venues) and the team centre (toward the team's Season Rate). Their home Points per Game,
+ * where they use it, comes from the other Seasons' Played Games only, so a held-out Season never leaks into its own
+ * prior. All variants share the id `matchup`, so they get the same Season Simulation seeds at each Match Day.
  *
  * Each comparison of two models gets its uncertainty as #41 did: a cluster bootstrap over team-seasons for the pooled
  * difference in per-Game Brier, Rank RPS and Cut Line Brier, a sign-flip test over the same team-seasons, and in how
@@ -16,8 +23,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
-import { gameBriers } from "../src/domain/backTest.ts";
+import { backTest, gameBriers } from "../src/domain/backTest.ts";
 import { eloModel } from "../src/domain/eloModel.ts";
+import { createMatchupModel, leagueHomePointsPerGame, matchupModel } from "../src/domain/matchupModel.ts";
+import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../src/domain/outcomes.ts";
 import { projectionModelInput } from "../src/domain/project.ts";
 import { seasonLabel } from "../src/domain/season.ts";
 import { createSeasonRate } from "../src/domain/seasonRate.ts";
@@ -26,15 +35,21 @@ import type { Snapshot, TeamId } from "../src/domain/types.ts";
 
 const { values } = parseArgs({
   options: {
+    study: { type: "string", default: "season-rate" },
     dir: { type: "string", default: "data/local/seasons" },
     seasons: { type: "string", default: "2022,2023,2024,2025" },
     runs: { type: "string", default: "2000" },
     rescore: { type: "string" },
     resamples: { type: "string", default: "10000" },
     "rescore-runs": { type: "string", default: "10000" },
-    out: { type: "string", default: "data/local/shrinkage-study/season-rate.txt" },
+    out: { type: "string" },
   },
 });
+
+const STUDIES = ["season-rate", "matchup"];
+if (!STUDIES.includes(values.study)) throw new Error(`--study must be one of ${STUDIES.join(", ")}`);
+const matchupStudy = values.study === "matchup";
+const out = values.out ?? `data/local/shrinkage-study/${values.study}.txt`;
 
 /** m values of the grid: how many Games at the league-average 1.5 Points per Game each team is rated as if it had also played. */
 const GRID = [0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40];
@@ -51,11 +66,59 @@ for (const season of seasons) {
   snapshots.set(season, JSON.parse(await readFile(join(values.dir, `season-${season}.json`), "utf8")) as Snapshot);
 }
 
-// The Elo Model and Season Rate both give Outcome Probabilities; the constructors are typed as any Projection Model.
+// The Elo Model, Season Rate and the Matchup Model all give Outcome Probabilities; the constructors are typed as any Projection Model.
 const elo = eloModel as OutcomesProjectionModel;
 const eloName = elo.name;
-const nameOf = (m: number) => `m=${m}`;
-const seasonRateOf = (m: number): OutcomesProjectionModel => ({ ...(createSeasonRate({ priorGames: m }) as OutcomesProjectionModel), name: nameOf(m) });
+
+/** A model to score on a Season: the Matchup Model's home Points per Game comes from the other Seasons, so it depends on the Season. */
+type ModelFor = (season: number) => OutcomesProjectionModel;
+
+/** A model with a prior strength m to choose, at every m of the grid. */
+interface Family {
+  label: string;
+  nameOf: (m: number) => string;
+  modelFor: (m: number) => ModelFor;
+}
+
+const seasonRateFamily: Family = {
+  label: "Season Rate",
+  nameOf: (m) => `${matchupStudy ? "Season Rate " : ""}m=${m}`,
+  modelFor: (m) => () => ({ ...(createSeasonRate({ priorGames: m }) as OutcomesProjectionModel), name: seasonRateFamily.nameOf(m) }),
+};
+
+/** After every Game in any Season. */
+const END_OF_SEASON = new Date(8.64e15);
+
+const playedGamesOf = (season: number) => projectionModelInput(snapshots.get(season)!.games, END_OF_SEASON).playedGames;
+
+/** League home Points per Game over the Played Games of every Season but `season`: 1.5 when there is none. */
+const trainingHomePointsPerGame = (season: number) =>
+  leagueHomePointsPerGame(seasons.filter((other) => other !== season).flatMap(playedGamesOf));
+
+/** m = 0 is the unshrunk Matchup Model whatever the centre, so the variants share its row. */
+function matchupFamily(label: string, centre: "league" | "flat" | "team"): Family {
+  const nameOf = (m: number) => (m === 0 ? "Matchup m=0" : `${label} m=${m}`);
+  return {
+    label,
+    nameOf,
+    modelFor: (m) => (season) => ({
+      ...(createMatchupModel({
+        priorGames: m,
+        homePointsPerGame: centre === "flat" ? LEAGUE_AVERAGE_POINTS_PER_GAME : trainingHomePointsPerGame(season),
+        centre: centre === "team" ? "team" : "league",
+      }) as OutcomesProjectionModel),
+      name: nameOf(m),
+    }),
+  };
+}
+
+const matchupFamilies = [matchupFamily("League", "league"), matchupFamily("Flat", "flat"), matchupFamily("Team", "team")];
+/** The unshrunk model: m = 0 of Season Rate, or the shipped Matchup Model. */
+const unshrunkName = (matchupStudy ? matchupFamilies[0]! : seasonRateFamily).nameOf(0);
+const families = matchupStudy ? [seasonRateFamily, ...matchupFamilies] : [seasonRateFamily];
+const modelsOf = (ms: readonly number[]): ModelFor[] => [...families.flatMap((family) => ms.map(family.modelFor)), () => elo];
+/** Every name of the grid's models, once (the Matchup Model's m = 0 is shared), without the Elo Model. */
+const namesOf = (ms: readonly number[]) => [...new Set(families.flatMap((family) => ms.map(family.nameOf)))];
 
 /** What one model scored on one Season. */
 interface SeasonScore {
@@ -67,12 +130,12 @@ interface SeasonScore {
 }
 
 /** Every model's score on every Season, by Season then model name. */
-async function scoreAll(models: readonly OutcomesProjectionModel[], simulationRuns: number, withBrier: boolean) {
-  const all = [...models, elo];
+async function scoreAll(modelsFor: readonly ModelFor[], simulationRuns: number, withBrier: boolean) {
   const scores = new Map<number, Map<string, SeasonScore>>();
   for (const season of seasons) {
     const { games, snapshotAt } = snapshots.get(season)!;
     const started = Date.now();
+    const all = [...new Map(modelsFor.map((modelFor) => modelFor(season)).map((model) => [model.name, model])).values()];
     const briers = withBrier ? gameBriers(games, new Date(snapshotAt), all) : [];
     const simulations = seasonSimulationBackTest(games, all, simulationRuns);
     scores.set(
@@ -136,7 +199,7 @@ function pooled(variant: Variant, phase?: number, over: readonly number[] = seas
 }
 
 /** For each held-out Season, the m that scores lowest on `metric` averaged over the other Seasons (the smaller m on a tie). */
-function leaveOneSeasonOut(scores: Map<number, Map<string, SeasonScore>>, metric: MetricName): Map<number, number> {
+function leaveOneSeasonOut(scores: Map<number, Map<string, SeasonScore>>, metric: MetricName, { nameOf }: Family): Map<number, number> {
   return new Map(
     seasons.map((heldOut) => {
       const others = seasons.filter((season) => season !== heldOut);
@@ -263,7 +326,8 @@ const fixed = (x: number, digits = 4) => (Number.isNaN(x) ? "—" : x.toFixed(di
 const percent = (x: number) => `${(100 * x).toFixed(1)}%`;
 
 /** A table with a row label and a column per header. */
-function table(rowHeader: string, headers: readonly string[], rows: readonly (readonly [string, ...string[]])[], labelWidth = 34, width = 9) {
+function table(rowHeader: string, headers: readonly string[], rows: readonly (readonly [string, ...string[]])[], minLabelWidth = 34, width = 9) {
+  const labelWidth = Math.max(minLabelWidth, rowHeader.length + 2, ...rows.map(([label]) => label.length + 2));
   print(rowHeader.padEnd(labelWidth) + headers.map((h) => cell(h, width)).join(""));
   for (const [label, ...cells] of rows) print(label.padEnd(labelWidth) + cells.map((c) => cell(c, width)).join(""));
 }
@@ -338,37 +402,69 @@ function teamSeasonReport(variants: readonly [string, Variant][]) {
 }
 
 const started = Date.now();
-const scores = await scoreAll(GRID.map(seasonRateOf), runs, true);
+const scores = await scoreAll(modelsOf(GRID), runs, true);
 
-print(`Shrinkage study: Season Rate over ${seasons.map(seasonLabel).join(", ")}; ${runs} simulation runs per forecast point.`);
+print(`Shrinkage study: ${matchupStudy ? "the Matchup Model's league, flat and team centres, with Season Rate," : "Season Rate"} over ${seasons.map(seasonLabel).join(", ")}; ${runs} simulation runs per forecast point.`);
 print(`Snapshots from ${values.dir}. Pooled figures weigh every team forecast the same; the per-Game Brier mean weighs every Season the same.`);
 print();
+
+if (matchupStudy) {
+  heading("0. LEAGUE HOME POINTS PER GAME AND THE SHIPPED MODEL");
+  table(
+    "",
+    seasonHeaders,
+    [
+      ["Season's own", ...seasons.map((season) => fixed(leagueHomePointsPerGame(playedGamesOf(season)), 3))],
+      ["Prior when held out (others)", ...seasons.map((season) => fixed(trainingHomePointsPerGame(season), 3))],
+    ],
+    30,
+  );
+  print("The league and team centres use the second row as homePointsPerGame for each held-out Season (away is 3 minus it); the flat control uses 1.5. Their m is chosen on the other Seasons, each scored with a prior from the Seasons but its own, which includes the held-out Season's Games.");
+  print();
+  // The priorGames 0 row is the shipped Matchup Model, so its per-Game Brier must be the existing Back-Test's.
+  for (const season of seasons) {
+    const { games, snapshotAt } = snapshots.get(season)!;
+    const shipped = backTest(games, new Date(snapshotAt), [matchupModel])[0]!.brierScore!;
+    const row = scores.get(season)!.get(unshrunkName)!.brier;
+    if (Math.abs(shipped - row) > 1e-9) throw new Error(`${unshrunkName} scores ${row} in ${season}, the shipped Matchup Model ${shipped}`);
+  }
+  print(`Check: ${unshrunkName}'s per-Game Brier equals the shipped Matchup Model's in the Back-Test, in every Season.`);
+  print();
+}
 
 heading("1. PER-GAME BACK-TEST: Brier score by m (lower is better)");
 table(
   "",
   [...seasonHeaders, "mean"],
-  [
-    ...[eloName, ...GRID.map(nameOf)].map((name): [string, ...string[]] => {
-      const variant = variantOf(scores, () => name);
-      return [name, ...seasons.map((season) => fixed(variant.get(season)!.brier)), fixed(pooled(variant).brier)];
-    }),
-  ],
+  [eloName, ...namesOf(GRID)].map((name): [string, ...string[]] => {
+    const variant = variantOf(scores, () => name);
+    return [name, ...seasons.map((season) => fixed(variant.get(season)!.brier)), fixed(pooled(variant).brier)];
+  }),
 );
 print();
 
-const chosenByBrier = leaveOneSeasonOut(scores, "brier");
-const chosenByRps = leaveOneSeasonOut(scores, "rps");
-const chosen = (by: Map<number, number>) => seasons.map((season) => `${seasonLabel(season)}: m=${by.get(season)}`).join(", ");
-print(`Leave-one-season-out m, by per-Game Brier: ${chosen(chosenByBrier)}`);
-print(`Leave-one-season-out m, by Rank RPS:       ${chosen(chosenByRps)}`);
+const chosenBy = new Map(
+  families.map((family) => [family, { brier: leaveOneSeasonOut(scores, "brier", family), rps: leaveOneSeasonOut(scores, "rps", family) }]),
+);
+print("Leave-one-season-out m: the m that scored best on the other Seasons, for each held-out Season");
+for (const [title, by] of [
+  ["by per-Game Brier", "brier"],
+  ["by Rank RPS", "rps"],
+] as const) {
+  table(
+    title,
+    seasonHeaders,
+    families.map((family): [string, ...string[]] => [family.label, ...seasons.map((season) => `m=${chosenBy.get(family)![by].get(season)}`)]),
+    20,
+  );
+}
 print();
 
 heading("2. SEASON SIMULATION BACK-TEST: pooled scores by m");
 table(
   "m",
   ["Rank RPS", "Cut Brier", "outer 10ths"],
-  [nameOf(0), ...GRID.slice(1).map(nameOf), eloName].map((name): [string, ...string[]] => {
+  [...namesOf(GRID), eloName].map((name): [string, ...string[]] => {
     const { rps, cut, outer } = pooled(variantOf(scores, () => name));
     return [name, fixed(rps), fixed(cut), percent(outer)];
   }),
@@ -379,18 +475,21 @@ print();
 print("Rank RPS by m and Games played:");
 phaseTable(
   "rps",
-  [...GRID.map(nameOf), eloName].map((name): [string, Variant] => [name, variantOf(scores, () => name)]),
+  [...namesOf(GRID), eloName].map((name): [string, Variant] => [name, variantOf(scores, () => name)]),
 );
 print();
 
-const heldOutByBrier = variantOf(scores, (season) => nameOf(chosenByBrier.get(season)!));
-const heldOutByRps = variantOf(scores, (season) => nameOf(chosenByRps.get(season)!));
+const heldOutLabel = (family: Family, by: "Brier" | "Rank RPS") => `${matchupStudy ? `${family.label} ` : ""}held-out m (by ${by})`;
+const heldOuts = families.flatMap((family): [string, Variant][] => [
+  [heldOutLabel(family, "Brier"), variantOf(scores, (season) => family.nameOf(chosenBy.get(family)!.brier.get(season)!))],
+  [heldOutLabel(family, "Rank RPS"), variantOf(scores, (season) => family.nameOf(chosenBy.get(family)!.rps.get(season)!))],
+]);
+const fixedM = (name: string): [string, Variant] => [name, variantOf(scores, () => name)];
 const compared: [string, Variant][] = [
-  ["m=0", variantOf(scores, () => nameOf(0))],
-  ["m=10", variantOf(scores, () => nameOf(10))],
-  ["held-out m (by Brier)", heldOutByBrier],
-  ["held-out m (by Rank RPS)", heldOutByRps],
-  [eloName, variantOf(scores, () => eloName)],
+  fixedM(unshrunkName),
+  ...(matchupStudy ? [] : [fixedM("m=10")]),
+  ...heldOuts,
+  fixedM(eloName),
 ];
 
 heading("3. COMPARISON: per-Game Brier");
@@ -408,14 +507,29 @@ print(`Seasons better: how many Seasons the challenger's pooled difference is ne
 print("A Game's Brier score counts for both its teams, so per-Game Brier intervals are somewhat too narrow. Neither the choice of m nor simulation noise is resampled.");
 print();
 const byName = new Map(compared);
-const comparisons: [challenger: string, baseline: string][] = [
-  ["m=10", "m=0"],
-  ["held-out m (by Rank RPS)", "m=0"],
-  ["held-out m (by Brier)", "m=0"],
-  ["m=10", eloName],
-  ["held-out m (by Rank RPS)", eloName],
-  ["held-out m (by Brier)", eloName],
-];
+const [league, flat, team] = matchupFamilies;
+const comparisons: [challenger: string, baseline: string][] = matchupStudy
+  ? [
+      ...matchupFamilies.flatMap((family): [string, string][] => [
+        [heldOutLabel(family, "Rank RPS"), unshrunkName],
+        [heldOutLabel(family, "Brier"), unshrunkName],
+      ]),
+      ...matchupFamilies.map((family): [string, string] => [heldOutLabel(family, "Rank RPS"), heldOutLabel(seasonRateFamily, "Rank RPS")]),
+      ...matchupFamilies.map((family): [string, string] => [heldOutLabel(family, "Rank RPS"), eloName]),
+      [heldOutLabel(team!, "Rank RPS"), heldOutLabel(league!, "Rank RPS")],
+      [heldOutLabel(team!, "Rank RPS"), heldOutLabel(flat!, "Rank RPS")],
+      [heldOutLabel(league!, "Rank RPS"), heldOutLabel(flat!, "Rank RPS")],
+      [heldOutLabel(seasonRateFamily, "Rank RPS"), unshrunkName],
+      [heldOutLabel(seasonRateFamily, "Rank RPS"), eloName],
+    ]
+  : [
+      ["m=10", "m=0"],
+      ["held-out m (by Rank RPS)", "m=0"],
+      ["held-out m (by Brier)", "m=0"],
+      ["m=10", eloName],
+      ["held-out m (by Rank RPS)", eloName],
+      ["held-out m (by Brier)", eloName],
+    ];
 let seed = 1;
 for (const [challenger, baseline] of comparisons) {
   print(`${challenger}  −  ${baseline}`);
@@ -432,19 +546,18 @@ for (const [challenger, baseline] of comparisons) {
   print();
 }
 
-heading("6. PER TEAM-SEASON: mean over the forecast points");
-teamSeasonReport(compared.filter(([label]) => label === "m=0" || label === "m=10" || label === eloName));
-
-if (rescore.length > 0) {
-  const rescored = await scoreAll(rescore.map(seasonRateOf), rescoreRuns, false);
-  heading(`7. RE-SCORED AT ${rescoreRuns} SIMULATION RUNS: ${rescore.map(nameOf).join(", ")}`);
-  variantReport([
-    ...rescore.map((m): [string, Variant] => [nameOf(m), variantOf(rescored, () => nameOf(m))]),
-    [eloName, variantOf(rescored, () => eloName)],
-  ]);
+if (!matchupStudy) {
+  heading("6. PER TEAM-SEASON: mean over the forecast points");
+  teamSeasonReport(compared.filter(([label]) => label === "m=0" || label === "m=10" || label === eloName));
 }
 
-await mkdir(dirname(values.out), { recursive: true });
-await writeFile(values.out, lines.join("\n") + "\n");
+if (rescore.length > 0) {
+  const rescored = await scoreAll(modelsOf(rescore), rescoreRuns, false);
+  heading(`${matchupStudy ? 6 : 7}. RE-SCORED AT ${rescoreRuns} SIMULATION RUNS: ${namesOf(rescore).join(", ")}`);
+  variantReport([...namesOf(rescore), eloName].map((name): [string, Variant] => [name, variantOf(rescored, () => name)]));
+}
+
+await mkdir(dirname(out), { recursive: true });
+await writeFile(out, lines.join("\n") + "\n");
 console.log(lines.join("\n"));
-console.error(`\nWrote ${values.out} in ${((Date.now() - started) / 1000).toFixed(0)}s`);
+console.error(`\nWrote ${out} in ${((Date.now() - started) / 1000).toFixed(0)}s`);

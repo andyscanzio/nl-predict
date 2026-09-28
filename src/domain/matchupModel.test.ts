@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMatchupModel, matchupModel, MATCHUP_PRIOR_GAMES } from "./matchupModel.ts";
+import { createMatchupModel, leagueHomePointsPerGame, matchupModel, MATCHUP_PRIOR_GAMES } from "./matchupModel.ts";
+import type { PlayedGame } from "./form.ts";
 import { project, type ProjectionModel } from "./project.ts";
 import type { Decision, Game } from "./types.ts";
 
@@ -175,5 +176,17 @@ describe("createMatchupModel: team centre", () => {
   it("with priorGames 0 has no effect", () => {
     const games = [played(3, 1, 0, 3), played(1, 4, 3, 0), scheduled(1, 2)];
     expect(projectedPoints(games, model(0, 1.74))).toEqual(projectedPoints(games));
+  });
+});
+
+describe("leagueHomePointsPerGame", () => {
+  it("is the home teams' mean Points per Game over the Played Games", () => {
+    const games = [played(1, 2, 3, 0), played(2, 1, 1, 2, "OT"), played(3, 1, 0, 1, "SO"), played(1, 3, 0, 4)];
+    // home Points 3, 1, 1, 0
+    expect(leagueHomePointsPerGame(games.filter((game): game is PlayedGame => game.result !== undefined))).toBeCloseTo(5 / 4);
+  });
+
+  it("is the league average of 1.5 with no Played Games", () => {
+    expect(leagueHomePointsPerGame([])).toBe(1.5);
   });
 });

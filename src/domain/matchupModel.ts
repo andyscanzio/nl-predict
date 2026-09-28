@@ -19,6 +19,12 @@ export interface MatchupParameters {
   centre: "league" | "team";
 }
 
+/** League home Points per Game over Played Games, for MatchupParameters.homePointsPerGame: the league-average 1.5 with none. */
+export function leagueHomePointsPerGame(playedGames: readonly PlayedGame[]): number {
+  if (playedGames.length === 0) return LEAGUE_AVERAGE_POINTS_PER_GAME;
+  return playedGames.reduce((sum, game) => sum + pointsFor(game, game.homeTeamId), 0) / playedGames.length;
+}
+
 /** A team's Points per Game over a Form Window, shrunk toward `prior` as if it had also played `priorGames` Games there. */
 function shrunkForm(window: PlayedGame[], teamId: TeamId, prior: number, priorGames: number): number {
   const points = window.reduce((sum, game) => sum + pointsFor(game, teamId), 0);
