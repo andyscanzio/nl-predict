@@ -20,7 +20,8 @@ import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
-import { chartMetrics, nearestMatchDay, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
+import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
+import { chartMetrics, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { applyTheme, readTheme, storeTheme, THEMES, type Theme } from "./theme.ts";
@@ -372,12 +373,6 @@ function RankHistogram({ distribution, projectedRank }: { distribution: readonly
   );
 }
 
-/** Plot area of the Projection History chart, in SVG units; the SVG scales to its box, so the aspect ratio stays fixed. */
-const CHART = { width: 320, height: 130, left: 34, right: 8, top: 8, bottom: 20 };
-
-/** The chart tooltip's box, in SVG units. */
-const TIP = { width: 78, line: 11, padding: 5, gap: 8 };
-
 const METRIC_LABELS: Record<ChartMetric, { title: string; toggle: string }> = {
   playoffs: { title: "Playoff chance over the Season", toggle: "Playoff %" },
   points: { title: "Projected Points over the Season", toggle: "Points" },
@@ -406,21 +401,13 @@ function ProjectionHistoryChart({
   const metric = shownMetric(chosenMetric, metrics);
   const chart = metric && projectionChart(history, teamId, metric);
   if (!metric || !chart) return null;
-  const plotWidth = CHART.width - CHART.left - CHART.right;
-  const plotHeight = CHART.height - CHART.top - CHART.bottom;
-  const x = (share: number) => (CHART.left + share * plotWidth).toFixed(1);
-  const y = (share: number) => (CHART.top + share * plotHeight).toFixed(1);
   const pointAt = (event: PointerEvent) => {
     const svg = (event.currentTarget as SVGElement).ownerSVGElement!;
-    const box = svg.getBoundingClientRect();
-    const svgX = ((event.clientX - box.left) / box.width) * CHART.width;
-    setActive(nearestMatchDay((svgX - CHART.left) / plotWidth, chart.tooltips.length));
+    setActive(matchDayAtPointer(event.clientX, svg.getBoundingClientRect(), chart.tooltips.length));
   };
   const tip = active === null ? null : chart.tooltips[active];
-  const tipHeight = tip ? tip.lines.length * TIP.line + TIP.padding * 2 - 2 : 0;
-  const tipX = tip ? Math.min(Math.max(Number(x(tip.x)) - TIP.width / 2, 0), CHART.width - TIP.width) : 0;
-  // Above the point, or below it when the line runs too close to the top for the box to fit.
-  const tipY = tip ? (Number(y(tip.y)) - tipHeight - TIP.gap >= 0 ? Number(y(tip.y)) - tipHeight - TIP.gap : Number(y(tip.y)) + TIP.gap) : 0;
+  const tipBox = tip && tooltipBox(tip);
+  const lowSample = lowSampleBox(chart.lowSample);
   return (
     <section class="history-chart">
       <div class="history-head">
@@ -444,22 +431,22 @@ function ProjectionHistoryChart({
           if (!(event.target as Element).classList.contains("history-hit")) setActive(null);
         }}
       >
-        {chart.lowSample && chart.lowSample.to > chart.lowSample.from && (
+        {lowSample && (
           <g class="history-low-sample">
-            <rect x={x(chart.lowSample.from)} y={y(0)} width={(Number(x(chart.lowSample.to)) - Number(x(chart.lowSample.from))).toFixed(1)} height={plotHeight} />
-            {chart.lowSample.to - chart.lowSample.from > 0.2 && (
-              <text x={Number(x(chart.lowSample.from)) + 3} y={Number(y(0)) + 8}>
+            <rect x={lowSample.x} y={lowSample.y} width={lowSample.width} height={lowSample.height} />
+            {lowSample.labelled && (
+              <text x={lowSample.textX} y={lowSample.textY}>
                 Low Sample
               </text>
             )}
           </g>
         )}
         {[0, 1].map((share) => (
-          <line key={share} class="history-edge" x1={x(0)} x2={x(1)} y1={y(share)} y2={y(share)} />
+          <line key={share} class="history-edge" x1={plotX(0)} x2={plotX(1)} y1={plotY(share)} y2={plotY(share)} />
         ))}
-        {chart.guideY !== null && <line class="history-guide" x1={x(0)} x2={x(1)} y1={y(chart.guideY)} y2={y(chart.guideY)} />}
+        {chart.guideY !== null && <line class="history-guide" x1={plotX(0)} x2={plotX(1)} y1={plotY(chart.guideY)} y2={plotY(chart.guideY)} />}
         {chart.yTicks.map(({ y: share, text }) => (
-          <text key={text} class="history-label" x={CHART.left - 4} y={y(share)} text-anchor="end" dominant-baseline="middle">
+          <text key={text} class="history-label" x={AXIS_LABEL.x} y={plotY(share)} text-anchor="end" dominant-baseline="middle">
             {text}
           </text>
         ))}
@@ -467,8 +454,8 @@ function ProjectionHistoryChart({
           <text
             key={index}
             class="history-label"
-            x={x(share)}
-            y={CHART.height - 4}
+            x={plotX(share)}
+            y={AXIS_LABEL.y}
             text-anchor={index === 0 ? "start" : index === chart.xLabels.length - 1 ? "end" : "middle"}
           >
             {text}
@@ -478,16 +465,16 @@ function ProjectionHistoryChart({
           <polyline
             key={line.teamId}
             class={line.chosen ? "history-line chosen" : "history-line"}
-            points={line.points.map((point) => `${x(point.x)},${y(point.y)}`).join(" ")}
+            points={polylinePoints(line.points)}
           />
         ))}
-        {tip && (
+        {tip && tipBox && (
           <g class="history-tip" pointer-events="none">
-            <line class="history-tip-rule" x1={x(tip.x)} x2={x(tip.x)} y1={y(0)} y2={y(1)} />
-            <circle class="history-tip-dot" cx={x(tip.x)} cy={y(tip.y)} r={3.5} />
-            <rect x={tipX} y={tipY} width={TIP.width} height={tipHeight} rx={3} />
+            <line class="history-tip-rule" x1={plotX(tip.x)} x2={plotX(tip.x)} y1={plotY(0)} y2={plotY(1)} />
+            <circle class="history-tip-dot" cx={plotX(tip.x)} cy={plotY(tip.y)} r={3.5} />
+            <rect x={tipBox.x} y={tipBox.y} width={tipBox.width} height={tipBox.height} rx={3} />
             {tip.lines.map((line, index) => (
-              <text key={index} class={index === 0 ? "history-tip-date" : undefined} x={tipX + TIP.padding} y={tipY + TIP.padding + TIP.line * index + 7}>
+              <text key={index} class={index === 0 ? "history-tip-date" : undefined} x={tipBox.textX} y={tipBox.textYs[index]}>
                 {line}
               </text>
             ))}
@@ -496,7 +483,7 @@ function ProjectionHistoryChart({
         {/* A wide invisible stroke over the chosen line is the only thing that answers to a tap or the mouse. */}
         <polyline
           class="history-hit"
-          points={chart.tooltips.map((point) => `${x(point.x)},${y(point.y)}`).join(" ")}
+          points={polylinePoints(chart.tooltips)}
           onPointerDown={pointAt}
           onPointerMove={pointAt}
           onPointerLeave={(event) => event.pointerType === "mouse" && setActive(null)}
