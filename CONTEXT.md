@@ -85,7 +85,7 @@ The Projection Model that expects each team to earn its Home Form in every remai
 A Projection Model predicting each Remaining Game from the home team's Home Form against the away team's Away Form: the home side expects (Home Form + 3 − Away Form) / 2, turned into Outcome Probabilities with the OT/SO Rate. An empty Form Window falls back to the team's other-venue Form; with neither, 1.5.
 
 **Season Rate**:
-The baseline Projection Model: each team keeps earning its Points per Game over all its Played Games of the Season, ignoring venue and opponent strength. A Game's home side expects the mean of its own rate and what the away side's rate leaves it, (home rate + 3 − away rate) / 2, turned into Outcome Probabilities with the OT/SO Rate; a team with no Played Games counts as 1.5.
+The baseline Projection Model: each team keeps earning its Points per Game over its Played Games of the Season, ignoring venue and opponent strength, shrunk toward the league-average 1.5 as if it had also played 10 Games at that rate, so early results count for less and the effect fades as the Season goes on. A Game's home side expects the mean of its own rate and what the away side's rate leaves it, (home rate + 3 − away rate) / 2, turned into Outcome Probabilities with the OT/SO Rate.
 
 **Elo Model**:
 A Projection Model that keeps a Rating per team, updated after every Played Game by the share of its 3 Points each team took against the share its Rating and Home Advantage expected, and predicts each Game's expected Points share from the two Ratings plus Home Advantage, turned into Outcome Probabilities with the OT/SO Rate.

@@ -13,7 +13,7 @@ Every model predicts each Remaining Game from the Games played so far. Pick one 
 | Model | Id | Idea |
 | --- | --- | --- |
 | **Elo Model** (default) | `elo` | A running Rating per team, updated after every Game, with a Home Advantage bonus. |
-| **Season Rate** | `season-rate` | Each team keeps earning its Points per Game so far, ignoring venue and opponent. |
+| **Season Rate** | `season-rate` | Each team keeps earning its Points per Game so far, shrunk toward the league average, ignoring venue and opponent. |
 | **Matchup Model** | `matchup` | The home team's Home Form against the away team's Away Form, over each team's last five Games at that venue. |
 | **Split Form Rate** | `split-form-rate` | Each team earns its Home Form at home and Away Form away, ignoring opponents. Gives Points only, no probabilities. |
 

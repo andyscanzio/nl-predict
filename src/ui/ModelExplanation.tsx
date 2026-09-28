@@ -4,6 +4,7 @@ import { FORM_WINDOW_SIZE } from "../domain/form.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
+import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
 import { SIMULATION_RUNS_LABEL } from "./format.ts";
 
 /** How each Projection Model turns Played Games into projected Points; a model without an entry fails type-checking. */
@@ -30,10 +31,11 @@ const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
   ),
   "season-rate": (
     <p>
-      Each team keeps earning its Points per Game over all its Played Games this Season, whatever the venue or
-      opponent; a team with no Played Games counts as {LEAGUE_AVERAGE_POINTS_PER_GAME}, half of a Game's 3 Points. A
-      Remaining Game's 3 Points can't honour both teams' rates at once, so the home team expects the mean of its own
-      rate and what the away team's rate leaves it: (home rate + 3 − away rate) ÷ 2.
+      Each team keeps earning its Points per Game over its Played Games, whatever the venue or opponent, as if it had
+      also played {SEASON_RATE_PRIOR_GAMES} Games at the league-average {LEAGUE_AVERAGE_POINTS_PER_GAME}. Early results
+      therefore count for less, and the effect fades as the Season goes on. A Remaining Game's 3 Points can't honour
+      both teams' rates at once, so the home team expects the mean of its own rate and what the away team's rate leaves
+      it: (home rate + 3 − away rate) ÷ 2.
     </p>
   ),
   matchup: (
