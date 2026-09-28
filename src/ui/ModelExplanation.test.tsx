@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { ModelExplanation } from "./ModelExplanation.tsx";
 import { PROJECTION_MODELS } from "../domain/projectionModels.ts";
+import { LEAGUE_HOME_POINTS_PER_GAME, MATCHUP_PRIOR_GAMES } from "../domain/matchupModel.ts";
 import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
 import { SIMULATION_RUNS } from "../domain/seasonSimulation.ts";
 
@@ -34,6 +35,16 @@ describe("ModelExplanation", () => {
     const seasonRateText = text(panel(PROJECTION_MODELS.find((model) => model.id === "season-rate")!));
     expect(seasonRateText).toContain(`as if it had also played ${SEASON_RATE_PRIOR_GAMES} Games at the league-average 1.5`);
     expect(seasonRateText).not.toContain("no Played Games");
+  });
+
+  it("explains the Matchup Model's shrinkage toward the league's home and away averages, without the other-venue fallback", () => {
+    const matchupText = text(panel(PROJECTION_MODELS.find((model) => model.id === "matchup")!));
+    expect(matchupText).toContain(`${MATCHUP_PRIOR_GAMES} home Games`);
+    expect(matchupText).toContain(`the league's home average, ${LEAGUE_HOME_POINTS_PER_GAME.toFixed(2)}`);
+    expect(matchupText).toContain(`the league's away average, ${(3 - LEAGUE_HOME_POINTS_PER_GAME).toFixed(2)}`);
+    expect(matchupText).toContain("(Home Rate + 3 − the away team's Away Rate) ÷ 2");
+    expect(matchupText).not.toContain("other venue");
+    expect(matchupText).not.toContain("no Played Games");
   });
 
   it.each(withOutcomes.map((model) => [model.name, model] as const))(

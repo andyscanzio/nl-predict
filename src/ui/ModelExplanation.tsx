@@ -2,6 +2,7 @@ import type { ComponentChildren } from "preact";
 import type { ProjectionModel } from "../domain/project.ts";
 import { FORM_WINDOW_SIZE } from "../domain/form.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
+import { LEAGUE_HOME_POINTS_PER_GAME, MATCHUP_PRIOR_GAMES } from "../domain/matchupModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../domain/outcomes.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
@@ -40,11 +41,13 @@ const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
   ),
   matchup: (
     <p>
-      Each Remaining Game weighs the home team's Home Form against the away team's Away Form. Home Form is the Points
+      Each Remaining Game weighs the home team's Home Rate against the away team's Away Rate. Home Form is the Points
       per Game over a team's home Form Window, its up to {FORM_WINDOW_SIZE} most recent Played home Games; Away Form is
-      the same over its away Form Window. The home team expects (Home Form + 3 − the away team's Away Form) ÷ 2 of the
-      Game's 3 Points. A team with no Played Games at one venue uses its Form from the other; with neither, it counts
-      as {LEAGUE_AVERAGE_POINTS_PER_GAME}.
+      the same over its away Form Window. A team is rated at home as if it had also played {MATCHUP_PRIOR_GAMES} home
+      Games at the league's home average, {LEAGUE_HOME_POINTS_PER_GAME.toFixed(2)}, and away as if it had also played as
+      many away Games at the league's away average, {(3 - LEAGUE_HOME_POINTS_PER_GAME).toFixed(2)}; that is its Home
+      Rate and Away Rate, so a short run of results counts for less. The home team expects (Home Rate + 3 − the away
+      team's Away Rate) ÷ 2 of the Game's 3 Points.
     </p>
   ),
   elo: (
