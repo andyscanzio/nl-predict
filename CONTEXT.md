@@ -123,6 +123,14 @@ _Avoid_: Rank spread, finishing chances
 A team's projected Points and Season Simulation results under one Projection Model, as they stood before the first Game of the Season and at the end of every Match Day played since. It shows what the model as it is today would have said at each point, not what the page showed then, so changing a model changes its whole history.
 _Avoid_: Trend, timeline
 
+**What-If Result**:
+An outcome a visitor sets for a Game in the Next Round: home or away win, in regulation or OT/SO. The projection treats it as a Played Game won by one goal, in every Projection Model, Form Window and Season Simulation, but it never touches the Current Table or Projection History. It is dropped once the Game is actually Played or leaves the Next Round.
+_Avoid_: Forced result, pick, prediction
+
+**What-If**:
+The set of What-If Results a visitor currently has; while it is non-empty, the Projected Table and headline show the What-If projection rather than the real one.
+_Avoid_: Scenario, simulation (that is the Season Simulation)
+
 **Default Model**:
 The Projection Model a visitor sees unless they pick another.
 
