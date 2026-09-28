@@ -147,7 +147,7 @@ How far a team's projected rank, projected Points, a chance or its Rank Distribu
 _Avoid_: Delta, impact, swing
 
 **Default Model**:
-The Projection Model a visitor sees unless they pick another.
+The Projection Model a visitor sees unless they pick another: the one that scores best in the Back-Test, which is why the page can call it best in back-test.
 
 **Back-Test**:
 Scoring a Projection Model by predicting every Played Game from only the Games played before it and comparing with the actual result.

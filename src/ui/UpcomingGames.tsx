@@ -18,7 +18,7 @@ function outcomesTitle(outcomes: OutcomeProbabilities, home: string, away: strin
 }
 
 /** The What-If Result as a visitor reads it, e.g. "HC Davos win in OT/SO". */
-function whatIfLabel(outcome: WhatIfOutcome, home: string, away: string) {
+export function whatIfLabel(outcome: WhatIfOutcome, home: string, away: string) {
   const [team, how] = {
     regulationWin: [home, "regulation"],
     overtimeOrShootoutWin: [home, "OT/SO"],
@@ -28,16 +28,15 @@ function whatIfLabel(outcome: WhatIfOutcome, home: string, away: string) {
   return `${team} win in ${how}`;
 }
 
-const PICKER_OPTIONS: { value: WhatIfOutcome | "model"; label: string }[] = [
-  { value: "regulationWin", label: "Home" },
-  { value: "overtimeOrShootoutWin", label: "Home OT" },
-  { value: "model", label: "Model" },
-  { value: "overtimeOrShootoutLoss", label: "Away OT" },
-  { value: "regulationLoss", label: "Away" },
+const TOGGLES: { outcome: WhatIfOutcome; label: string }[] = [
+  { outcome: "regulationWin", label: "Home" },
+  { outcome: "overtimeOrShootoutWin", label: "Home OT" },
+  { outcome: "overtimeOrShootoutLoss", label: "Away OT" },
+  { outcome: "regulationLoss", label: "Away" },
 ];
 
-/** Sets a Game's What-If Result, or with Model (the default) removes it. */
-function WhatIfPicker({
+/** Sets a Game's What-If Result; pressing the pressed button again removes it. */
+function WhatIfToggles({
   gameId,
   home,
   away,
@@ -51,23 +50,18 @@ function WhatIfPicker({
   onPick: (gameId: string, outcome: WhatIfOutcome | undefined) => void;
 }) {
   return (
-    <fieldset class="theme-toggle what-if-picker">
-      <legend class="visually-hidden">
-        Set the result of {home} vs {away}
-      </legend>
-      {PICKER_OPTIONS.map(({ value, label }) => (
-        <label key={value}>
-          <input
-            type="radio"
-            name={`whatif-${gameId}`}
-            value={value}
-            checked={value === (whatIf ?? "model")}
-            onChange={() => onPick(gameId, value === "model" ? undefined : value)}
-          />
-          <span>{label}</span>
-        </label>
+    <div class="what-if-toggles" role="group" aria-label={`Set the result of ${home} vs ${away}`}>
+      {TOGGLES.map(({ outcome, label }) => (
+        <button
+          key={outcome}
+          type="button"
+          aria-pressed={outcome === whatIf}
+          onClick={() => onPick(gameId, outcome === whatIf ? undefined : outcome)}
+        >
+          {label}
+        </button>
       ))}
-    </fieldset>
+    </div>
   );
 }
 
@@ -101,7 +95,7 @@ export function UpcomingGames({
   nextRound: NextRoundDay[];
   lowSample: LowSampleShare;
   teams: Teams;
-  /** Called with a Game's new What-If Result, or undefined when the visitor picks Model. */
+  /** Called with a Game's new What-If Result, or undefined when the visitor clears it. */
   onWhatIfPick: (gameId: string, outcome: WhatIfOutcome | undefined) => void;
 }) {
   if (nextRound.length === 0) return null;
@@ -109,7 +103,7 @@ export function UpcomingGames({
   const predictions = nextRound.flatMap((day) => day.games.flatMap(({ prediction }) => (prediction ? [prediction] : [])));
   return (
     <section class="panel">
-      <h2>Upcoming Games</h2>
+      <h2>Upcoming games</h2>
       {nextRound.map((day) => (
         <div class="upcoming-day" key={day.date}>
           <h3 class="upcoming-day-heading">{formatMatchDayHeading(day.date)}</h3>
@@ -151,7 +145,7 @@ export function UpcomingGames({
                     {formatExpectedPoints(prediction.points.home)} Pts – {formatExpectedPoints(prediction.points.away)} Pts
                   </p>
                 )}
-                <WhatIfPicker
+                <WhatIfToggles
                   gameId={game.id}
                   home={fullTeamName(teams, game.homeTeamId)}
                   away={fullTeamName(teams, game.awayTeamId)}
@@ -193,7 +187,7 @@ export function UpcomingGames({
             <li>Percentages are the chance of winning, in regulation or OT/SO</li>
           </>
         ) : (
-          <li>Pts – Pts: expected Points for the home – away team</li>
+          <li>Pts – Pts: expected points for the home – away team</li>
         )}
       </ul>
       )}

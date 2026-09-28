@@ -88,12 +88,12 @@ function changeText(change: number, unit: string, decimals: number): string {
 
 function playoffsSummary(start: number, previous: number, latest: number): string {
   const since = changeText(Math.round((latest - previous) * 100), " pts", 0);
-  return `Playoff chance ${formatPercent(latest)}% now, ${formatPercent(start)}% at the start of the Season, ${since} since the previous Match Day.`;
+  return `Playoff chance ${formatPercent(latest)}% now, ${formatPercent(start)}% at the start of the season, ${since} since the previous match day.`;
 }
 
 function pointsSummary(start: number, previous: number, latest: number): string {
   const since = changeText(latest - previous, "", 1);
-  return `Projected Points ${latest.toFixed(1)} now, ${start.toFixed(1)} at the start of the Season, ${since} since the previous Match Day.`;
+  return `Projected points ${latest.toFixed(1)} now, ${start.toFixed(1)} at the start of the season, ${since} since the previous match day.`;
 }
 
 /** The metrics a model's history can chart: playoff % only where the model has Outcome Probabilities (ADR 0002). None while only the Season-start point exists. */
@@ -151,7 +151,7 @@ export function projectionChart(history: ProjectionHistory, teamId: TeamId, metr
     const change =
       index === 0
         ? []
-        : [metric === "playoffs" ? signedChange((chosen[index]! - chosen[index - 1]!) * 100, "pts", 0) : signedChange(chosen[index]! - chosen[index - 1]!, "Points", 1)];
+        : [metric === "playoffs" ? signedChange((chosen[index]! - chosen[index - 1]!) * 100, "pts", 0) : signedChange(chosen[index]! - chosen[index - 1]!, "points", 1)];
     return {
       ...chosenLine.points[index]!,
       lines: [tooltipDate(entry.matchDay), value, ...(first === null ? [] : [`1st place ${formatPercent(first)}%`]), ...change],

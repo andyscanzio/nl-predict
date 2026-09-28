@@ -163,15 +163,41 @@ body {
   color: var(--fg);
 }
 
-/* What-If picker: the theme toggle's segments under each Game, lined up under the teams. */
-.theme-toggle.what-if-picker {
-  width: fit-content;
-  margin: 0.7rem 0 0.2rem calc(2.9rem + 0.6rem);
+/* What-If toggles: small outlined buttons under each Game, lined up under the teams; the pressed one filled. */
+.what-if-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.1rem calc(2.9rem + 0.6rem);
 }
 
-.what-if-picker span {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.68rem;
+.what-if-toggles button {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.what-if-toggles button:hover {
+  border-color: var(--muted);
+  color: var(--fg);
+}
+
+/* Lit like the theme toggle's chosen segment: amber on the page background is too faint for this small text in light mode. */
+.what-if-toggles button[aria-pressed="true"] {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--panel);
+}
+
+.what-if-toggles button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
 }
 
 /*
@@ -268,6 +294,7 @@ body {
 }
 
 .model-picker-label {
+  flex-basis: 100%;
   font: 600 0.62rem var(--display);
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -275,8 +302,9 @@ body {
 }
 
 .model-options {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2px;
   padding: 2px;
   /* Follows the theme, unlike the clock and Headline: a light track in light mode, the LED screen in dark. */
@@ -296,21 +324,42 @@ body {
   pointer-events: none;
 }
 
-.model-options span {
+.model-options label > span {
   display: block;
-  padding: 0.3rem 0.7rem;
+  height: 100%;
+  padding: 0.35rem 0.7rem;
   border-radius: 3px;
-  font: 600 0.72rem var(--display);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
-.model-options label:hover span {
+.model-name {
+  font: 600 0.72rem var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.model-default {
+  display: block;
+  font: 700 0.58rem var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--amber);
 }
 
-.model-options input:checked + span {
+.model-summary {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+/* Only unpicked options: the picked one is already amber, so an amber name would vanish into it. */
+.model-options label:hover input:not(:checked) + span .model-name {
+  color: var(--amber);
+}
+
+.model-options input:checked + span,
+.model-options input:checked + span .model-default {
   color: #000;
   background: #ffb000;
   box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
@@ -655,6 +704,21 @@ tbody th {
   color: var(--amber);
 }
 
+/* The whole team row lights up on hover, so it reads as something that expands. */
+.projected tbody > tr:first-child {
+  cursor: pointer;
+}
+
+.projected tbody > tr:first-child:hover > * {
+  background: var(--panel-strip);
+}
+
+/* Now is context; ▲▼ carries the emphasis. */
+.projected .now {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
 .chevron {
   width: 0.8rem;
   font-size: 0.9rem;
@@ -791,6 +855,23 @@ tbody th {
 
 .form-window {
   overflow-x: auto;
+}
+
+.form-windows.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.form-window.empty {
+  padding-block: 0.35rem;
+}
+
+.form-window.empty h3 {
+  margin: 0;
+}
+
+.form-window tr.what-if {
+  font-style: italic;
+  color: var(--muted);
 }
 
 /* The Rank Distribution and the Projection History share a row, and stack when it is too narrow for both. */
@@ -1056,6 +1137,46 @@ tbody th {
 
 /* ───────── Explanation, warning, empty state ───────── */
 
+.explanation > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.explanation > summary::-webkit-details-marker {
+  display: none;
+}
+
+.explanation > summary h2 {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  font: 600 0.8rem var(--display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel-strip);
+}
+
+.explanation > summary h2::before {
+  content: "▸ ";
+}
+
+.explanation[open] > summary h2 {
+  border-bottom: 1px solid var(--line);
+}
+
+.explanation[open] > summary h2::before {
+  content: "▾ ";
+}
+
+.explanation > summary:hover h2 {
+  color: var(--amber);
+}
+
+.explanation > summary:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: -2px;
+}
+
 .explanation p {
   font-size: 0.9rem;
 }
@@ -1096,6 +1217,36 @@ footer {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 1rem;
+}
+
+.what-if-banner > p {
+  flex: 1 1 100%;
+}
+
+.what-if-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.what-if-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.55rem;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.what-if-banner .what-if-result button {
+  padding: 0 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  line-height: 1.4;
 }
 
 .what-if-banner button {
@@ -1185,10 +1336,6 @@ footer a {
     gap: 0.6rem;
   }
 
-  .model-picker-label {
-    flex-basis: 100%;
-  }
-
   h1 {
     font-size: 1.6rem;
   }
@@ -1210,10 +1357,12 @@ footer a {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .model-options span {
-    padding: 0.3rem 0.4rem;
+  .model-options label > span {
+    padding: 0.3rem 0.45rem;
+  }
+
+  .model-name {
     letter-spacing: 0.08em;
-    text-align: center;
   }
 
   .rank {
@@ -1241,19 +1390,14 @@ footer a {
   }
 }
 
-/* Phones: the What-If picker spans the Game's full width, its five segments sharing it. */
+/* Phones: the What-If toggles span the Game's full width, big enough to tap. */
 @media (max-width: 30rem) {
-  .theme-toggle.what-if-picker {
-    width: auto;
+  .what-if-toggles {
     margin-left: 0;
   }
 
-  .what-if-picker label {
+  .what-if-toggles button {
     flex: 1 1 0;
-    text-align: center;
-  }
-
-  .what-if-picker span {
-    padding-inline: 0.2rem;
+    padding-block: 0.45rem;
   }
 }

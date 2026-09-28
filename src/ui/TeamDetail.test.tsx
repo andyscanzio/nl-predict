@@ -15,7 +15,7 @@ const teams: Teams = new Map([
 ]);
 
 function game(overrides: Partial<FormWindowGame> = {}): FormWindowGame {
-  return { gameId: "g1", startsAt: "2026-09-26T17:45:00Z", opponentId: 2, goalsFor: 3, goalsAgainst: 1, decision: "regulation", points: 3, ...overrides };
+  return { gameId: "g1", startsAt: "2026-09-26T17:45:00Z", opponentId: 2, goalsFor: 3, goalsAgainst: 1, decision: "regulation", points: 3, whatIf: false, ...overrides };
 }
 
 function row(overrides: Partial<ProjectedTableRow> = {}): ProjectedTableRow {
@@ -82,17 +82,17 @@ function text(html: string) {
 
 /** The Form Window headings, home first. */
 function formWindowHeadings(html: string) {
-  return [...html.matchAll(/<section class="form-window"><h3>(.*?)<\/h3>/g)].map((match) => match[1]!);
+  return [...html.matchAll(/<section class="form-window[^"]*"><h3>(.*?)<\/h3>/g)].map((match) => text(match[1]!));
 }
 
 /** The Form Window sections, home first. */
 function formWindows(html: string) {
-  return [...html.matchAll(/<section class="form-window">(.*?)<\/section>/g)].map((match) => match[1]!);
+  return [...html.matchAll(/<section class="form-window[^"]*">(.*?)<\/section>/g)].map((match) => match[1]!);
 }
 
 describe("TeamDetail", () => {
   describe("Projection History note", () => {
-    const note = "Projection History ignores the What-If.";
+    const note = "Projection history ignores the what-if.";
 
     it("says the chart ignores the What-If while one is active, and leaves the chart as it is", () => {
       const html = panel({ whatIfActive: true });
@@ -101,7 +101,7 @@ describe("TeamDetail", () => {
     });
 
     it("is absent without a What-If", () => {
-      expect(text(panel())).not.toContain("What-If");
+      expect(text(panel())).not.toContain("what-if");
     });
 
     it("is absent when the chart itself is not drawn", () => {
@@ -110,16 +110,16 @@ describe("TeamDetail", () => {
   });
 
   describe("Form Window headings under Split Form Rate", () => {
-    it("show each side's rate per Game × Remaining Games", () => {
+    it("show each side's rate per game × remaining games", () => {
       const html = panel({ showProbabilities: false, row: row({ homeForm: 1.5, awayForm: 2, remainingHomeGames: 4, remainingAwayGames: 3 }) });
-      expect(formWindowHeadings(html)).toEqual(["Home Form: 1.50 per Game × 4 Remaining", "Away Form: 2.00 per Game × 3 Remaining"]);
+      expect(formWindowHeadings(html)).toEqual(["Home form: 1.50 per game × 4 remaining", "Away form: 2.00 per game × 3 remaining"]);
     });
 
-    it("borrow the other venue's Form for an empty Form Window and name it", () => {
+    it("borrow the other venue's Form for an empty Form Window, name it, and say no games are played", () => {
       const html = panel({ showProbabilities: false, row: row({ homeForm: null, homeFormWindow: [], awayForm: 2 }) });
-      expect(formWindowHeadings(html)[0]).toBe("Home Form: 2.00 per Game (Away Form) × 4 Remaining");
+      expect(formWindowHeadings(html)[0]).toBe("Home form: 2.00 per game (away) × 4 remaining · no home games played yet");
       const away = panel({ showProbabilities: false, row: row({ awayForm: null, awayFormWindow: [], homeForm: 1.5 }) });
-      expect(formWindowHeadings(away)[1]).toBe("Away Form: 1.50 per Game (Home Form) × 3 Remaining");
+      expect(formWindowHeadings(away)[1]).toBe("Away form: 1.50 per game (home) × 3 remaining · no away games played yet");
     });
 
     it("show a rate of 0 for a team with no Played Games at either venue", () => {
@@ -127,25 +127,28 @@ describe("TeamDetail", () => {
         showProbabilities: false,
         row: row({ homeForm: null, awayForm: null, homeFormWindow: [], awayFormWindow: [] }),
       });
-      expect(formWindowHeadings(html)).toEqual(["Home Form: 0 per Game × 4 Remaining", "Away Form: 0 per Game × 3 Remaining"]);
+      expect(formWindowHeadings(html)).toEqual([
+        "Home form: 0 per game × 4 remaining · no home games played yet",
+        "Away form: 0 per game × 3 remaining · no away games played yet",
+      ]);
     });
   });
 
   it("shows the Form and Remaining Games without a rate under models with Outcome Probabilities", () => {
-    const html = panel({ showProbabilities: true, row: row({ homeForm: 1.5, awayForm: null, awayFormWindow: [] }) });
-    expect(formWindowHeadings(html)).toEqual(["Home Form: 1.50 · 4 Remaining", "Away Form: – · 3 Remaining"]);
-    expect(html).not.toContain("per Game");
+    const html = panel({ showProbabilities: true, row: row({ homeForm: 1.5, awayForm: 1, awayFormWindow: [game()] }) });
+    expect(formWindowHeadings(html)).toEqual(["Home form: 1.50 · 4 remaining", "Away form: 1.00 · 3 remaining"]);
+    expect(html).not.toContain("per game");
   });
 
   describe("Rank Distribution", () => {
     it("appears when the row has one", () => {
       const html = panel();
       expect(html).toContain('<section class="rank-histogram">');
-      expect(text(html)).toContain("Rank Distribution");
+      expect(text(html)).toContain("Rank distribution");
     });
 
     describe("during a What-If", () => {
-      const note = "Marks show the Real Projection.";
+      const note = "Marks show the real projection.";
       const withReal = (rankDistribution: number[] | null) =>
         panel({
           whatIfActive: true,
@@ -185,7 +188,7 @@ describe("TeamDetail", () => {
     it("is left out when the row has none", () => {
       const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null) });
       expect(html).not.toContain("rank-histogram");
-      expect(text(html)).not.toContain("Rank Distribution");
+      expect(text(html)).not.toContain("Rank distribution");
     });
   });
 
@@ -210,6 +213,28 @@ describe("TeamDetail", () => {
       ]);
     });
 
+    it("mark a What-If Result in italic, with 'What-if' and how it was won in place of the made-up score, keeping its Points", () => {
+      const html = panel({
+        row: row({
+          homeFormWindow: [
+            game({ gameId: "a", goalsFor: 1, goalsAgainst: 0, decision: "OT", points: 2, whatIf: true }),
+            game({ gameId: "b", goalsFor: 0, goalsAgainst: 1, decision: "regulation", points: 0, whatIf: true }),
+            game({ gameId: "c" }),
+          ],
+        }),
+      });
+      const [home] = formWindows(html);
+      const rows = [...home!.matchAll(/<tr( class="what-if")?>(.*?)<\/tr>/g)].slice(1).map((match) => ({
+        whatIf: match[1] !== undefined,
+        cells: [...match[2]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((cell) => text(cell[1]!)).slice(2),
+      }));
+      expect(rows).toEqual([
+        { whatIf: true, cells: ["What-if · OT/SO", "", "2"] },
+        { whatIf: true, cells: ["What-if", "", "0"] },
+        { whatIf: false, cells: ["3:1", "", "3"] },
+      ]);
+    });
+
     it("prefix away Games with @ and label the columns", () => {
       const html = panel({ row: row({ awayFormWindow: [game({ decision: "SO", opponentId: 3, goalsFor: 2, goalsAgainst: 1, points: 2 })] }) });
       const [, away] = formWindows(html);
@@ -222,39 +247,43 @@ describe("TeamDetail", () => {
       expect(panel()).toContain(`<time datetime="2026-09-26T17:45:00Z">${formatGameDate(new Date("2026-09-26T17:45:00Z"))}</time>`);
     });
 
-    it("say so when a Form Window is empty, instead of showing a table", () => {
+    it("collapse an empty Form Window to its heading and let the other one take the full width", () => {
       const html = panel({ row: row({ homeForm: null, homeFormWindow: [] }) });
-      const [home, away] = formWindows(html);
-      expect(text(home!)).toContain("No Played home Games yet.");
-      expect(home).not.toContain("<table");
+      expect(html).toContain('<section class="form-window empty"><h3>Home form: – · 4 remaining · no home games played yet</h3></section>');
+      expect(html).toContain('<div class="form-windows single">');
+      const [, away] = formWindows(html);
       expect(away).toContain("<table");
     });
 
-    it("say so for an empty away window too", () => {
+    it("collapse an empty away window too", () => {
       const html = panel({ row: row({ awayForm: null, awayFormWindow: [] }) });
       const [home, away] = formWindows(html);
       expect(home).toContain("<table");
-      expect(text(away!)).toContain("No Played away Games yet.");
+      expect(text(away!)).toBe("Away form: – · 3 remaining · no away games played yet");
+    });
+
+    it("sit side by side when both have Games", () => {
+      expect(panel()).toContain('<div class="form-windows">');
     });
   });
 
   describe("Projection History chart", () => {
     it("shows the chosen metric under a heading, with a toggle when the model can chart more than one", () => {
       const html = panel({ chartMetric: "points" });
-      expect(html).toContain("<h3>Projected Points over the Season</h3>");
+      expect(html).toContain("<h3>Projected points over the season</h3>");
       expect(html).toContain('class="history-toggle"');
       expect(html).toMatch(/aria-pressed="true"[^>]*>Points<\/button>/);
       expect(html).toMatch(/aria-pressed="false"[^>]*>Playoff %<\/button>/);
     });
 
     it("charts the playoff chance when that is the chosen metric", () => {
-      expect(panel({ chartMetric: "playoffs" })).toContain("<h3>Playoff chance over the Season</h3>");
+      expect(panel({ chartMetric: "playoffs" })).toContain("<h3>Playoff chance over the season</h3>");
     });
 
     it("leaves out the metric toggle when the model can chart only Points, and shows Points whatever was chosen", () => {
       const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null), chartMetric: "playoffs" });
       expect(html).not.toContain("history-toggle");
-      expect(html).toContain("<h3>Projected Points over the Season</h3>");
+      expect(html).toContain("<h3>Projected points over the season</h3>");
     });
 
     it("describes the team's chart for screen readers", () => {

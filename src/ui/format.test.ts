@@ -60,8 +60,9 @@ describe("Swiss-time formatters", () => {
     expect(formatGameDate(new Date("2026-10-04T22:30:00Z"))).toBe("5 Oct");
   });
 
-  it("formats the scoreboard time as day.month hours:minutes", () => {
-    expect(formatScoreboardTime(summer)).toBe("04.10 19:45");
+  it("formats the scoreboard time as day.month hours:minutes with the Swiss time zone", () => {
+    expect(formatScoreboardTime(summer)).toBe("04.10 19:45 CEST");
+    expect(formatScoreboardTime(winter)).toBe("05.12 18:45 CET");
   });
 
   it("formats the Snapshot time with its date and time", () => {

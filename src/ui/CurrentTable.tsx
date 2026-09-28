@@ -14,7 +14,7 @@ export function CurrentTable({
 }) {
   return (
     <section class="panel">
-      <h2>{whatIfActive ? "Current Table (real results)" : "Current Table"}</h2>
+      <h2>{whatIfActive ? "Current table (real results)" : "Current table"}</h2>
       <div class="table-scroll">
         <table class="current">
           <thead>
@@ -52,8 +52,8 @@ export function CurrentTable({
         </table>
       </div>
       <p class="meta panel-body">
-        Teams level on Points are ordered by Points per Game (which only matters while teams have played different
-        numbers of Games), then by the <a href={OFFICIAL_TIE_BREAK_RULE_URL}>official National League rule</a>{" "}
+        Teams level on points are ordered by points per game (which only matters while teams have played different
+        numbers of games), then by the <a href={OFFICIAL_TIE_BREAK_RULE_URL}>official National League rule</a>{" "}
         (head-to-head first).
       </p>
     </section>

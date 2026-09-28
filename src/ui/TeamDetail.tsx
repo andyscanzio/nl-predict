@@ -19,6 +19,11 @@ const DECISION_LABELS: Record<Decision, string> = {
   SO: "SO",
 };
 
+/** A What-If Result in the Score column: "What-if · OT/SO", or "What-if" in regulation; it never says OT or SO alone, as the visitor picked neither. */
+function whatIfScore(decision: Decision) {
+  return decision === "regulation" ? "What-if" : "What-if · OT/SO";
+}
+
 function FormWindowDetail({
   side,
   form,
@@ -42,49 +47,55 @@ function FormWindowDetail({
   const rates = side === "home" ? splitFormRatesOf(form, otherForm) : splitFormRatesOf(otherForm, form);
   const projectedRate = rates[side];
   // Neither Form exists: the rate is a bare 0, not a formatted Form.
-  const rate = `${form === null && otherForm === null ? "0" : formatForm(projectedRate)} per Game${borrowed ? ` (${labels.other})` : ""}`;
+  const rate = `${form === null && otherForm === null ? "0" : formatForm(projectedRate)} per game${borrowed ? ` (${labels.other})` : ""}`;
+  const heading = showProjectedRate
+    ? `${labels.form}: ${rate} × ${remaining} remaining`
+    : `${labels.form}: ${formatForm(form)} · ${remaining} remaining`;
+  // An empty Form Window collapses to its heading; TeamDetail lets the other one take the full width.
+  if (games.length === 0) {
+    return (
+      <section class="form-window empty">
+        <h3>
+          {heading} · no {side} games played yet
+        </h3>
+      </section>
+    );
+  }
   return (
     <section class="form-window">
-      <h3>
-        {showProjectedRate
-          ? `${labels.form}: ${rate} × ${remaining} Remaining`
-          : `${labels.form}: ${formatForm(form)} · ${remaining} Remaining`}
-      </h3>
-      {games.length === 0 ? (
-        <p class="meta">No Played {side} Games yet.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Opponent</th>
-              <th class="num" scope="col" title="Goals for : goals against">Score</th>
-              <th scope="col" title="Decision: blank for regulation, OT for overtime, SO for shootout">
-                <span class="visually-hidden">Decision</span>
-              </th>
-              <th class="num" scope="col" title="Points earned">Pts</th>
+      <h3>{heading}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Opponent</th>
+            <th class="num" scope="col" title="Goals for : goals against">Score</th>
+            <th scope="col" title="Decision: blank for regulation, OT for overtime, SO for shootout">
+              <span class="visually-hidden">Decision</span>
+            </th>
+            <th class="num" scope="col" title="Points earned">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {games.map((game) => (
+            <tr key={game.gameId} class={game.whatIf ? "what-if" : undefined}>
+              <td>
+                <time dateTime={game.startsAt}>{formatGameDate(new Date(game.startsAt))}</time>
+              </td>
+              <td>
+                {side === "home" ? "vs " : "@ "}
+                {teamName(game.opponentId)}
+              </td>
+              {/* A What-If Result's one-goal score is made up, so it shows only how it was won. */}
+              <td class="num">
+                {game.whatIf ? whatIfScore(game.decision) : `${game.goalsFor}:${game.goalsAgainst}`}
+              </td>
+              <td class="decision">{game.whatIf ? "" : DECISION_LABELS[game.decision]}</td>
+              <td class="num points">{game.points}</td>
             </tr>
-          </thead>
-          <tbody>
-            {games.map((game) => (
-              <tr key={game.gameId}>
-                <td>
-                  <time dateTime={game.startsAt}>{formatGameDate(new Date(game.startsAt))}</time>
-                </td>
-                <td>
-                  {side === "home" ? "vs " : "@ "}
-                  {teamName(game.opponentId)}
-                </td>
-                <td class="num">
-                  {game.goalsFor}:{game.goalsAgainst}
-                </td>
-                <td class="decision">{DECISION_LABELS[game.decision]}</td>
-                <td class="num points">{game.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }
@@ -105,12 +116,12 @@ function RankHistogram({
   const summary = rankSummary(distribution);
   return (
     <section class="rank-histogram">
-      <h3>Rank Distribution</h3>
+      <h3>Rank distribution</h3>
       <p class="rank-summary">
         {summary.around80 ? (
           <>
             {summary.around80.before}
-            <span class="rank-summary-share" title={`${formatPercent(summary.share)}% of simulated Seasons`}>
+            <span class="rank-summary-share" title={`${formatPercent(summary.share)}% of simulated seasons`}>
               80%
             </span>
             {summary.around80.after}
@@ -134,8 +145,8 @@ function RankHistogram({
           </span>
         ))}
       </div>
-      {hasCaps && <p class="meta history-note">Marks show the Real Projection.</p>}
-      <p class="visually-hidden">Projected rank in the table, by expected Points: {ordinal(projectedRank)}</p>
+      {hasCaps && <p class="meta history-note">Marks show the real projection.</p>}
+      <p class="visually-hidden">Projected rank in the table, by expected points: {ordinal(projectedRank)}</p>
       <ul class="visually-hidden">
         {bars
           .filter((bar) => bar.height > 0 || bar.cap !== null)
@@ -148,8 +159,8 @@ function RankHistogram({
 }
 
 const METRIC_LABELS: Record<ChartMetric, { title: string; toggle: string }> = {
-  playoffs: { title: "Playoff chance over the Season", toggle: "Playoff %" },
-  points: { title: "Projected Points over the Season", toggle: "Points" },
+  playoffs: { title: "Playoff chance over the season", toggle: "Playoff %" },
+  points: { title: "Projected points over the season", toggle: "Points" },
 };
 
 /**
@@ -212,7 +223,7 @@ function ProjectionHistoryChart({
             <rect x={lowSample.x} y={lowSample.y} width={lowSample.width} height={lowSample.height} />
             {lowSample.labelled && (
               <text x={lowSample.textX} y={lowSample.textY}>
-                Low Sample
+                Low sample
               </text>
             )}
           </g>
@@ -265,7 +276,7 @@ function ProjectionHistoryChart({
           onPointerLeave={(event) => event.pointerType === "mouse" && setActive(null)}
         />
       </svg>
-      {whatIfActive && <p class="meta history-note">Projection History ignores the What-If.</p>}
+      {whatIfActive && <p class="meta history-note">Projection history ignores the what-if.</p>}
     </section>
   );
 }
@@ -291,8 +302,9 @@ export function TeamDetail({
   whatIfActive: boolean;
 }) {
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
+  const anyEmpty = row.homeFormWindow.length === 0 || row.awayFormWindow.length === 0;
   return (
-    <div class="form-windows">
+    <div class={anyEmpty ? "form-windows single" : "form-windows"}>
       <div class="rank-row">
         {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} real={row.realProjection?.rankDistribution} />}
         <ProjectionHistoryChart

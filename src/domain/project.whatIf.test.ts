@@ -31,7 +31,11 @@ function projectedOnceReallyPlayed(model: ProjectionModel, gameId: string, outco
  */
 const withoutMovement = (projection: Projection) =>
   projection.projectedTable.map(
-    ({ currentRank: _currentRank, movement: _movement, probabilities: _p, rankDistribution: _r, realProjection: _real, ...row }) => row,
+    ({ currentRank: _currentRank, movement: _movement, probabilities: _p, rankDistribution: _r, realProjection: _real, ...row }) => ({
+      ...row,
+      homeFormWindow: row.homeFormWindow.map(({ whatIf: _whatIf, ...game }) => game),
+      awayFormWindow: row.awayFormWindow.map(({ whatIf: _whatIf, ...game }) => game),
+    }),
   );
 
 describe("project with a What-If", () => {
@@ -64,6 +68,23 @@ describe("project with a What-If", () => {
         const again = project(snapshot.games, asOf, model, both);
         expect(again).toEqual(first);
         expect(onlyA).not.toEqual(first);
+      });
+
+      it("flags the What-If Game in both teams' Form Windows, and no other Game", () => {
+        const game = firstGame(model);
+        const { projectedTable } = project(snapshot.games, asOf, model, new Map([[game.id, "overtimeOrShootoutWin"]]));
+        const flagged = projectedTable.flatMap((row) =>
+          [...row.homeFormWindow, ...row.awayFormWindow].filter((g) => g.whatIf).map((g) => [row.teamId, g.gameId]),
+        );
+        expect(flagged).toEqual(
+          expect.arrayContaining([
+            [game.homeTeamId, game.id],
+            [game.awayTeamId, game.id],
+          ]),
+        );
+        expect(flagged).toHaveLength(2);
+        const unflagged = real(model).projectedTable.flatMap((row) => [...row.homeFormWindow, ...row.awayFormWindow]);
+        expect(unflagged.every((g) => g.whatIf === false)).toBe(true);
       });
 
       it("keeps the Match Day of the real Played Games", () => {

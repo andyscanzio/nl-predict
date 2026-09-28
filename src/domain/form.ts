@@ -50,9 +50,11 @@ export interface FormWindowGame {
   decision: Decision;
   /** Points the team earned from the Game. */
   points: number;
+  /** A What-If Result rather than a real one: its one-goal score is made up, but its Points count toward the Form. */
+  whatIf: boolean;
 }
 
-export function formWindowGame(game: PlayedGame, teamId: TeamId): FormWindowGame {
+export function formWindowGame(game: PlayedGame, teamId: TeamId, whatIf = false): FormWindowGame {
   const isHome = teamId === game.homeTeamId;
   const { homeGoals, awayGoals, decision } = game.result;
   return {
@@ -63,5 +65,6 @@ export function formWindowGame(game: PlayedGame, teamId: TeamId): FormWindowGame
     goalsAgainst: isHome ? awayGoals : homeGoals,
     decision,
     points: pointsFor(game, teamId),
+    whatIf,
   };
 }
