@@ -30,7 +30,7 @@ function day(date: string, ...games: UpcomingGame[]): NextRoundDay {
 }
 
 function panel(nextRound: NextRoundDay[], lowSample = false) {
-  return render(<UpcomingGames nextRound={nextRound} lowSample={lowSample} teams={teams} />);
+  return render(<UpcomingGames nextRound={nextRound} lowSample={lowSample} teams={teams} onWhatIfPick={() => {}} />);
 }
 
 /** The text a visitor reads, without markup. */
@@ -132,7 +132,55 @@ describe("UpcomingGames", () => {
       whatIf: "regulationLoss",
     };
     const html = panel([day("2026-10-06", setGame)]);
-    expect(html).not.toContain("legend");
+    expect(html).not.toContain('class="legend"');
     expect(text(html)).toContain("SC Bern win in regulation");
+  });
+
+  describe("picker", () => {
+    const setGame = (whatIf: UpcomingGame["whatIf"], id = "g1"): UpcomingGame => ({
+      game: { id, startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
+      whatIf: whatIf!,
+    });
+
+    /** The picker's option values in order, with the checked one. */
+    function options(html: string) {
+      const inputs = [...html.matchAll(/<input[^>]*type="radio"[^>]*>/g)].map((match) => match[0]);
+      return {
+        values: inputs.map((input) => input.match(/value="([^"]*)"/)![1]),
+        checked: inputs.filter((input) => /\bchecked\b/.test(input)).map((input) => input.match(/value="([^"]*)"/)![1]),
+      };
+    }
+
+    it("offers five options on every Game, Model checked by default", () => {
+      const html = panel([day("2026-10-06", upcomingGame({ id: "a" }), upcomingGame({ id: "b", outcomes: null }))]);
+      expect(html.match(/<fieldset/g)).toHaveLength(2);
+      expect(text(html)).toContain("Home Home OT Model Away OT Away");
+      const { values, checked } = options(html);
+      expect(values).toEqual(Array(2).fill(["regulationWin", "overtimeOrShootoutWin", "model", "overtimeOrShootoutLoss", "regulationLoss"]).flat());
+      expect(checked).toEqual(["model", "model"]);
+    });
+
+    it("names both teams in a visually hidden legend", () => {
+      const html = panel([day("2026-10-06", upcomingGame())]);
+      expect(html).toContain('<legend class="visually-hidden">Set the result of HC Davos vs SC Bern</legend>');
+    });
+
+    it("gives each Game its own radio group", () => {
+      const html = panel([day("2026-10-06", upcomingGame({ id: "a" }), upcomingGame({ id: "b" }))]);
+      const names = [...html.matchAll(/<input[^>]*name="([^"]*)"/g)].map((match) => match[1]);
+      expect(new Set(names)).toEqual(new Set(["whatif-a", "whatif-b"]));
+    });
+
+    it("checks the option of a What-If Result", () => {
+      for (const outcome of ["regulationWin", "overtimeOrShootoutWin", "overtimeOrShootoutLoss", "regulationLoss"] as const) {
+        expect(options(panel([day("2026-10-06", setGame(outcome))])).checked).toEqual([outcome]);
+      }
+    });
+
+    it("keeps the picker on a Points-only Game with a What-If Result", () => {
+      const html = panel([day("2026-10-06", setGame("regulationWin"))]);
+      expect(text(html)).toContain("HC Davos win in regulation");
+      expect(html).not.toContain("Pts");
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import { project, REGULAR_SEASON_GAMES, type IntegrityIssue, type ProjectionModel, type WhatIf } from "../domain/project.ts";
+import { project, REGULAR_SEASON_GAMES, type IntegrityIssue, type ProjectionModel, type WhatIf, type WhatIfOutcome } from "../domain/project.ts";
 import { headlineOf, type Headline } from "../domain/headline.ts";
 import type { Snapshot, TeamId } from "../domain/types.ts";
 import { seasonLabel } from "../domain/season.ts";
@@ -197,6 +197,12 @@ export function App({
   const snapshotAt = new Date(snapshot.snapshotAt);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
+  const pickWhatIfResult = (gameId: string, outcome: WhatIfOutcome | undefined) => {
+    const next = new Map(appliedWhatIf);
+    if (outcome) next.set(gameId, outcome);
+    else next.delete(gameId);
+    onWhatIfChange(next, "push");
+  };
 
   return (
     <>
@@ -237,7 +243,12 @@ export function App({
               onModelChange={onModelChange}
             />
 
-            <UpcomingGames nextRound={nextRound} lowSample={projectedTable.some((row) => row.lowSample)} teams={teams} />
+            <UpcomingGames
+              nextRound={nextRound}
+              lowSample={projectedTable.some((row) => row.lowSample)}
+              teams={teams}
+              onWhatIfPick={pickWhatIfResult}
+            />
 
             <ModelExplanation model={model} />
 

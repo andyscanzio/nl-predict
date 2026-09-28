@@ -67,6 +67,16 @@ describe("App", () => {
       );
     });
 
+    it("checks the picked option of the Game and leaves the others on Model", () => {
+      const html = page(asOf, new Map([[nextRoundIds[0]!, "overtimeOrShootoutLoss"]]));
+      const checked = [...html.matchAll(/<input[^>]*type="radio"[^>]*name="whatif-[^>]*>/g)]
+        .map((match) => match[0])
+        .filter((input) => /\bchecked\b/.test(input))
+        .map((input) => input.match(/value="([^"]*)"/)![1]);
+      expect(checked.filter((value) => value === "overtimeOrShootoutLoss")).toHaveLength(1);
+      expect(checked.filter((value) => value === "model")).toHaveLength(nextRoundIds.length - 1);
+    });
+
     it("shows neither banner nor Reset without a What-If", () => {
       const html = page(asOf);
       expect(html).not.toContain("What-if");

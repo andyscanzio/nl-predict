@@ -164,6 +164,12 @@ body {
   color: var(--amber);
 }
 
+/* What-If picker: the theme toggle's segments under each Game, lined up under the teams. */
+.what-if-picker {
+  width: fit-content;
+  margin: 0.4rem 0 0 calc(2.9rem + 0.6rem);
+}
+
 /* Win split: home and away win chance, each side with a lighter slice for its OT/SO wins, both slices meeting in the middle. */
 .win-split {
   display: flex;
