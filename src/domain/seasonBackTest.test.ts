@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { OutcomeProbabilities } from "./outcomes.ts";
 import { SEASON_START, type ProjectionModel } from "./project.ts";
-import { seasonSimulationBackTest } from "./seasonBackTest.ts";
+import { inOuterTenths, seasonSimulationBackTest } from "./seasonBackTest.ts";
 import type { Game, TeamId } from "./types.ts";
 
 type OutcomesModel = Extract<ProjectionModel, { kind: "outcomes" }>;
@@ -61,7 +61,7 @@ describe("seasonSimulationBackTest", () => {
     for (const row of result!.rows) {
       expect(row.rankRps).toBe(0);
       expect(row.cutLineBrier).toBe(0);
-      expect(row.outsideMiddle80).toBe(false);
+      expect(row.outerTenths).toBe(false);
     }
   });
 
@@ -84,7 +84,7 @@ describe("seasonSimulationBackTest", () => {
     for (const row of result!.rows) {
       expect(row.rankRps).toBeCloseTo(0.25, 1);
       expect(row.cutLineBrier).toBe(0);
-      expect(row.outsideMiddle80).toBe(false);
+      expect(row.outerTenths).toBe(false);
     }
   });
 
@@ -109,7 +109,7 @@ describe("seasonSimulationBackTest", () => {
       // Only teams 1 (forecast 7th, in fact 1st) and 7 (forecast 1st, in fact 7th) are on the wrong side of a Cut Line.
       expect(row.cutLineBrier).toBe(team === 1 || team === 7 ? 2 : 0);
       // Team 4 is the one team forecast where it finished.
-      expect(row.outsideMiddle80).toBe(team !== 4);
+      expect(row.outerTenths).toBe(team !== 4);
     }
   });
 
@@ -127,5 +127,28 @@ describe("seasonSimulationBackTest", () => {
     const scores = seasonSimulationBackTest(twoTeamSeason, models, 500);
     expect(scores.map((result) => result.model)).toEqual(["coin-flip", "oracle"]);
     expect(seasonSimulationBackTest(twoTeamSeason, models, 500)).toEqual(scores);
+  });
+});
+
+describe("inOuterTenths", () => {
+  const uniform = Array<number>(10).fill(0.1);
+
+  it("counts a rank whose mid-point transform is below 0.1 or above 0.9", () => {
+    // Rank 1 of a uniform forecast: 0 + 0.1 / 2 = 0.05. Rank 10: 0.9 + 0.05 = 0.95.
+    expect(inOuterTenths(uniform, 1)).toBe(true);
+    expect(inOuterTenths(uniform, 10)).toBe(true);
+    // Rank 2: 0.1 + 0.05 = 0.15. Rank 9: 0.8 + 0.05 = 0.85.
+    expect(inOuterTenths(uniform, 2)).toBe(false);
+    expect(inOuterTenths(uniform, 9)).toBe(false);
+  });
+
+  it("weighs the actual rank at half", () => {
+    // Rank 2 of [0.05, 0.1, ...]: 0.05 + 0.05 = 0.10, which is not below 0.1; with the rest of the mass on rank 3 it stays in.
+    expect(inOuterTenths([0.05, 0.1, 0.85], 2)).toBe(false);
+    // 0.04 + 0.05 = 0.09 is below 0.1.
+    expect(inOuterTenths([0.04, 0.1, 0.86], 2)).toBe(true);
+    // Rank 2 of [0.85, 0.1, 0.05]: 0.85 + 0.05 = 0.90, which is not above 0.9; 0.86 + 0.05 = 0.91 is.
+    expect(inOuterTenths([0.85, 0.1, 0.05], 2)).toBe(false);
+    expect(inOuterTenths([0.86, 0.1, 0.04], 2)).toBe(true);
   });
 });

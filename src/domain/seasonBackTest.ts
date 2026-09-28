@@ -1,5 +1,4 @@
 import { cutLineFor, type CutLine } from "./cutLines.ts";
-import { middle80 } from "./middle80.ts";
 import { matchDayOf, predictGames, projectionModelInput, type ProjectionModel } from "./project.ts";
 import { projectionHistoryAsOfDates } from "./projectionHistory.ts";
 import { simulateSeason, simulationSeed } from "./seasonSimulation.ts";
@@ -19,8 +18,8 @@ export interface SeasonSimulationScore {
   rankRps: number;
   /** Squared error summed over Playoffs, Play-in and Eliminated (0 is perfect, 2 the worst). */
   cutLineBrier: number;
-  /** The actual final rank fell outside the middle 80% of the Rank Distribution. */
-  outsideMiddle80: boolean;
+  /** The actual final rank fell in the outer tenths of the Rank Distribution (see inOuterTenths); 20% of forecasts should. */
+  outerTenths: boolean;
 }
 
 /** The Season Simulation Back-Test of one Projection Model: a row per team at every forecast point, oldest point first. */
@@ -69,14 +68,13 @@ export function seasonSimulationBackTest(
         const actualRank = actualRanks.get(teamId)!;
         const actualZone = cutLineFor(actualRank);
         const zoneChances = { playoffs: probabilities.playoffs, "play-in": probabilities.playIn, eliminated: probabilities.eliminated };
-        const { low, high } = middle80(rankDistribution);
         return {
           teamId,
           matchDay,
           gamesPlayed,
           rankRps: rankProbabilityScore(rankDistribution, actualRank),
           cutLineBrier: CUT_LINES.reduce((sum, zone) => sum + (zoneChances[zone] - Number(zone === actualZone)) ** 2, 0),
-          outsideMiddle80: actualRank < low || actualRank > high,
+          outerTenths: inOuterTenths(rankDistribution, actualRank),
         };
       });
     }),
@@ -92,4 +90,18 @@ function rankProbabilityScore(distribution: readonly number[], actualRank: numbe
     sum += (cumulative - Number(rank >= actualRank)) ** 2;
   }
   return sum / (distribution.length - 1);
+}
+
+/**
+ * Whether the actual rank sits in the outer tenths of the forecast: its mid-point probability integral transform, the
+ * forecast chance of finishing above it plus half the chance of finishing at it, is below 0.1 or above 0.9. Unlike the
+ * middle 80% of a Rank Distribution, it does not favour a forecast spread over few ranks, so a calibrated forecast
+ * spread over many ranks lands in the outer tenths about 20% of the time. A forecast concentrated on a few ranks, as late in
+ * the Season, scores lower even when calibrated, because the transform of a discrete distribution is not uniform.
+ */
+export function inOuterTenths(distribution: readonly number[], actualRank: number): boolean {
+  let above = 0;
+  for (let rank = 1; rank < actualRank; rank++) above += distribution[rank - 1]!;
+  const transform = above + distribution[actualRank - 1]! / 2;
+  return transform < 0.1 || transform > 0.9;
 }
