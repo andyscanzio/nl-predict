@@ -13,7 +13,7 @@ import { TeamDetail } from "./TeamDetail.tsx";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
 import { formatPercent } from "./winSplit.ts";
 
-const PROJECTED_COLUMNS = 10;
+const PROJECTED_COLUMNS = 9;
 
 const PROBABILITY_COLUMNS: { key: keyof CutLineProbabilities; label: string; short: string; title: string }[] = [
   { key: "playoffs", label: "Playoffs", short: "PO", title: "Chance of finishing 1–6: straight to the playoffs" },
@@ -149,22 +149,6 @@ function FormChips({
   );
 }
 
-/** Current Points solid, Projected Gain striped, on a scale shared by every row. */
-function GainBar({ row, scale }: { row: ProjectedTableRow; scale: number }) {
-  const gain = Math.max(0, row.projectedPoints - row.currentPoints);
-  const percent = (points: number) => `${(points / scale) * 100}%`;
-  return (
-    <span
-      class="gain-bar"
-      aria-hidden="true"
-      title={`${row.currentPoints} Points + ${Math.round(gain)} Projected Gain`}
-    >
-      <span class="gain-bar-now" style={{ width: percent(row.currentPoints) }} />
-      <span class="gain-bar-gain" style={{ left: percent(row.currentPoints), width: percent(gain) }} />
-    </span>
-  );
-}
-
 function ModelPicker({
   model,
   onChange,
@@ -221,7 +205,6 @@ export function ProjectedTable({
   const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
-  const barScale = Math.max(1, ...rows.map((row) => row.projectedPoints));
   const [expanded, setExpanded] = useState<ReadonlySet<TeamId>>(new Set());
   // Kept here rather than per chart, so the choice survives switching model and opening another team.
   const [chartMetric, setChartMetric] = useState<ChartMetric>("playoffs");
@@ -255,10 +238,6 @@ export function ProjectedTable({
                 Left
               </th>
               <th class="num roomy" scope="col" title="Current Points">Pts</th>
-              <th class="wide bar-col" scope="col" title="Current Points plus Projected Gain">
-                <span aria-hidden="true">+ Gain</span>
-                <span class="visually-hidden">Projected Gain</span>
-              </th>
               <th class="num" scope="col" title="Projected Points">Proj</th>
               {showProbabilities &&
                 PROBABILITY_COLUMNS.map((column) => (
@@ -316,9 +295,6 @@ export function ProjectedTable({
                     {row.remainingHomeGames}·{row.remainingAwayGames}
                   </td>
                   <td class="num roomy">{row.currentPoints}</td>
-                  <td class="wide bar-col">
-                    <GainBar row={row} scale={barScale} />
-                  </td>
                   <td class="num projected-points">
                     <ProjectedPoints row={row} />
                   </td>
@@ -359,13 +335,6 @@ export function ProjectedTable({
         <li class="wide">
           <span class="chip chip-3" /> Win <span class="chip chip-2" /> OT/SO win{" "}
           <span class="chip chip-1" /> OT/SO loss <span class="chip chip-0" /> Loss
-        </li>
-        <li class="wide">
-          <span class="gain-bar legend-bar">
-            <span class="gain-bar-now" style={{ width: "40%" }} />
-            <span class="gain-bar-gain" style={{ left: "40%", width: "60%" }} />
-          </span>{" "}
-          Points + Projected Gain
         </li>
         <li>
           <abbr class="low-sample">LS</abbr> Low Sample: fewer than {LOW_SAMPLE_GAMES} Played Games

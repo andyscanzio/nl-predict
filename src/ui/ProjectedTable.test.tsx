@@ -54,13 +54,6 @@ function teamRows(html: string) {
   return [...html.matchAll(/<tbody class="cut-[\w-]+">(<tr[^>]*>)(.*?)<\/tr>/g)].map((match) => ({ open: match[1]!, html: match[2]! }));
 }
 
-/** The gain bar's solid and striped widths in a team's row. */
-function gainWidths(rowHtml: string) {
-  const now = /gain-bar-now" style="width:([\d.]+)%/.exec(rowHtml)?.[1];
-  const gain = /gain-bar-gain" style="left:[\d.]+%;width:([\d.]+)%/.exec(rowHtml)?.[1];
-  return { now: Number(now), gain: Number(gain) };
-}
-
 describe("ProjectedTable", () => {
   describe("Cut Line breaks", () => {
     const rows = [
@@ -81,25 +74,10 @@ describe("ProjectedTable", () => {
     });
   });
 
-  describe("gain bars", () => {
-    it("share one scale set by the highest projected Points", () => {
-      const rows = [
-        row({ teamId: 1, currentPoints: 20, projectedPoints: 40 }),
-        row({ teamId: 2, currentPoints: 10, projectedPoints: 30 }),
-      ];
-      const [first, second] = teamRows(panel(rows));
-      expect(gainWidths(first!.html)).toEqual({ now: 50, gain: 50 });
-      expect(gainWidths(second!.html)).toEqual({ now: 25, gain: 50 });
-    });
-
-    it("shows no striped gain for a team projected to gain nothing", () => {
-      const rows = [
-        row({ teamId: 1, currentPoints: 20, projectedPoints: 40 }),
-        row({ teamId: 2, currentPoints: 30, projectedPoints: 28 }),
-      ];
-      const [, behind] = teamRows(panel(rows));
-      expect(gainWidths(behind!.html).gain).toBe(0);
-    });
+  it("has no Projected Gain column: Pts and Proj already show it", () => {
+    const html = panel([row()]);
+    expect(html).not.toContain("gain-bar");
+    expect(text(html)).not.toContain("Gain");
   });
 
   describe("percentage columns", () => {
