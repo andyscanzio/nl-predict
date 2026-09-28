@@ -11,7 +11,7 @@ export interface RankBar {
   height: number;
 }
 
-function ordinal(rank: number): string {
+export function ordinal(rank: number): string {
   const lastTwo = rank % 100;
   const suffix = lastTwo >= 11 && lastTwo <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[rank % 10] ?? "th";
   return `${rank}${suffix}`;

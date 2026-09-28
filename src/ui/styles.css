@@ -806,6 +806,17 @@ tbody th {
   margin: 0;
 }
 
+.rank-summary {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+
+.rank-summary-share {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
 .form-window table {
   font-size: 0.85rem;
 }

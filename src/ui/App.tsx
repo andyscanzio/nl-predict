@@ -19,6 +19,7 @@ import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
 import { rankBars } from "./rankHistogram.ts";
+import { rankSummary } from "./rankSummary.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -326,9 +327,23 @@ function FormWindowDetail({
 /** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar. */
 function RankHistogram({ distribution }: { distribution: readonly number[] }) {
   const bars = rankBars(distribution);
+  const summary = rankSummary(distribution);
   return (
     <section class="rank-histogram">
       <h3>Rank Distribution</h3>
+      <p class="rank-summary">
+        {summary.around80 ? (
+          <>
+            {summary.around80.before}
+            <span class="rank-summary-share" title={`${formatPercent(summary.share)}% of simulated Seasons`}>
+              80%
+            </span>
+            {summary.around80.after}
+          </>
+        ) : (
+          summary.text
+        )}
+      </p>
       <div class="rank-bars" aria-hidden="true">
         {bars.map((bar) => (
           <span key={bar.rank} class="rank-bar" title={bar.label}>
