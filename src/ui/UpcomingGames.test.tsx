@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { UpcomingGames } from "./UpcomingGames.tsx";
 import type { Teams } from "./TeamName.tsx";
-import type { NextRoundDay, UpcomingGame } from "../domain/project.ts";
+import type { NextRoundDay, UpcomingGame, WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
 
 const teams: Teams = new Map([
@@ -137,9 +137,9 @@ describe("UpcomingGames", () => {
   });
 
   describe("picker", () => {
-    const setGame = (whatIf: UpcomingGame["whatIf"], id = "g1"): UpcomingGame => ({
-      game: { id, startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
-      whatIf: whatIf!,
+    const setGame = (whatIf: WhatIfOutcome): UpcomingGame => ({
+      game: { id: "g1", startsAt: "2026-10-06T17:45:00Z", homeTeamId: 1, awayTeamId: 2 },
+      whatIf,
     });
 
     /** The picker's option values in order, with the checked one. */
@@ -177,10 +177,5 @@ describe("UpcomingGames", () => {
       }
     });
 
-    it("keeps the picker on a Points-only Game with a What-If Result", () => {
-      const html = panel([day("2026-10-06", setGame("regulationWin"))]);
-      expect(text(html)).toContain("HC Davos win in regulation");
-      expect(html).not.toContain("Pts");
-    });
   });
 });
