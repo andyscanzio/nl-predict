@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { App } from "./App.tsx";
 import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
 import type { ProjectionModel } from "../domain/project.ts";
+import histories from "virtual:projection-history";
 import snapshot from "../../data/games.json";
 import type { Snapshot } from "../domain/types.ts";
 import "@fontsource-variable/oxanium";
@@ -22,7 +23,7 @@ function Root() {
     history.pushState(null, "", urlWithModel(location.href, next));
     setModel(next);
   };
-  return <App snapshot={snapshot as Snapshot} now={now} model={model} onModelChange={pick} />;
+  return <App snapshot={snapshot as Snapshot} now={now} model={model} history={histories[model.id]!} onModelChange={pick} />;
 }
 
 render(<Root />, document.getElementById("app")!);

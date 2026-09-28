@@ -782,7 +782,8 @@ tbody th {
 }
 
 .form-window,
-.rank-histogram {
+.rank-histogram,
+.history-chart {
   min-width: 0;
   padding: 0.5rem 0.75rem;
   background: var(--inset);
@@ -794,12 +795,158 @@ tbody th {
   overflow-x: auto;
 }
 
-.rank-histogram {
+/* The Rank Distribution and the Projection History share a row, and stack when it is too narrow for both. */
+.rank-row {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 0.5rem 1rem;
+}
+
+/* Alone in the row (a Points-only model has no Rank Distribution), the chart keeps the width it has beside one. */
+.rank-row > .history-chart:only-child {
+  max-width: 28rem;
+}
+
+.history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.history-head h3 {
+  margin: 0;
+}
+
+.history-toggle {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.history-toggle button {
+  padding: 0.2rem 0.55rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 600 0.65rem var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.history-toggle button + button {
+  border-left: 1px solid var(--line);
+}
+
+.history-toggle button:hover {
+  color: var(--fg);
+}
+
+.history-toggle button[aria-pressed="true"] {
+  background: var(--playoffs);
+  color: var(--bg);
+}
+
+.history-toggle button:focus-visible {
+  outline: 2px solid var(--playoffs);
+  outline-offset: -2px;
+}
+
+.history-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.history-edge {
+  stroke: var(--line);
+}
+
+.history-guide {
+  stroke: var(--muted);
+  stroke-opacity: 0.5;
+  stroke-dasharray: 3 3;
+}
+
+.history-label {
+  fill: var(--muted);
+  font: 500 9px var(--display);
+}
+
+.history-line {
+  fill: none;
+  stroke: var(--muted);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.history-line.chosen {
+  stroke: var(--playoffs);
+  stroke-opacity: 1;
+  stroke-width: 2.5;
+}
+
+.history-low-sample rect {
+  fill: var(--muted);
+  fill-opacity: 0.12;
+}
+
+.history-low-sample text {
+  fill: var(--muted);
+  font: 500 7px var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Wide and invisible so a fingertip can find the line; horizontal drags scrub it, vertical ones still scroll the page. */
+.history-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  stroke-linejoin: round;
+  pointer-events: stroke;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.history-tip-rule {
+  stroke: var(--muted);
+  stroke-opacity: 0.6;
+  stroke-dasharray: 2 2;
+}
+
+.history-tip-dot {
+  fill: var(--playoffs);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.history-tip rect {
+  fill: var(--panel);
+  stroke: var(--line);
+}
+
+.history-tip text {
+  fill: var(--fg);
+  font: 500 8.5px var(--display);
+}
+
+.history-tip text.history-tip-date {
+  fill: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .form-window h3,
-.rank-histogram h3 {
+.rank-histogram h3,
+.history-chart h3 {
   margin: 0 0 0.25rem;
   font: 600 0.72rem var(--display);
   letter-spacing: 0.08em;

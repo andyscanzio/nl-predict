@@ -28,8 +28,12 @@ Any Regular Season Game that is not a Played Game, regardless of its scheduled d
 A Remaining Game scheduled to start after the As-Of Date. Remaining Games whose start has passed (in progress, awaiting a result, or postponed without a new date) are not Upcoming.
 _Avoid_: Next game, fixture
 
+**Match Day**:
+A Swiss calendar day on which at least one Regular Season Game is scheduled or was played.
+_Avoid_: Game day, gameweek
+
 **Next Round**:
-The Upcoming Games on the earliest match day plus each following match day, whole, until at least one full round's worth of Games (half the teams) is included, or none are left.
+The Upcoming Games on the earliest Match Day plus each following Match Day, whole, until at least one full round's worth of Games (half the teams) is included, or none are left.
 _Avoid_: Match day (when more than one day is meant), gameweek
 
 **Decision**:
@@ -105,6 +109,10 @@ _Avoid_: Monte Carlo Model
 **Rank Distribution**:
 A team's probability of finishing at each rank of the final Regular Season table, from a Season Simulation. Its Cut Line chances (Playoffs, Play-in, Eliminated) and first-place chance are sums over it. Summarised by the most likely rank (the better rank on a tie) and the middle 80%: the ranks from its 10th to its 90th percentile.
 _Avoid_: Rank spread, finishing chances
+
+**Projection History**:
+A team's projected Points and Season Simulation results under one Projection Model, as they stood before the first Game of the Season and at the end of every Match Day played since. It shows what the model as it is today would have said at each point, not what the page showed then, so changing a model changes its whole history.
+_Avoid_: Trend, timeline
 
 **Default Model**:
 The Projection Model a visitor sees unless they pick another.

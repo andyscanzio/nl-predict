@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eloModel } from "./eloModel.ts";
+import { SEASON_START, simulationSeedAsOf } from "./matchDay.ts";
 import { matchupModel } from "./matchupModel.ts";
 import type { OutcomeProbabilities } from "./outcomes.ts";
 import { project, type ProjectionModel } from "./project.ts";
@@ -178,11 +179,11 @@ describe("project: Rank Distribution", () => {
 });
 
 describe("simulationSeed", () => {
-  it("derives the same seed from the same snapshot time and model, and a different one for another model", () => {
-    const snapshotAt = "2026-09-27T13:33:00+02:00";
-    expect(simulationSeed(snapshotAt, "elo")).toBe(simulationSeed(snapshotAt, "elo"));
-    expect(simulationSeed(snapshotAt, "elo")).not.toBe(simulationSeed(snapshotAt, "matchup"));
-    expect(simulationSeed(snapshotAt, "elo")).not.toBe(simulationSeed("2026-09-28T07:00:00+02:00", "elo"));
+  it("derives the same seed from the same Match Day and model, and a different one for another model or Match Day", () => {
+    expect(simulationSeed("2026-09-27", "elo")).toBe(simulationSeed("2026-09-27", "elo"));
+    expect(simulationSeed("2026-09-27", "elo")).not.toBe(simulationSeed("2026-09-27", "matchup"));
+    expect(simulationSeed("2026-09-27", "elo")).not.toBe(simulationSeed("2026-09-28", "elo"));
+    expect(simulationSeed(SEASON_START, "elo")).not.toBe(simulationSeed("2026-09-27", "elo"));
   });
 });
 
@@ -194,7 +195,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
       snapshot.games,
       new Date(snapshot.snapshotAt),
       model,
-      simulationSeed(snapshot.snapshotAt, model.id),
+      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
     );
     expect(projectedTable).toHaveLength(14);
     for (const { probabilities } of projectedTable) {
@@ -212,7 +213,7 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
       snapshot.games,
       new Date(snapshot.snapshotAt),
       model,
-      simulationSeed(snapshot.snapshotAt, model.id),
+      simulationSeedAsOf(snapshot.games, new Date(snapshot.snapshotAt), model.id),
     );
     for (const { rankDistribution } of projectedTable) {
       expect(rankDistribution).toHaveLength(14);
@@ -225,5 +226,25 @@ describe("project: Season Simulation on the recorded 27.09.2026 snapshot", () =>
     for (let rank = 0; rank < 14; rank++) {
       expect(projectedTable.reduce((sum, row) => sum + row.rankDistribution![rank]!, 0)).toBeCloseTo(1, 12);
     }
+  });
+});
+
+describe("Season Simulation seeded by Match Day", () => {
+  const snapshot = recordedSnapshot as Snapshot;
+  const tableAt = (model: ProjectionModel, asOf: Date) =>
+    project(snapshot.games, asOf, model, simulationSeedAsOf(snapshot.games, asOf, model.id)).projectedTable;
+  const snapshotAt = new Date(snapshot.snapshotAt);
+  // Same Games, no new result: refreshes an hour and a day later.
+  const refreshes = [3_600_000, 86_400_000].map((offset) => new Date(snapshotAt.getTime() + offset));
+
+  it.each([seasonRate, matchupModel, eloModel])(
+    "gives identical tables under $name for snapshots of the same Games taken at different times",
+    (model) => {
+      for (const later of refreshes) expect(tableAt(model, later)).toEqual(tableAt(model, snapshotAt));
+    },
+  );
+
+  it("gives the same numbers on every run", () => {
+    expect(tableAt(eloModel, snapshotAt)).toEqual(tableAt(eloModel, snapshotAt));
   });
 });

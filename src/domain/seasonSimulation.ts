@@ -27,9 +27,9 @@ function hash(text: string): number {
   return h >>> 0;
 }
 
-/** The seed for a Season Simulation: the same snapshot and model always give the same numbers. */
-export function simulationSeed(snapshotAt: string, modelId: string): number {
-  return hash(`${snapshotAt}|${modelId}`);
+/** The seed for a Season Simulation: the same Match Day (see matchDayOf) and model always give the same numbers. */
+export function simulationSeed(matchDay: string, modelId: string): number {
+  return hash(`${matchDay}|${modelId}`);
 }
 
 /** Mulberry32: a small, fast seeded generator of uniform numbers in [0, 1). */
