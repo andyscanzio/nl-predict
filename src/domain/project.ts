@@ -164,6 +164,9 @@ export interface Projection {
 /** The Match Day of a projection made before any Game has been played. */
 export const SEASON_START = "season-start";
 
+/** Art. 6.2, "Weisungen für den Spielbetrieb der National League, Saison 2026/27" (02.09.2026): the Current Table's tie-break rule. */
+export const OFFICIAL_TIE_BREAK_RULE_URL = "https://www.nationalleague.ch/media/bvinatrg/weisungen_spielbetrieb_nl_26_27_d.pdf";
+
 /** Projected Points closer than this are a tie, so floating-point noise never overrides Current Table position. */
 const PROJECTED_TIE_TOLERANCE = 1e-9;
 
@@ -340,8 +343,12 @@ function settleGroup(group: Group, playedGames: readonly PlayedGame[]): Group {
 }
 
 /**
- * Current Table order: Points, then Points per Game (as the official live table does mid-season). Teams still level
- * form a Group, settled with the Played Games available to it rather than compared pairwise — see settleGroup.
+ * Current Table order: Points, then Points per Game, then the official Art. 6.2 rule (see OFFICIAL_TIE_BREAK_RULE_URL),
+ * settled per Group by settleGroup rather than compared pairwise. Points per Game runs ahead of Art. 6.2 because the
+ * official live table's own `pointsQuotient` does, mid-season while teams have played different numbers of Games — the
+ * recorded 27.09.2026 standings confirm it: EVZ, SCB, EHCB and HCD, all on 7 Points, follow Points per Game (1.75,
+ * 1.75, 1.40, 1.17) rather than overall goal difference, which would rank EHCB (no Direct Games with the others)
+ * second. Once every team has played all its Games, Points per Game separates no one and the order is Art. 6.2 exactly.
  */
 function currentTableOrder(rows: Group, playedGames: readonly PlayedGame[]): Group {
   return groupBy(rows, (row) => row.points)
