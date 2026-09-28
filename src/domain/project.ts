@@ -106,6 +106,8 @@ export interface ProjectedTableRow {
   lowSample: boolean;
   /** Cut Line zone and 1st-place chances from the Season Simulation; null for Points-only models. */
   probabilities: CutLineProbabilities | null;
+  /** Chance of finishing at each rank of the final table (index 0 = 1st) from the Season Simulation; null for Points-only models. */
+  rankDistribution: number[] | null;
 }
 
 /** A team with fewer Played Games than this is Low Sample, under every Projection Model. */
@@ -299,7 +301,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, seed 
     projectedPoints.set(game.awayTeamId, projectedPoints.get(game.awayTeamId)! + points.away);
   }
 
-  const probabilities =
+  const simulation =
     model.kind === "outcomes"
       ? simulateSeason(
           new Map(currentTable.map((row) => [row.teamId, row.points])),
@@ -332,7 +334,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, seed 
       remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
       projectedPoints: projected,
       lowSample: row.gamesPlayed < LOW_SAMPLE_GAMES,
-      probabilities: probabilities?.get(row.teamId) ?? null,
+      probabilities: simulation?.get(row.teamId)?.probabilities ?? null,
+      rankDistribution: simulation?.get(row.teamId)?.rankDistribution ?? null,
     };
   });
 

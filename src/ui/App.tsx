@@ -18,6 +18,8 @@ import { seasonLabel } from "../domain/season.ts";
 import { ELO_HOME_ADVANTAGE, ELO_K, INITIAL_RATING } from "../domain/eloModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME, type OutcomeProbabilities } from "../domain/outcomes.ts";
 import { PROJECTION_MODELS } from "./modelUrl.ts";
+import { rankBars } from "./rankHistogram.ts";
+import { rankSummary } from "./rankSummary.ts";
 import { formatPercent, winSplit } from "./winSplit.ts";
 
 const SIHF_TERMS = "https://www.sihf.ch/de/nutzungsbedingungen/";
@@ -322,6 +324,52 @@ function FormWindowDetail({
   );
 }
 
+/** A team's Rank Distribution as a histogram: one bar per rank, colored by Cut Line zone, scaled to the team's highest bar, with a tick at the projected rank. */
+function RankHistogram({ distribution, projectedRank }: { distribution: readonly number[]; projectedRank: number }) {
+  const bars = rankBars(distribution, projectedRank);
+  const summary = rankSummary(distribution);
+  return (
+    <section class="rank-histogram">
+      <h3>Rank Distribution</h3>
+      <p class="rank-summary">
+        {summary.around80 ? (
+          <>
+            {summary.around80.before}
+            <span class="rank-summary-share" title={`${formatPercent(summary.share)}% of simulated Seasons`}>
+              80%
+            </span>
+            {summary.around80.after}
+          </>
+        ) : (
+          summary.text
+        )}
+      </p>
+      <div class="rank-bars" aria-hidden="true">
+        {bars.map((bar) => (
+          <span key={bar.rank} class="rank-bar" title={bar.label}>
+            <span class="rank-bar-track">
+              <span
+                class={`rank-bar-fill zone-${bar.zone}${bar.height > 0 ? " chance" : ""}`}
+                style={{ height: `${bar.height * 100}%` }}
+              />
+            </span>
+            <span class="rank-bar-rank">{bar.rank}</span>
+            {bar.projected && <span class="rank-bar-tick" />}
+          </span>
+        ))}
+      </div>
+      <p class="visually-hidden">Projected rank in the table, by expected Points: {ordinal(projectedRank)}</p>
+      <ul class="visually-hidden">
+        {bars
+          .filter((bar) => bar.height > 0)
+          .map((bar) => (
+            <li key={bar.rank}>{bar.label}</li>
+          ))}
+      </ul>
+    </section>
+  );
+}
+
 function IntegrityWarning({
   issues,
   teamName,
@@ -576,6 +624,7 @@ export function App({
     [snapshot, now, model],
   );
   const showProbabilities = model.kind === "outcomes";
+  const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
   const season = seasonLabel(snapshot.season);
@@ -680,7 +729,7 @@ export function App({
                               class="expand"
                               aria-expanded={isExpanded}
                               aria-controls={detailId}
-                              title={isExpanded ? "Hide Form Window Games" : "Show Form Window Games"}
+                              title={`${isExpanded ? "Hide" : "Show"} ${expandTarget}`}
                               onClick={() => toggle(row.teamId)}
                             >
                               <span class="chevron" aria-hidden="true">
@@ -723,6 +772,7 @@ export function App({
                           <tr class="detail" id={detailId}>
                             <td colSpan={columns}>
                               <div class="form-windows">
+                                {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} />}
                                 <FormWindowDetail
                                   side="home"
                                   form={row.homeForm}
@@ -803,11 +853,16 @@ export function App({
                       Seasons a team finishes 1–6, 7–10 and 11–14; 1st is the share it finishes top. The table itself stays
                       ranked by expected Points. The same data always gives the same numbers.
                     </p>
+                    <p>
+                      A team's Rank Distribution charts how often it finished at each rank across those Seasons, with a tick
+                      at its projected rank. The most likely rank can differ from #, because # ranks teams by expected Points
+                      while the chart counts where the team finished in each simulated Season.
+                    </p>
                   </>
                 )}
                 <p>
-                  Teams level on projected Points keep their Current Table order. Select a team to see the Games in its Form
-                  Windows.
+                  Teams level on projected Points keep their Current Table order. Select a team to see{" "}
+                  {showProbabilities ? "its finishing ranks and the Games in its Form Windows." : "the Games in its Form Windows."}
                 </p>
               </div>
             </section>

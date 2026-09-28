@@ -13,6 +13,13 @@ export interface CutLineProbabilities {
   first: number;
 }
 
+/** A team's Season Simulation result: its Cut Line chances, and the Rank Distribution they are summed from. */
+export interface SimulationResult {
+  probabilities: CutLineProbabilities;
+  /** Probability of finishing at each rank of the final table; index 0 is 1st, one entry per team in the Season. */
+  rankDistribution: number[];
+}
+
 /** 32-bit FNV-1a hash of a string. */
 function hash(text: string): number {
   let h = 0x811c9dc5;
@@ -46,7 +53,7 @@ export function simulateSeason(
   remainingGames: readonly Game[],
   outcomes: ReadonlyMap<string, OutcomeProbabilities>,
   seed: number,
-): Map<TeamId, CutLineProbabilities> {
+): Map<TeamId, SimulationResult> {
   const teamIds = [...currentPoints.keys()];
   const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
   const teams = teamIds.length;
@@ -68,8 +75,7 @@ export function simulateSeason(
   const random = seededRandom(seed);
   const points = new Float64Array(teams);
   const order = teamIds.map((_, index) => index);
-  const zoneCounts = teamIds.map((): Record<CutLine, number> => ({ playoffs: 0, "play-in": 0, eliminated: 0 }));
-  const firstCounts = teamIds.map(() => 0);
+  const rankCounts = teamIds.map(() => new Int32Array(teams));
 
   for (let run = 0; run < SIMULATION_RUNS; run++) {
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
@@ -84,20 +90,24 @@ export function simulateSeason(
     for (let t = 0; t < teams; t++) points[t] = points[t]! + random();
     order.sort((a, b) => points[b]! - points[a]!);
 
-    firstCounts[order[0]!]!++;
-    order.forEach((team, index) => zoneCounts[team]![cutLineFor(index + 1)]++);
+    order.forEach((team, index) => rankCounts[team]![index]!++);
   }
 
   return new Map(
     teamIds.map((teamId, index) => {
-      const zones = zoneCounts[index]!;
+      const counts = rankCounts[index]!;
+      const zones: Record<CutLine, number> = { playoffs: 0, "play-in": 0, eliminated: 0 };
+      counts.forEach((count, rankIndex) => (zones[cutLineFor(rankIndex + 1)] += count));
       return [
         teamId,
         {
-          playoffs: zones.playoffs / SIMULATION_RUNS,
-          playIn: zones["play-in"] / SIMULATION_RUNS,
-          eliminated: zones.eliminated / SIMULATION_RUNS,
-          first: firstCounts[index]! / SIMULATION_RUNS,
+          probabilities: {
+            playoffs: zones.playoffs / SIMULATION_RUNS,
+            playIn: zones["play-in"] / SIMULATION_RUNS,
+            eliminated: zones.eliminated / SIMULATION_RUNS,
+            first: counts[0]! / SIMULATION_RUNS,
+          },
+          rankDistribution: Array.from(counts, (count) => count / SIMULATION_RUNS),
         },
       ];
     }),

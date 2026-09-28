@@ -91,8 +91,12 @@ A Projection Model's prediction for one Game: the probability of each of the fou
 The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
 
 **Season Simulation**:
-Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Cut Line and first-place chances.
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution.
 _Avoid_: Monte Carlo Model
+
+**Rank Distribution**:
+A team's probability of finishing at each rank of the final Regular Season table, from a Season Simulation. Its Cut Line chances (Playoffs, Play-in, Eliminated) and first-place chance are sums over it. Summarised by the most likely rank (the better rank on a tie) and the middle 80%: the ranks from its 10th to its 90th percentile.
+_Avoid_: Rank spread, finishing chances
 
 **Default Model**:
 The Projection Model a visitor sees unless they pick another.
