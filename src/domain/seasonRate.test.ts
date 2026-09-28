@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { project } from "./project.ts";
-import { seasonRate } from "./seasonRate.ts";
+import { createSeasonRate, seasonRate } from "./seasonRate.ts";
 import type { Decision, Game } from "./types.ts";
 
 const asOf = new Date("2026-10-01T12:00:00+02:00");
@@ -54,6 +54,20 @@ describe("project: Season Rate", () => {
     const games = [played(1, 3, 3, 0), played(1, 4, 3, 0), played(1, 5, 3, 0), scheduled(1, 2)];
     // 9 Points in 3 Games, rated (9 + 15) / 13 ≈ 1.85 rather than 3.0, against 2 at 1.5
     expect(projectedPoints(games)[1]).toBeCloseTo(9 + (24 / 13 + 3 - 1.5) / 2);
+  });
+
+  it("rates a hot start at its raw Points per Game with no prior Games", () => {
+    const games = [played(1, 3, 3, 0), played(1, 4, 3, 0), played(1, 5, 3, 0), scheduled(1, 2)];
+    const model = createSeasonRate({ priorGames: 0 });
+    const points = Object.fromEntries(
+      project(games, asOf, model).projectedTable.map((row) => [row.teamId, row.projectedPoints]),
+    );
+    // 9 Points in 3 Games, rated 3.0, against 2 at 1.5
+    expect(points[1]).toBeCloseTo(9 + (3 + 3 - 1.5) / 2);
+  });
+
+  it("is named Season Rate whatever its prior Games", () => {
+    expect(createSeasonRate({ priorGames: 4 })).toMatchObject({ id: "season-rate", name: "Season Rate" });
   });
 
   it("follows a team's raw Points per Game closely late in the Season", () => {
