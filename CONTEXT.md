@@ -73,8 +73,12 @@ A team with fewer than ten Played Games; its projection still runs under every P
 The moment a projection is made from: only Games played up to it count as Played; everything later is Remaining. Defaults to now.
 
 **Current Table**:
-The real standings built from Played Games up to the As-Of Date, ordered by Points, then Points per Game, goal difference, goals for, and regulation wins (an approximation of the official SIHF order, which also uses head-to-head).
+The real standings built from Played Games up to the As-Of Date, ordered by Points, then Points per Game (as the official live table does mid-season), then the official National League tie-break: Points in Direct Games, goal difference, goals for, goal difference in Direct Games, goals for in Direct Games, away goals, away goals in Direct Games; then regulation wins and team acronym (our own, where the official rule leaves it to NL Operations). Once every team has played all its Games, Points per Game separates no one, so the final table follows the official rule exactly.
 _Avoid_: Leaderboard, standings (when ambiguous)
+
+**Direct Games**:
+The Played Games among a group of teams level on Points, fixed when the group is first formed and kept even after some of them are separated. When the teams have met each other unequally often, only the smallest number counts for all of them, dropping each pairing's earliest home and away Games by date.
+_Avoid_: Head-to-head games, mini-league
 
 **Projected Table**:
 The expected final Regular Season standings produced by a Projection Model, ranked by projected Points with ties broken by Current Table position.
