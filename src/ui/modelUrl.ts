@@ -4,8 +4,8 @@ import type { ProjectionModel } from "../domain/project.ts";
 import { seasonRate } from "../domain/seasonRate.ts";
 import { splitFormRate } from "../domain/splitFormRate.ts";
 
-/** The Projection Models a visitor can pick, in picker order. */
-export const PROJECTION_MODELS: readonly ProjectionModel[] = [splitFormRate, seasonRate, matchupModel, eloModel];
+/** The Projection Models a visitor can pick, in picker order: the Default Model first, Points-only Split Form Rate last. */
+export const PROJECTION_MODELS: readonly ProjectionModel[] = [eloModel, seasonRate, matchupModel, splitFormRate];
 
 /**
  * The Default Model: what a visitor sees unless they pick another.
