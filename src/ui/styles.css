@@ -774,23 +774,28 @@ tbody th {
   white-space: normal;
 }
 
+/* Home and Away Form Window boxes always share a row, wide enough for their tables; the Rank Distribution gets its own row above. */
 .form-windows {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(min-content, 1fr));
   gap: 0.5rem 1rem;
 }
 
 .form-window,
 .rank-histogram {
-  flex: 1 1 13rem;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   background: var(--inset);
   border: 1px solid var(--line);
   border-radius: 6px;
 }
 
+.form-window {
+  overflow-x: auto;
+}
+
 .rank-histogram {
-  flex-basis: 10rem;
+  grid-column: 1 / -1;
 }
 
 .form-window h3,
@@ -964,6 +969,10 @@ footer a {
   .legend .wide {
     display: none;
   }
+
+  .form-windows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 36rem) {
@@ -1029,6 +1038,10 @@ footer a {
 
   .projected tr.detail > td {
     padding-left: 0.5rem;
+  }
+
+  .form-windows {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
