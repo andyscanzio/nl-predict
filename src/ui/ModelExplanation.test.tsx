@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { ModelExplanation } from "./ModelExplanation.tsx";
 import { PROJECTION_MODELS } from "../domain/projectionModels.ts";
+import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
 import { SIMULATION_RUNS } from "../domain/seasonSimulation.ts";
 
 function panel(model: (typeof PROJECTION_MODELS)[number]) {
@@ -30,7 +31,9 @@ describe("ModelExplanation", () => {
     const explanations = PROJECTION_MODELS.map((model) => text(panel(model)));
     expect(new Set(explanations).size).toBe(PROJECTION_MODELS.length);
     expect(text(panel(PROJECTION_MODELS.find((model) => model.id === "elo")!))).toContain("Every team starts the Season on a Rating of");
-    expect(text(panel(PROJECTION_MODELS.find((model) => model.id === "season-rate")!))).toContain("all its Played Games this Season");
+    const seasonRateText = text(panel(PROJECTION_MODELS.find((model) => model.id === "season-rate")!));
+    expect(seasonRateText).toContain(`as if it had also played ${SEASON_RATE_PRIOR_GAMES} Games at the league-average 1.5`);
+    expect(seasonRateText).not.toContain("no Played Games");
   });
 
   it.each(withOutcomes.map((model) => [model.name, model] as const))(
