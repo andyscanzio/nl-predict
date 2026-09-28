@@ -4,8 +4,21 @@ import type { ProjectionModel } from "./project.ts";
 import { SEASON_RATE_PRIOR_GAMES, shrunkSeasonRate } from "./seasonRate.ts";
 import type { TeamId } from "./types.ts";
 
-/** m: Games at the prior each team is rated as if it had also played at each venue. 0 is the unshrunk model. */
-export const MATCHUP_PRIOR_GAMES = 0;
+/*
+ * m was chosen by leave-one-season-out on the 2022/23–2025/26 Regular Seasons (#62), with the league centre: the
+ * per-Game Brier score is best at m 10–13 (0.6681) and the Rank RPS at m 20–30 (0.0833), and m = 16 is within 0.0002 of
+ * the best Brier (0.6683) and 0.0001 of the best Rank RPS (0.0834). The held-out choice was m 8–13 by Brier and 20–30 by
+ * Rank RPS.
+ */
+
+/** m: Games at each venue's league average that each team is rated as if it had also played at that venue. */
+export const MATCHUP_PRIOR_GAMES = 16;
+
+/**
+ * The league's home Points per Game, pooled over the 2022/23–2025/26 Regular Seasons (1.673, 1.725, 1.874 and 1.687;
+ * every Season had 364 Games, so the mean is 1.740). The away average is 3 minus it. Not recomputed from the live Season.
+ */
+export const LEAGUE_HOME_POINTS_PER_GAME = 1.74;
 
 export interface MatchupParameters {
   /** m: Games at the prior each team is rated as if it had also played at each venue; 0 is the unshrunk model. */
@@ -32,10 +45,11 @@ function shrunkForm(window: PlayedGame[], teamId: TeamId, prior: number, priorGa
 }
 
 /**
- * Each Remaining Game weighs the home team's Home Form against the away team's Away Form, splitting the Game's 3 Points
- * between them (see outcomesFromRates) through the OT/SO Rate.
+ * Each Remaining Game weighs the home team's Home Rate against the away team's Away Rate, splitting the Game's 3 Points
+ * between them (see outcomesFromRates) through the OT/SO Rate: the home side expects (Home Rate + 3 − Away Rate) / 2.
+ * A Home Rate or Away Rate is a venue's Form shrunk toward a prior, as set out below.
  *
- * With priorGames (m) 0, the Forms are raw: an empty Form Window falls back to the team's other-venue Form, as under
+ * With priorGames (m) 0, the rates are the raw Forms: an empty Form Window falls back to the team's other-venue Form, as under
  * Split Form Rate, and with neither to the league-average 1.5; homePointsPerGame and centre have no effect. With
  * priorGames above 0, each venue's rate is shrunk toward a prior as if the team had also played m Games at it:
  * (Points + prior · m) / (Games + m). An empty Form Window is then exactly the prior, and the other-venue fallback is
@@ -77,9 +91,13 @@ export function createMatchupModel({ priorGames, homePointsPerGame, centre }: Ma
   };
 }
 
-/** The shipped model: unshrunk, so the centre and home average are moot. */
+/**
+ * The shipped model: Home Rate against Away Rate, each venue's Form shrunk toward the league's Points per Game there as
+ * if the team had also played MATCHUP_PRIOR_GAMES Games at that average. An empty Form Window is exactly the league
+ * venue average, so there is no other-venue fallback.
+ */
 export const matchupModel = createMatchupModel({
   priorGames: MATCHUP_PRIOR_GAMES,
-  homePointsPerGame: LEAGUE_AVERAGE_POINTS_PER_GAME,
+  homePointsPerGame: LEAGUE_HOME_POINTS_PER_GAME,
   centre: "league",
 });

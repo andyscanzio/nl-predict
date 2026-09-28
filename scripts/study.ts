@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { backTest, gameBriers } from "../src/domain/backTest.ts";
 import { eloModel } from "../src/domain/eloModel.ts";
-import { createMatchupModel, leagueHomePointsPerGame, matchupModel } from "../src/domain/matchupModel.ts";
+import { createMatchupModel, leagueHomePointsPerGame } from "../src/domain/matchupModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../src/domain/outcomes.ts";
 import { projectionModelInput } from "../src/domain/project.ts";
 import { seasonLabel } from "../src/domain/season.ts";
@@ -113,7 +113,9 @@ function matchupFamily(label: string, centre: "league" | "flat" | "team"): Famil
 }
 
 const matchupFamilies = [matchupFamily("League", "league"), matchupFamily("Flat", "flat"), matchupFamily("Team", "team")];
-/** The unshrunk model: m = 0 of Season Rate, or the shipped Matchup Model. */
+/** The unshrunk Matchup Model, the study's m = 0 row; the shipped Matchup Model is shrunk. */
+const unshrunkMatchupModel = createMatchupModel({ priorGames: 0, homePointsPerGame: LEAGUE_AVERAGE_POINTS_PER_GAME, centre: "league" });
+/** The unshrunk model: m = 0 of Season Rate, or of the Matchup Model. */
 const unshrunkName = (matchupStudy ? matchupFamilies[0]! : seasonRateFamily).nameOf(0);
 const families = matchupStudy ? [seasonRateFamily, ...matchupFamilies] : [seasonRateFamily];
 const modelsOf = (ms: readonly number[]): ModelFor[] => [...families.flatMap((family) => ms.map(family.modelFor)), () => elo];
@@ -409,7 +411,7 @@ print(`Snapshots from ${values.dir}. Pooled figures weigh every team forecast th
 print();
 
 if (matchupStudy) {
-  heading("0. LEAGUE HOME POINTS PER GAME AND THE SHIPPED MODEL");
+  heading("0. LEAGUE HOME POINTS PER GAME AND THE UNSHRUNK MODEL");
   table(
     "",
     seasonHeaders,
@@ -421,14 +423,14 @@ if (matchupStudy) {
   );
   print("The league and team centres use the second row as homePointsPerGame for each held-out Season (away is 3 minus it); the flat control uses 1.5. Their m is chosen on the other Seasons, each scored with a prior from the Seasons but its own, which includes the held-out Season's Games.");
   print();
-  // The priorGames 0 row is the shipped Matchup Model, so its per-Game Brier must be the existing Back-Test's.
+  // The priorGames 0 row is the unshrunk Matchup Model, so its per-Game Brier must be the existing Back-Test's.
   for (const season of seasons) {
     const { games, snapshotAt } = snapshots.get(season)!;
-    const shipped = backTest(games, new Date(snapshotAt), [matchupModel])[0]!.brierScore!;
+    const unshrunk = backTest(games, new Date(snapshotAt), [unshrunkMatchupModel])[0]!.brierScore!;
     const row = scores.get(season)!.get(unshrunkName)!.brier;
-    if (Math.abs(shipped - row) > 1e-9) throw new Error(`${unshrunkName} scores ${row} in ${season}, the shipped Matchup Model ${shipped}`);
+    if (Math.abs(unshrunk - row) > 1e-9) throw new Error(`${unshrunkName} scores ${row} in ${season}, the unshrunk Matchup Model ${unshrunk}`);
   }
-  print(`Check: ${unshrunkName}'s per-Game Brier equals the shipped Matchup Model's in the Back-Test, in every Season.`);
+  print(`Check: ${unshrunkName}'s per-Game Brier equals the unshrunk Matchup Model's in the Back-Test, in every Season.`);
   print();
 }
 
