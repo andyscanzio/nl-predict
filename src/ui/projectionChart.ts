@@ -1,6 +1,5 @@
-import { SEASON_START } from "../domain/matchDay.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
-import { LOW_SAMPLE_GAMES } from "../domain/project.ts";
+import { LOW_SAMPLE_GAMES, SEASON_START } from "../domain/project.ts";
 import type { TeamId } from "../domain/types.ts";
 import { formatPercent } from "./winSplit.ts";
 

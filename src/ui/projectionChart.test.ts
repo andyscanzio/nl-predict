@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEASON_START } from "../domain/matchDay.ts";
+import { SEASON_START } from "../domain/project.ts";
 import type { HistoryPoint, ProjectionHistory } from "../domain/projectionHistory.ts";
 import { LOW_SAMPLE_GAMES } from "../domain/project.ts";
 import { chartMetrics, nearestMatchDay, projectionChart, shownMetric } from "./projectionChart.ts";
