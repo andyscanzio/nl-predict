@@ -33,25 +33,80 @@ function resultLabel(game: FormWindowGame) {
   return game.decision === "regulation" ? `Regulation ${outcome}` : `${game.decision} ${outcome}`;
 }
 
-function Movement({ movement }: { movement: number }) {
+/** Movement against the current rank, or against the real projected rank when `comparison` says so. */
+function Movement({ movement, comparison }: { movement: number; comparison: string }) {
   if (movement > 0) {
     return (
-      <span class="movement up" title={`Up ${movement} from current rank`}>
+      <span class="movement up" title={`Up ${movement} from ${comparison}`}>
         ▲{movement}
       </span>
     );
   }
   if (movement < 0) {
     return (
-      <span class="movement down" title={`Down ${-movement} from current rank`}>
+      <span class="movement down" title={`Down ${-movement} from ${comparison}`}>
         ▼{-movement}
       </span>
     );
   }
   return (
-    <span class="movement same" title="Same as current rank">
+    <span class="movement same" title={`Same as ${comparison}`}>
       –
     </span>
+  );
+}
+
+/** A signed number with a real minus sign. */
+function signed(value: number): string {
+  return value > 0 ? `+${value}` : `−${-value}`;
+}
+
+/** The projected Points, with the What-If Change from the Real Projection stacked under it when the rounded values differ. */
+function ProjectedPoints({ row }: { row: ProjectedTableRow }) {
+  const points = Math.round(row.projectedPoints);
+  const change = row.realProjection ? points - Math.round(row.realProjection.projectedPoints) : 0;
+  if (change === 0) return <>{points}</>;
+  return (
+    <>
+      <span class="visually-hidden">
+        {points}, {change > 0 ? "up" : "down"} {Math.abs(change)} from the Real Projection
+      </span>
+      <span aria-hidden="true">{points}</span>
+      <small class={`what-if-change ${change > 0 ? "up" : "down"}`} aria-hidden="true">
+        {signed(change)}
+      </small>
+    </>
+  );
+}
+
+/** A printed percent as a number: "<1" counts as 0 and ">99" as 100. */
+function printedPercent(probability: number): number {
+  const printed = formatPercent(probability);
+  return printed === "<1" ? 0 : printed === ">99" ? 100 : Number(printed);
+}
+
+/**
+ * A chance percent, with its What-If Change from the Real Projection stacked under it when the printed values differ.
+ * A rise in PO or 1st is good and a fall bad, Out is the other way round, and PI is neutral.
+ */
+function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number]; row: ProjectedTableRow }) {
+  const probability = row.probabilities![column.key];
+  const printed = formatPercent(probability);
+  const real = row.realProjection?.probabilities;
+  const change = real ? printedPercent(probability) - printedPercent(real[column.key]) : 0;
+  if (change === 0) return <>{printed}</>;
+  const direction = change > 0 ? "up" : "down";
+  const tone = column.key === "playIn" ? "neutral" : (change > 0) === (column.key !== "eliminated") ? "good" : "bad";
+  return (
+    <>
+      <span class="visually-hidden">
+        {printed} percent, {direction} {Math.abs(change)} from the Real Projection
+      </span>
+      <span aria-hidden="true">{printed}</span>
+      <small class={`what-if-change ${tone}`} aria-hidden="true">
+        {signed(change)}
+      </small>
+    </>
   );
 }
 
@@ -159,6 +214,9 @@ export function ProjectedTable({
   teams: Teams;
   onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
 }) {
+  // Rows carry the Real Projection only while a What-If is applied.
+  const showChanges = rows.some((row) => row.realProjection);
+  const movementComparison = showChanges ? "the real projected rank" : "current rank";
   const showProbabilities = model.kind === "outcomes";
   const expandTarget = showProbabilities ? "finishing ranks and Form Window Games" : "Form Window Games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
@@ -185,7 +243,7 @@ export function ProjectedTable({
           <thead>
             <tr>
               <th class="rank-head" scope="col" title="Projected rank">#</th>
-              <th scope="col" title="Movement against current rank">
+              <th scope="col" title={`Movement against ${movementComparison}`}>
                 <span class="visually-hidden">Movement</span>
               </th>
               <th scope="col">Team</th>
@@ -222,7 +280,10 @@ export function ProjectedTable({
                 >
                   <td class="num rank">{String(row.rank).padStart(2, "0")}</td>
                   <td>
-                    <Movement movement={row.movement} />
+                    <Movement
+                      movement={row.realProjection ? row.realProjection.rank - row.rank : row.movement}
+                      comparison={movementComparison}
+                    />
                   </td>
                   <th scope="row" class="team">
                     <button
@@ -258,13 +319,15 @@ export function ProjectedTable({
                   <td class="wide bar-col">
                     <GainBar row={row} scale={barScale} />
                   </td>
-                  <td class="num projected-points">{Math.round(row.projectedPoints)}</td>
+                  <td class="num projected-points">
+                    <ProjectedPoints row={row} />
+                  </td>
                   {row.probabilities &&
-                    PROBABILITY_COLUMNS.map(({ key }) => {
-                      const probability = row.probabilities![key];
+                    PROBABILITY_COLUMNS.map((column) => {
+                      const probability = row.probabilities![column.key];
                       return (
-                        <td key={key} class={probability === 0 ? "num pct none" : "num pct"}>
-                          {formatPercent(probability)}
+                        <td key={column.key} class={probability === 0 ? "num pct none" : "num pct"}>
+                          <Chance column={column} row={row} />
                         </td>
                       );
                     })}

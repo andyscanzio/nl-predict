@@ -149,4 +149,112 @@ describe("ProjectedTable", () => {
     expect(inputs.filter((input) => input.includes("checked"))).toHaveLength(1);
     expect(inputs.find((input) => input.includes("checked"))).toContain(`value="${pointsModel.id}"`);
   });
+
+  describe("What-If Change", () => {
+    const changed = (overrides: Partial<ProjectedTableRow>, realRank: number, realPoints: number) =>
+      row({ realProjection: { rank: realRank, projectedPoints: realPoints, probabilities: null }, ...overrides });
+    const projCell = (html: string) => /<td class="num projected-points">(.*?)<\/td>/.exec(teamRows(html)[0]!.html)![1]!;
+
+    it("shows a signed Proj change with a real minus sign, green up and red down", () => {
+      const up = projCell(panel([changed({ projectedPoints: 45.2 }, 1, 43.1)]));
+      expect(up).toContain('what-if-change up');
+      expect(text(up)).toContain("+2");
+      const down = projCell(panel([changed({ projectedPoints: 41.2 }, 1, 43.1)]));
+      expect(down).toContain('what-if-change down');
+      expect(text(down)).toContain("−2");
+    });
+
+    it("shows no change when the rounded values match, never +0", () => {
+      const cell = projCell(panel([changed({ projectedPoints: 43.4 }, 1, 42.6)]));
+      expect(cell).not.toContain("what-if-change");
+      expect(text(cell)).toBe("43");
+    });
+
+    it("gives screen readers one phrase and hides the stacked number", () => {
+      const cell = projCell(panel([changed({ projectedPoints: 43 }, 1, 45)]));
+      expect(cell).toContain("43, down 2 from the Real Projection");
+      expect(cell).toMatch(/<small[^>]*aria-hidden="true"/);
+    });
+
+    it("measures Movement against the real projected rank with the new tooltips", () => {
+      const html = panel([
+        changed({ rank: 1, teamId: 1, movement: 0 }, 3, 30),
+        changed({ rank: 2, teamId: 2, movement: 0 }, 1, 30),
+        changed({ rank: 3, teamId: 3, movement: 0 }, 3, 30),
+      ]);
+      expect(html).toContain("Up 2 from the real projected rank");
+      expect(html).toContain("Down 1 from the real projected rank");
+      expect(html).toContain("Same as the real projected rank");
+      expect(html).toContain("Movement against the real projected rank");
+    });
+
+    it("keeps today's Movement text when rows carry no Real Projection", () => {
+      const html = panel([row({ movement: 2 })]);
+      expect(html).toContain("Up 2 from current rank");
+      expect(html).toContain("Movement against current rank");
+      expect(html).not.toContain("what-if-change");
+    });
+
+    it("shows Movement and the Proj change only for Split Form Rate", () => {
+      const html = panel([changed({ projectedPoints: 45, probabilities: null, rankDistribution: null }, 2, 43)], pointsModel);
+      expect(html).toContain("Up 1 from the real projected rank");
+      expect(text(projCell(html))).toContain("+2");
+    });
+
+    describe("chances", () => {
+      const REAL = { playoffs: 0.5, playIn: 0.3, eliminated: 0.15, first: 0.05 };
+      const withChances = (now: Partial<typeof REAL>, real: Partial<typeof REAL> = {}) =>
+        row({
+          probabilities: { ...REAL, ...now },
+          realProjection: { rank: 1, projectedPoints: 30, probabilities: { ...REAL, ...real } },
+        });
+      /** The four % cells of the first team's row. */
+      const pctCells = (html: string) => [...teamRows(html)[0]!.html.matchAll(/<td class="num pct[^"]*">(.*?)<\/td>/g)].map((m) => m[1]!);
+
+      it("shows a signed change under each % column", () => {
+        const cells = pctCells(panel([withChances({ playoffs: 0.64, playIn: 0.2, eliminated: 0.1, first: 0.08 })]));
+        const stacked = cells.map((cell) => /<small[^>]*>(.*?)<\/small>/.exec(cell)![1]);
+        expect(stacked).toEqual(["+14", "−10", "−5", "+3"]);
+      });
+
+      it("shows no change when the printed values match", () => {
+        const cells = pctCells(panel([withChances({ playoffs: 0.501 })]));
+        for (const cell of cells) expect(cell).not.toContain("what-if-change");
+        expect(text(cells[0]!)).toBe("50");
+      });
+
+      it('counts "<1" as 0 and ">99" as 100', () => {
+        const small = pctCells(panel([withChances({ first: 0.03 }, { first: 0.001 })]));
+        expect(text(small[3]!)).toContain("+3");
+        const large = pctCells(panel([withChances({ playoffs: 0.999 }, { playoffs: 0.9992 })]));
+        expect(large[0]).not.toContain("what-if-change");
+        expect(text(large[0]!)).toBe(">99");
+      });
+
+      it("colours by column and direction: Out inverted, PI neutral", () => {
+        const rise = pctCells(panel([withChances({ playoffs: 0.6, playIn: 0.4, eliminated: 0.25, first: 0.15 })]));
+        expect(rise[0]).toContain("what-if-change good");
+        expect(rise[1]).toContain("what-if-change neutral");
+        expect(rise[2]).toContain("what-if-change bad");
+        expect(rise[3]).toContain("what-if-change good");
+        const fall = pctCells(panel([withChances({ playoffs: 0.4, playIn: 0.2, eliminated: 0.05, first: 0.01 })]));
+        expect(fall[0]).toContain("what-if-change bad");
+        expect(fall[1]).toContain("what-if-change neutral");
+        expect(fall[2]).toContain("what-if-change good");
+        expect(fall[3]).toContain("what-if-change bad");
+      });
+
+      it("gives screen readers one phrase and hides the stacked number", () => {
+        const cell = pctCells(panel([withChances({ playoffs: 0.64 })]))[0]!;
+        expect(cell).toContain("64 percent, up 14 from the Real Projection");
+        expect(cell).toMatch(/<small[^>]*aria-hidden="true"/);
+        const down = pctCells(panel([withChances({ eliminated: 0.1 })]))[2]!;
+        expect(down).toContain("10 percent, down 5 from the Real Projection");
+      });
+
+      it("leaves the cells plain without a Real Projection", () => {
+        for (const cell of pctCells(panel([row()]))) expect(cell).not.toContain("what-if-change");
+      });
+    });
+  });
 });

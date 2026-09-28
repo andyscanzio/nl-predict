@@ -602,6 +602,26 @@ tbody th {
   color: var(--amber);
 }
 
+/* The What-If Change from the Real Projection, stacked under the projected Points. */
+.what-if-change {
+  display: block;
+  font: 700 0.7rem/1.1 var(--display);
+}
+
+.what-if-change.up,
+.what-if-change.good {
+  color: var(--up);
+}
+
+.what-if-change.down,
+.what-if-change.bad {
+  color: var(--down);
+}
+
+.what-if-change.neutral {
+  color: var(--muted);
+}
+
 /* Season Simulation percentages: short labels (PO, PI, Out, 1st), spelled out in the legend. */
 .projected .pct {
   padding-left: 0.3rem;

@@ -258,3 +258,27 @@ describe("Season Simulation seeded by Match Day", () => {
     expect(tableAt(eloModel, snapshotAt)).toEqual(tableAt(eloModel, snapshotAt));
   });
 });
+
+describe("simulateSeason: draw layout", () => {
+  const even = { regulationWin: 0.5, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 0.5 };
+  const game = (id: string, homeTeamId: number, awayTeamId: number): Game => ({ id, startsAt: "2026-10-10T19:45:00+02:00", homeTeamId, awayTeamId });
+  const [ab, cd, ef] = [game("ab", 1, 2), game("cd", 3, 4), game("ef", 5, 6)];
+  const outcomes = new Map([["ab", even], ["cd", even], ["ef", even]]);
+  // Teams 1 and 2 are far ahead, so how their Game ends never moves anyone else's rank.
+  const points = new Map([1, 2, 3, 4, 5, 6].map((teamId) => [teamId, teamId <= 2 ? 100 : 0]));
+  const run = (remaining: Game[], layout: Game[]) => simulateSeason(points, remaining, outcomes, 11, 500, layout);
+
+  it("gives a Game the same draw when an earlier Game in the layout is no longer Remaining", () => {
+    const real = run([ab, cd, ef], [ab, cd, ef]);
+    const whatIf = run([cd, ef], [ab, cd, ef]);
+    // Points ties are broken by per-team draws that follow the Game draws, so those match only if the layout is kept.
+    expect(whatIf.get(3)).toEqual(real.get(3));
+    expect(whatIf.get(4)).toEqual(real.get(4));
+    expect(whatIf.get(5)).toEqual(real.get(5));
+    expect(whatIf.get(6)).toEqual(real.get(6));
+  });
+
+  it("is unchanged by a layout equal to the Remaining Games", () => {
+    expect(run([ab, cd], [ab, cd])).toEqual(simulateSeason(points, [ab, cd], outcomes, 11, 500));
+  });
+});

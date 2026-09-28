@@ -116,7 +116,7 @@ A Projection Model's prediction for one Game: the probability of each of the fou
 The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
 
 **Season Simulation**:
-Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. Its random draws are fixed by the latest Match Day with a Played Game as of the As-Of Date and the Projection Model, so projecting again with no new results gives the same numbers.
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. Its random draws are fixed by the latest Match Day with a real Played Game as of the As-Of Date and the Projection Model, one per Remaining Game per run, so projecting again with no new results gives the same numbers.
 _Avoid_: Monte Carlo Model
 
 **Rank Distribution**:
@@ -132,8 +132,15 @@ An outcome a visitor sets for a Game in the Next Round: home or away win, in reg
 _Avoid_: Forced result, pick, prediction
 
 **What-If**:
-The set of What-If Results a visitor currently has; while it is non-empty, the Projected Table and headline show the What-If projection rather than the real one.
+The set of What-If Results a visitor currently has; while it is non-empty, the Projected Table and headline show the What-If projection rather than the Real Projection, and the Projected Table shows each What-If Change.
 _Avoid_: Scenario, simulation (that is the Season Simulation)
+
+**Real Projection**:
+The projection made with no What-If, from real Played Games only.
+
+**What-If Change**:
+How far a team's projected rank, projected Points or a chance moves from the Real Projection to the What-If projection under the same Projection Model. The What-If projection's Season Simulation reuses the Real Projection's random draws, so a team the What-If Results do not reach shows no What-If Change.
+_Avoid_: Delta, impact, swing
 
 **Default Model**:
 The Projection Model a visitor sees unless they pick another.

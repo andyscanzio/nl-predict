@@ -55,7 +55,7 @@ describe("App", () => {
     it("shows the banner with the count and a Reset button, above the Projected Table", () => {
       const html = page(asOf, new Map([[nextRoundIds[0]!, "regulationWin"], [nextRoundIds[1]!, "regulationLoss"]]));
       expect(text(banner(html))).toContain(
-        "What-if: 2 results set. The Projected Table, chances and headline assume them. Reset",
+        "What-if: 2 results set. The Projected Table, chances and headline assume them. The small numbers show the What-If Change from the Real Projection, and ▲▼ compares with the real projected rank. Reset",
       );
       expect(banner(html)).toMatch(/<button[^>]*>\s*Reset\s*<\/button>/);
       expect(html.indexOf("What-if:")).toBeLessThan(html.indexOf("<h2>Projected Table</h2>"));
@@ -93,6 +93,7 @@ describe("App", () => {
     it("shows neither banner nor Reset without a What-If", () => {
       const html = page(asOf);
       expect(html).not.toContain("What-if");
+      expect(html).not.toContain("What-If Change");
       expect(html).not.toContain("Reset");
     });
 

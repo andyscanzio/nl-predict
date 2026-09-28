@@ -83,6 +83,16 @@ export function predictGames(model: ProjectionModel, input: ProjectionModelInput
   return predictions;
 }
 
+/**
+ * A team's place in the Real Projection under the same Projection Model: its projected rank, projected Points, and
+ * Cut Line zone and 1st-place chances (null for Points-only models).
+ */
+export interface RealProjectionRow {
+  rank: number;
+  projectedPoints: number;
+  probabilities: CutLineProbabilities | null;
+}
+
 export interface ProjectedTableRow {
   rank: number;
   teamId: TeamId;
@@ -102,6 +112,11 @@ export interface ProjectedTableRow {
   remainingHomeGames: number;
   remainingAwayGames: number;
   projectedPoints: number;
+  /**
+   * The team's Real Projection rank and projected Points, so the UI can show its What-If Change. Present only when a
+   * non-empty What-If is applied; absent otherwise.
+   */
+  realProjection?: RealProjectionRow;
   /** The team has fewer than LOW_SAMPLE_GAMES Played Games. */
   lowSample: boolean;
   /** Cut Line zone and 1st-place chances from the Season Simulation; null for Points-only models. */
@@ -495,10 +510,21 @@ function whatIfGame(game: Game, outcome: WhatIfOutcome): Game {
  * As-Of Date, model and What-If always give the same numbers, and a refresh with no new results changes nothing.
  *
  * With a What-If, every What-If Result whose Game is in the real Next Round is treated as a Played Game won by one goal,
- * for the Projected Table, Season Simulation and Match Day. The Current Table, integrity issues and the Next Round's
+ * for the Projected Table and Season Simulation. The Match Day and the Season Simulation's random draws stay those of the
+ * Real Projection: a What-If Game skips its draw and never counts toward the seed. The Current Table, integrity issues and the Next Round's
  * Games stay real. Other What-If Results are ignored quietly.
+ *
+ * With a What-If applied, each Projected Table row also carries the team's Real Projection rank and projected Points.
+ * `realProjection` may be the already computed Real Projection for the same Games, As-Of Date and model; when it is
+ * not given, it is computed here.
  */
-export function project(games: Game[], asOf: Date, model: ProjectionModel, whatIf: WhatIf = new Map()): Projection {
+export function project(
+  games: Game[],
+  asOf: Date,
+  model: ProjectionModel,
+  whatIf: WhatIf = new Map(),
+  realProjection?: Projection,
+): Projection {
   const realInput = projectionModelInput(games, asOf);
   const realNextRound = nextRoundOf(realInput.remainingGames, asOf, realInput.currentTable.length);
 
@@ -512,9 +538,10 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
           asOf,
           new Set(applied.keys()),
         );
-  const { currentTable, formWindows, playedGames, remainingGames } = input;
+  if (applied.size === 0 && realProjection) return realProjection;
+  const { currentTable, formWindows, remainingGames } = input;
   const realRanks = new Map(realInput.currentTable.map((row) => [row.teamId, row.rank]));
-  const matchDay = matchDayOf(playedGames);
+  const matchDay = matchDayOf(realInput.playedGames);
 
   const predictions = predictGames(model, input);
   const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
@@ -524,6 +551,16 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
     projectedPoints.set(game.awayTeamId, projectedPoints.get(game.awayTeamId)! + points.away);
   }
 
+  const realRows =
+    applied.size === 0
+      ? null
+      : new Map(
+          (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
+            row.teamId,
+            { rank: row.rank, projectedPoints: row.projectedPoints, probabilities: row.probabilities },
+          ]),
+        );
+
   const simulation =
     model.kind === "outcomes"
       ? simulateSeason(
@@ -531,6 +568,8 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
           remainingGames,
           new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
           simulationSeed(matchDay, model.id),
+          undefined,
+          realInput.remainingGames,
         )
       : null;
 
@@ -556,6 +595,7 @@ export function project(games: Game[], asOf: Date, model: ProjectionModel, whatI
       remainingHomeGames: remainingGames.filter((game) => game.homeTeamId === row.teamId).length,
       remainingAwayGames: remainingGames.filter((game) => game.awayTeamId === row.teamId).length,
       projectedPoints: projected,
+      ...(realRows && { realProjection: realRows.get(row.teamId)! }),
       lowSample: row.gamesPlayed < LOW_SAMPLE_GAMES,
       probabilities: simulation?.get(row.teamId)?.probabilities ?? null,
       rankDistribution: simulation?.get(row.teamId)?.rankDistribution ?? null,
