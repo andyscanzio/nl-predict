@@ -53,9 +53,15 @@ function history(playoffs: number | null = 0.5): ProjectionHistory {
 }
 
 function panel(
-  overrides: { row?: ProjectedTableRow; history?: ProjectionHistory; showProbabilities?: boolean; chartMetric?: ChartMetric } = {},
+  overrides: {
+    row?: ProjectedTableRow;
+    history?: ProjectionHistory;
+    showProbabilities?: boolean;
+    chartMetric?: ChartMetric;
+    whatIfActive?: boolean;
+  } = {},
 ) {
-  const { showProbabilities = true, chartMetric = "playoffs" } = overrides;
+  const { showProbabilities = true, chartMetric = "playoffs", whatIfActive = false } = overrides;
   return render(
     <TeamDetail
       row={overrides.row ?? row()}
@@ -64,6 +70,7 @@ function panel(
       showProbabilities={showProbabilities}
       chartMetric={chartMetric}
       onChartMetricChange={() => {}}
+      whatIfActive={whatIfActive}
     />,
   );
 }
@@ -84,6 +91,24 @@ function formWindows(html: string) {
 }
 
 describe("TeamDetail", () => {
+  describe("Projection History note", () => {
+    const note = "Projection History ignores the What-If.";
+
+    it("says the chart ignores the What-If while one is active, and leaves the chart as it is", () => {
+      const html = panel({ whatIfActive: true });
+      expect(text(html)).toContain(note);
+      expect(html.replace(/<p class="meta history-note">.*?<\/p>/, "")).toBe(panel());
+    });
+
+    it("is absent without a What-If", () => {
+      expect(text(panel())).not.toContain("What-If");
+    });
+
+    it("is absent when the chart itself is not drawn", () => {
+      expect(text(panel({ history: [], whatIfActive: true }))).not.toContain(note);
+    });
+  });
+
   describe("Form Window headings under Split Form Rate", () => {
     it("show each side's rate per Game × Remaining Games", () => {
       const html = panel({ showProbabilities: false, row: row({ homeForm: 1.5, awayForm: 2, remainingHomeGames: 4, remainingAwayGames: 3 }) });

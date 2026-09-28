@@ -42,12 +42,12 @@ function HeadlineSentence({
 }
 
 /** Scrolls the headline like a scoreboard crawl; pauses on hover, focus or the button, and stands still for reduced motion. */
-function Ticker({ children }: { children: ComponentChildren }) {
+function Ticker({ whatIfActive, children }: { whatIfActive: boolean; children: ComponentChildren }) {
   const [paused, setPaused] = useState(false);
   return (
     <section class={paused ? "ticker paused" : "ticker"} aria-label="Projection headline">
       <span class="ticker-tag" aria-hidden="true">
-        Projection
+        {whatIfActive ? "What-if" : "Projection"}
       </span>
       <div class="ticker-rail">
         <div class="ticker-track">
@@ -197,6 +197,8 @@ export function App({
   const snapshotAt = new Date(snapshot.snapshotAt);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
+  // While active, the Projected Table and headline follow the What-If; the Current Table and Projection History stay real.
+  const whatIfActive = appliedWhatIf.size > 0;
   const pickWhatIfResult = (gameId: string, outcome: WhatIfOutcome | undefined) => {
     const next = new Map(appliedWhatIf);
     if (outcome) next.set(gameId, outcome);
@@ -228,17 +230,18 @@ export function App({
         {anyGamesPlayed ? (
           <>
             {headline && (
-              <Ticker>
+              <Ticker whatIfActive={whatIfActive}>
                 <HeadlineSentence headline={headline} modelName={model.name} teamName={teamName} />
               </Ticker>
             )}
-            {appliedWhatIf.size > 0 && (
+            {whatIfActive && (
               <WhatIfBanner count={appliedWhatIf.size} onReset={() => onWhatIfChange(new Map(), "push")} />
             )}
             <ProjectedTable
               rows={projectedTable}
               model={model}
               history={history}
+              whatIfActive={whatIfActive}
               teams={teams}
               onModelChange={onModelChange}
             />
@@ -252,7 +255,7 @@ export function App({
 
             <ModelExplanation model={model} />
 
-            <CurrentTable rows={currentTable} teams={teams} />
+            <CurrentTable rows={currentTable} teams={teams} whatIfActive={whatIfActive} />
           </>
         ) : (
           <section class="panel empty-state">

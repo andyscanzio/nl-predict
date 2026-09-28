@@ -41,7 +41,7 @@ function row(overrides: Partial<ProjectedTableRow> = {}): ProjectedTableRow {
 const history: ProjectionHistory = [];
 
 function panel(rows: ProjectedTableRow[], model: ProjectionModel<ProjectionModelId> = outcomesModel) {
-  return render(<ProjectedTable rows={rows} model={model} history={history} teams={teams} onModelChange={() => {}} />);
+  return render(<ProjectedTable rows={rows} model={model} history={history} whatIfActive={false} teams={teams} onModelChange={() => {}} />);
 }
 
 /** The text a visitor reads, without markup. */

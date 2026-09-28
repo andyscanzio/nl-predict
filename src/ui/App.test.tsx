@@ -77,6 +77,19 @@ describe("App", () => {
       expect(checked.filter((value) => value === "model")).toHaveLength(nextRoundIds.length - 1);
     });
 
+    it("tags the ticker 'What-if' and marks the Current Table as real results", () => {
+      const html = page(asOf, new Map([[nextRoundIds[0]!, "regulationWin"]]));
+      expect(html).toMatch(/<span class="ticker-tag"[^>]*>\s*What-if\s*<\/span>/);
+      expect(html).not.toMatch(/<span class="ticker-tag"[^>]*>\s*Projection\s*<\/span>/);
+      expect(headings(html).at(-1)).toBe("Current Table (real results)");
+    });
+
+    it("keeps the ticker tag and Current Table heading as they are without a What-If", () => {
+      const html = page(asOf);
+      expect(html).toMatch(/<span class="ticker-tag"[^>]*>\s*Projection\s*<\/span>/);
+      expect(headings(html).at(-1)).toBe("Current Table");
+    });
+
     it("shows neither banner nor Reset without a What-If", () => {
       const html = page(asOf);
       expect(html).not.toContain("What-if");
@@ -87,6 +100,7 @@ describe("App", () => {
       const played = snapshot.games.find((game) => game.result)!;
       const html = page(asOf, new Map([[played.id, "regulationWin"], ["no-such-game", "regulationLoss"]]));
       expect(html).not.toContain("What-if");
+      expect(html).not.toContain("real results");
       expect(html).not.toContain("Reset");
       expect(html).toBe(page(asOf));
     });

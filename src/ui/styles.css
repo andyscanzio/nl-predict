@@ -885,6 +885,10 @@ tbody th {
   margin: 0;
 }
 
+.history-note {
+  margin: 0.25rem 0 0;
+}
+
 .history-toggle {
   display: flex;
   border: 1px solid var(--line);
