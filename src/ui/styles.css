@@ -353,7 +353,8 @@ body {
   line-height: 1.3;
 }
 
-.model-options label:hover .model-name {
+/* Only unpicked options: the picked one is already amber, so an amber name would vanish into it. */
+.model-options label:hover input:not(:checked) + span .model-name {
   color: var(--amber);
 }
 
