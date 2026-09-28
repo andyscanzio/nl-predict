@@ -24,6 +24,14 @@ A Game with a final score, including results still awaiting official confirmatio
 **Remaining Game**:
 Any Regular Season Game that is not a Played Game, regardless of its scheduled date (postponed Games stay Remaining). Played + Remaining always equals 52 per team.
 
+**Upcoming Game**:
+A Remaining Game scheduled to start after the As-Of Date. Remaining Games whose start has passed (in progress, awaiting a result, or postponed without a new date) are not Upcoming.
+_Avoid_: Next game, fixture
+
+**Next Round**:
+The Upcoming Games on the earliest match day plus each following match day, whole, until at least one full round's worth of Games (half the teams) is included, or none are left.
+_Avoid_: Match day (when more than one day is meant), gameweek
+
 **Decision**:
 How a played Game ended: in regulation, in overtime (OT), or in a shootout (SO).
 _Avoid_: Result type
