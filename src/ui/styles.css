@@ -1115,7 +1115,7 @@ tbody th {
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--text);
+  background: var(--fg);
 }
 
 .rank-bar-rank {
