@@ -9,7 +9,7 @@ import {
 } from "./form.ts";
 import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
 import { cutLineFor, type CutLine } from "./cutLines.ts";
-import { simulateSeason, simulationSeed, type CutLineProbabilities } from "./seasonSimulation.ts";
+import { simulateSeason, simulationSeed, type CutLineProbabilities, type OutcomeSampler } from "./seasonSimulation.ts";
 import { swissCalendarDay } from "./swissDay.ts";
 import type { Game, TeamId } from "./types.ts";
 
@@ -50,6 +50,12 @@ export type ProjectionModel<Id extends string = string> =
       kind: "outcomes";
       /** Outcome Probabilities for every Remaining Game, by Game id. */
       predictOutcomes(input: ProjectionModelInput): Map<string, OutcomeProbabilities>;
+      /**
+       * Optional: a sampler of each Season Simulation run's own Outcome Probabilities for the Remaining Games, in their
+       * order, spread around predictOutcomes' by the model's uncertainty about the teams (ADR 0005). Without it, every
+       * run plays the Games from predictOutcomes'.
+       */
+      sampleOutcomes?(input: ProjectionModelInput): OutcomeSampler;
     }
   | {
       /** Stable identifier, e.g. for seeding the Season Simulation. */
@@ -576,6 +582,7 @@ export function project(
           simulationSeed(matchDay, model.id),
           undefined,
           realInput.remainingGames,
+          model.sampleOutcomes?.(input),
         )
       : null;
 

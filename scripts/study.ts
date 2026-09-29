@@ -24,7 +24,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { backTest, gameBriers } from "../src/domain/backTest.ts";
-import { eloModel } from "../src/domain/eloModel.ts";
+import { eloModelFor } from "../src/domain/eloModel.ts";
 import { createMatchupModel, leagueHomePointsPerGame } from "../src/domain/matchupModel.ts";
 import { LEAGUE_AVERAGE_POINTS_PER_GAME } from "../src/domain/outcomes.ts";
 import { projectionModelInput } from "../src/domain/project.ts";
@@ -32,6 +32,7 @@ import { seasonLabel } from "../src/domain/season.ts";
 import { createSeasonRate } from "../src/domain/seasonRate.ts";
 import { seasonSimulationBackTest, type OutcomesProjectionModel, type SeasonSimulationScore } from "../src/domain/seasonBackTest.ts";
 import type { Snapshot, TeamId } from "../src/domain/types.ts";
+import { pairedUncertainty, type Uncertainty } from "./studyStats.ts";
 
 const { values } = parseArgs({
   options: {
@@ -67,8 +68,9 @@ for (const season of seasons) {
 }
 
 // The Elo Model, Season Rate and the Matchup Model all give Outcome Probabilities; the constructors are typed as any Projection Model.
-const elo = eloModel as OutcomesProjectionModel;
-const eloName = elo.name;
+// A past Season has no Starting Ratings, so the Elo Model starts it level (eloModelFor).
+const elo = (season: number) => eloModelFor(season) as OutcomesProjectionModel;
+const eloName = elo(seasons[0]!).name;
 
 /** A model to score on a Season: the Matchup Model's home Points per Game comes from the other Seasons, so it depends on the Season. */
 type ModelFor = (season: number) => OutcomesProjectionModel;
@@ -118,7 +120,7 @@ const unshrunkMatchupModel = createMatchupModel({ priorGames: 0, homePointsPerGa
 /** The unshrunk model: m = 0 of Season Rate, or of the Matchup Model. */
 const unshrunkName = (matchupStudy ? matchupFamilies[0]! : seasonRateFamily).nameOf(0);
 const families = matchupStudy ? [seasonRateFamily, ...matchupFamilies] : [seasonRateFamily];
-const modelsOf = (ms: readonly number[]): ModelFor[] => [...families.flatMap((family) => ms.map(family.modelFor)), () => elo];
+const modelsOf = (ms: readonly number[]): ModelFor[] => [...families.flatMap((family) => ms.map(family.modelFor)), elo];
 /** Every name of the grid's models, once (the Matchup Model's m = 0 is shared), without the Elo Model. */
 const namesOf = (ms: readonly number[]) => [...new Set(families.flatMap((family) => ms.map(family.nameOf)))];
 
@@ -216,18 +218,6 @@ function leaveOneSeasonOut(scores: Map<number, Map<string, SeasonScore>>, metric
   );
 }
 
-/** A seeded generator (mulberry32) so the report is reproducible. */
-function seededRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32;
-  };
-}
-
 const UNCERTAINTY_METRICS = [
   ["brier", "per-Game Brier"],
   ["rps", "Rank RPS"],
@@ -257,63 +247,12 @@ function teamSeasons(variant: Variant, metric: MetricName): Map<string, TeamSeas
   return units;
 }
 
-interface Uncertainty {
-  /** Challenger minus baseline, pooled over team-seasons; negative means the challenger is better. */
-  diff: number;
-  /** Baseline's pooled score, for the relative difference. */
-  baseline: number;
-  /** 95% percentile interval of the cluster bootstrap over team-seasons. */
-  low: number;
-  high: number;
-  /** Two-sided sign-flip test over the team-seasons' differences. */
-  p: number;
-  /** Seasons where the challenger's pooled difference is negative. */
-  seasonsBetter: number;
-  /** Two-sided exact sign-flip test over the Seasons' differences: it cannot go below 2 / 2^(Seasons). */
-  seasonP: number;
-}
-
 /** Differences of every team-season (challenger minus baseline), each with its Season. */
 function uncertainty(challenger: Variant, baseline: Variant, metric: MetricName, seed: number): Uncertainty {
   const challengerUnits = teamSeasons(challenger, metric);
   const baselineUnits = teamSeasons(baseline, metric);
   const diffs = [...challengerUnits].map(([key, { season, value }]) => ({ season, diff: value - baselineUnits.get(key)!.value }));
-  const values = diffs.map(({ diff }) => diff);
-  const n = values.length;
-  const observed = mean(values);
-  const next = seededRandom(seed);
-
-  // Cluster bootstrap: resample whole team-seasons, since one team's forecasts share a final rank and a schedule.
-  const boot = Array.from({ length: resamples }, () => {
-    let sum = 0;
-    for (let i = 0; i < n; i++) sum += values[Math.floor(next() * n)]!;
-    return sum / n;
-  }).sort((a, b) => a - b);
-
-  // Sign-flip: under "no difference" each team-season's difference is as likely to have the other sign.
-  let extreme = 0;
-  for (let i = 0; i < SIGN_FLIPS; i++) {
-    let sum = 0;
-    for (const value of values) sum += next() < 0.5 ? -value : value;
-    if (Math.abs(sum / n) >= Math.abs(observed) - 1e-12) extreme++;
-  }
-
-  const seasonDiffs = seasons.map((season) => mean(diffs.filter((d) => d.season === season).map((d) => d.diff)));
-  let seasonExtreme = 0;
-  for (let flips = 0; flips < 2 ** seasons.length; flips++) {
-    const sum = seasonDiffs.reduce((acc, diff, i) => acc + (flips & (1 << i) ? -diff : diff), 0);
-    if (Math.abs(sum / seasons.length) >= Math.abs(mean(seasonDiffs)) - 1e-12) seasonExtreme++;
-  }
-
-  return {
-    diff: observed,
-    baseline: mean([...baselineUnits.values()].map(({ value }) => value)),
-    low: boot[Math.floor(0.025 * resamples)]!,
-    high: boot[Math.ceil(0.975 * resamples) - 1]!,
-    p: (extreme + 1) / (SIGN_FLIPS + 1),
-    seasonsBetter: seasonDiffs.filter((diff) => diff < 0).length,
-    seasonP: seasonExtreme / 2 ** seasons.length,
-  };
+  return pairedUncertainty(diffs, mean([...baselineUnits.values()].map(({ value }) => value)), seasons, { resamples, signFlips: SIGN_FLIPS, seed });
 }
 
 const lines: string[] = [];

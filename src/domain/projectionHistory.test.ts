@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eloModel } from "./eloModel.ts";
+import { eloModel, STARTING_RATINGS } from "./eloModel.ts";
 import { matchupModel } from "./matchupModel.ts";
 import { project, SEASON_START, type ProjectionModel } from "./project.ts";
 import { projectionHistory } from "./projectionHistory.ts";
@@ -19,17 +19,23 @@ const histories = new Map(MODELS.map((model) => [model.id, projectionHistory(sna
 const historyOf = (model: ProjectionModel) => histories.get(model.id)!;
 
 describe("projectionHistory", () => {
-  it("starts before the first Game with every team level and nothing played", () => {
+  it("starts before the first Game with nothing played, every team level but under the Elo Model's Starting Ratings", () => {
     const [start] = historyOf(eloModel);
     expect(start!.matchDay).toBe(SEASON_START);
     const teams = Object.values(start!.teams);
     expect(teams).toHaveLength(snapshot.teams.length);
     expect(teams.every((team) => team.gamesPlayed === 0)).toBe(true);
-    for (const model of MODELS) {
+    for (const model of MODELS.filter((model) => model !== eloModel)) {
       const [first] = historyOf(model);
       const points = Object.values(first!.teams).map((team) => team.projectedPoints);
       expect(points.every((p) => Math.abs(p - points[0]!) < 1e-9)).toBe(true);
     }
+    const byStartingRating = [...STARTING_RATINGS.ratings].sort((a, b) => b.rating - a.rating).map(({ teamId }) => teamId);
+    const byProjectedPoints = Object.entries(start!.teams)
+      .sort(([, a], [, b]) => b.projectedPoints - a.projectedPoints)
+      .map(([teamId]) => Number(teamId));
+    expect(byProjectedPoints[0]).toBe(byStartingRating[0]);
+    expect(byProjectedPoints.at(-1)).toBe(byStartingRating.at(-1));
   });
 
   it("has one point per Match Day with a Played Game, oldest first", () => {

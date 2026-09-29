@@ -1,0 +1,84 @@
+{
+  "season": 2026,
+  "fromSeasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "k": 10,
+  "homeAdvantage": 60,
+  "carryOver": 1,
+  "ratings": [
+    {
+      "teamId": 101151,
+      "acronym": "HCD",
+      "rating": 1603
+    },
+    {
+      "teamId": 103138,
+      "acronym": "FRI",
+      "rating": 1578.3
+    },
+    {
+      "teamId": 101139,
+      "acronym": "ZSC",
+      "rating": 1563.5
+    },
+    {
+      "teamId": 103141,
+      "acronym": "LHC",
+      "rating": 1537.2
+    },
+    {
+      "teamId": 103140,
+      "acronym": "GSHC",
+      "rating": 1527.2
+    },
+    {
+      "teamId": 101150,
+      "acronym": "HCL",
+      "rating": 1514.2
+    },
+    {
+      "teamId": 101144,
+      "acronym": "EVZ",
+      "rating": 1502.6
+    },
+    {
+      "teamId": 101060,
+      "acronym": "SCRJ",
+      "rating": 1496.4
+    },
+    {
+      "teamId": 102126,
+      "acronym": "SCB",
+      "rating": 1496
+    },
+    {
+      "teamId": 102128,
+      "acronym": "EHCB",
+      "rating": 1471.8
+    },
+    {
+      "teamId": 101149,
+      "acronym": "EHCK",
+      "rating": 1453.2
+    },
+    {
+      "teamId": 102127,
+      "acronym": "SCL",
+      "rating": 1451.9
+    },
+    {
+      "teamId": 101152,
+      "acronym": "HCAP",
+      "rating": 1451.6
+    },
+    {
+      "teamId": 103144,
+      "acronym": "HCA",
+      "rating": 1353.3
+    }
+  ]
+}

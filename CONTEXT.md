@@ -108,7 +108,15 @@ The baseline Projection Model: each team keeps earning its Points per Game over 
 A Projection Model that keeps a Rating per team, updated after every Played Game by the share of its 3 Points each team took against the share its Rating and Home Advantage expected, and predicts each Game's expected Points share from the two Ratings plus Home Advantage, turned into Outcome Probabilities with the OT/SO Rate.
 
 **Rating**:
-An Elo Model's running estimate of a team's strength; every team starts the Season level.
+An Elo Model's running estimate of a team's strength, starting each Season from its Starting Rating.
+
+**Starting Rating**:
+A team's Rating before its first Game of a Season: its Rating at the end of the previous Season, carried over in full, with a promoted team taking over the Starting Rating of the team it replaces (the league average on an expansion).
+_Avoid_: Seed, seeding (the Season Simulation's random draws are seeded), initial rating
+
+**Rating Uncertainty**:
+How far an Elo Model's Ratings may be off, in Rating points: each Season Simulation run moves every team's Rating by its own random draw of that spread before playing out the Remaining Games, so the Rank Distributions allow for the Ratings being estimates.
+_Avoid_: Noise, hot simulation (Ratings updated inside each run, a different idea)
 
 **Home Advantage**:
 The Rating bonus an Elo Model gives the home team when predicting a Game, and when judging a Played Game to update Ratings.
@@ -120,7 +128,7 @@ A Projection Model's prediction for one Game: the probability of each of the fou
 The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
 
 **Season Simulation**:
-Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. Its random draws are fixed by the latest Match Day with a real Played Game as of the As-Of Date and the Projection Model, one per Remaining Game per run, so projecting again with no new results gives the same numbers.
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. A model may give each run its own Outcome Probabilities, as the Elo Model does with Rating Uncertainty. Its random draws are fixed by the latest Match Day with a real Played Game as of the As-Of Date and the Projection Model, one per Remaining Game per run, so projecting again with no new results gives the same numbers.
 _Avoid_: Monte Carlo Model
 
 **Rank Distribution**:
