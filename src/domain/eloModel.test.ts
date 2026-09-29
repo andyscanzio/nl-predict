@@ -192,6 +192,53 @@ describe("Elo Model: Rating Uncertainty", () => {
   });
 });
 
+describe("Elo Model: Rating Uncertainty shrinking with Played Games", () => {
+  // Teams 1 and 2 have played `n` Games against each other; teams 3 and 4 none. Game 1 v 2 and 3 v 4 remain.
+  const inputAfter = (n: number) =>
+    projectionModelInput(
+      [...Array.from({ length: n }, () => played(1, 2, 1, 1, "OT")), played(5, 6, 1, 0), scheduled(1, 2), scheduled(3, 4)],
+      asOf,
+    );
+  type EloModel = ReturnType<typeof createEloModel>;
+  const sampledHomePoints = (model: EloModel, n: number) => {
+    if (model.kind !== "outcomes") throw new Error("the Elo Model gives Outcome Probabilities");
+    const sample = model.sampleOutcomes!(inputAfter(n));
+    const random = seededRandom(11);
+    return Array.from({ length: 6000 }, () => sample(random).map((o) => expectedPointsOf(o).home));
+  };
+  const variance = (values: number[]) => {
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    return values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+  };
+  const base = { k: 0, homeAdvantage: 0, ratingUncertainty: 60 };
+
+  it("draws exactly as constant σ without n₀ and with n₀ = ∞", () => {
+    const draws = (model: EloModel) => sampledHomePoints(model, 20);
+    expect(draws(createEloModel({ ...base, ratingUncertaintyHalfLife: Infinity }))).toEqual(draws(createEloModel(base)));
+  });
+
+  it("narrows the spread of a team with many Played Games and keeps that of a team with none", () => {
+    const constant = sampledHomePoints(createEloModel(base), 20);
+    const shrinking = sampledHomePoints(createEloModel({ ...base, ratingUncertaintyHalfLife: 20 }), 20);
+    // Game 0 is 1 v 2 (20 Played Games each): narrower. Game 1 is 3 v 4 (none): the same.
+    expect(variance(shrinking.map((run) => run[0]!))).toBeLessThan(0.7 * variance(constant.map((run) => run[0]!)));
+    expect(shrinking.map((run) => run[1])).toEqual(constant.map((run) => run[1]));
+  });
+
+  it("follows σ₀·√(n₀/(n₀+n)): the Rating-gap spread is σ₀/√2 at n = n₀", () => {
+    // Near-linear: expected home Points ≈ 1.5 + 3·gap·ln10/1600 for a small gap, so the spread of the gap scales it.
+    const sd = (model: ReturnType<typeof createEloModel>, n: number) => Math.sqrt(variance(sampledHomePoints(model, n).map((run) => run[0]!)));
+    const tiny = { k: 0, homeAdvantage: 0, ratingUncertainty: 1 };
+    const constant = sd(createEloModel(tiny), 0);
+    expect(sd(createEloModel({ ...tiny, ratingUncertaintyHalfLife: 20 }), 20) / constant).toBeCloseTo(1 / Math.SQRT2, 1);
+  });
+
+  it("has no sampler at σ₀ of 0 or left out, whatever n₀ is", () => {
+    expect("sampleOutcomes" in createEloModel({ k: 30, homeAdvantage: 0, ratingUncertaintyHalfLife: 20 })).toBe(false);
+    expect("sampleOutcomes" in createEloModel({ k: 30, homeAdvantage: 0, ratingUncertainty: 0, ratingUncertaintyHalfLife: 20 })).toBe(false);
+  });
+});
+
 describe("Elo Model: committed Starting Ratings", () => {
   it("were carried with the shipped K, Home Advantage and carry-over", () => {
     expect([STARTING_RATINGS.k, STARTING_RATINGS.homeAdvantage, STARTING_RATINGS.carryOver]).toEqual([ELO_K, ELO_HOME_ADVANTAGE, ELO_CARRY_OVER]);

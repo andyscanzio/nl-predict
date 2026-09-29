@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { project, type Projection, type ProjectionModel, type WhatIfOutcome } from "./project.ts";
+import { createEloModel } from "./eloModel.ts";
 import { PROJECTION_MODELS } from "./projectionModels.ts";
 import type { Decision, Game, Snapshot } from "./types.ts";
 import recordedSnapshot from "./__fixtures__/snapshot-2026-09-27.json";
@@ -208,4 +209,19 @@ describe("project with a What-If", () => {
       });
     });
   }
+});
+
+describe("What-If with the Elo Model's Rating Uncertainty shrinking with Played Games", () => {
+  const model = createEloModel({ k: 10, homeAdvantage: 60, ratingUncertainty: 50, ratingUncertaintyHalfLife: 20 });
+  const rankDistributions = (projection: Projection) =>
+    new Map(projection.projectedTable.map((row) => [row.teamId, JSON.stringify(row.rankDistribution)]));
+
+  it("changes the teams the What-If Result reaches and no unrelated team", () => {
+    const game = firstGame(model);
+    const realRows = rankDistributions(real(model));
+    const changed = [...rankDistributions(project(snapshot.games, asOf, model, new Map([[game.id, "regulationWin"]])))]
+      .filter(([teamId, distribution]) => distribution !== realRows.get(teamId))
+      .map(([teamId]) => teamId);
+    expect(changed).toEqual(expect.arrayContaining([game.homeTeamId, game.awayTeamId]));
+  });
 });
