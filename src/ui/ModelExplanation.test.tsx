@@ -37,7 +37,7 @@ describe("ModelExplanation", () => {
   it("gives each model its own explanation", () => {
     const explanations = PROJECTION_MODELS.map((model) => text(panel(model)));
     expect(new Set(explanations).size).toBe(PROJECTION_MODELS.length);
-    expect(text(panel(PROJECTION_MODELS.find((model) => model.id === "elo")!))).toContain("Every team starts the season on a rating of");
+    expect(text(panel(PROJECTION_MODELS.find((model) => model.id === "elo")!))).toContain("Every team starts the season on the rating it ended last season with");
     const seasonRateText = text(panel(PROJECTION_MODELS.find((model) => model.id === "season-rate")!));
     expect(seasonRateText).toContain(`as if it had also played ${SEASON_RATE_PRIOR_GAMES} games at the league-average 1.5`);
     expect(seasonRateText).not.toContain("no played games");

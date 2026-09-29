@@ -33,7 +33,7 @@ export function simulationSeed(matchDay: string, modelId: string): number {
 }
 
 /** Mulberry32: a small, fast seeded generator of uniform numbers in [0, 1). */
-function seededRandom(seed: number): () => number {
+export function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -44,6 +44,15 @@ function seededRandom(seed: number): () => number {
   };
 }
 
+/** Mixed into the seed for the second generator, the one `sampleOutcomes` draws from. */
+const SAMPLE_SEED_MIX = 0x9e3779b9;
+
+/**
+ * One Season Simulation run's Outcome Probabilities for the Remaining Games, in their order, drawn with `random` (see
+ * ProjectionModel.sampleOutcomes, ADR 0005).
+ */
+export type OutcomeSampler = (random: () => number) => readonly OutcomeProbabilities[];
+
 /**
  * Season Simulation: plays out every Remaining Game `runs` times (SIMULATION_RUNS unless given) by sampling its Outcome Probabilities, adds the Points
  * to each team's current Points, and ranks each simulated Season with final ties broken at random.
@@ -51,6 +60,10 @@ function seededRandom(seed: number): () => number {
  * Each run draws one number per Game of `drawLayout` (the real Remaining Games; `remainingGames` unless given), in that order, then one per team
  * for the final ties. A Game of `remainingGames` takes the draw at its place in the layout; a layout Game not in `remainingGames` (it has a What-If
  * Result) has its draw skipped, so every other Game draws what it draws in the Real Projection.
+ *
+ * With `sampleOutcomes`, each run first takes its own Outcome Probabilities from it instead of `outcomes`. The sampler
+ * draws from a second generator, seeded from `seed`, so the Games' and ties' draws stay exactly those without it, and a
+ * What-If leaves the sampler's draws unchanged too.
  */
 export function simulateSeason(
   currentPoints: ReadonlyMap<TeamId, number>,
@@ -59,6 +72,7 @@ export function simulateSeason(
   seed: number,
   runs: number = SIMULATION_RUNS,
   drawLayout: readonly Game[] = remainingGames,
+  sampleOutcomes?: OutcomeSampler,
 ): Map<TeamId, SimulationResult> {
   const teamIds = [...currentPoints.keys()];
   const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
@@ -72,21 +86,25 @@ export function simulateSeason(
   const homes = new Int32Array(remainingGames.length);
   const aways = new Int32Array(remainingGames.length);
   const thresholds = new Float64Array(remainingGames.length * 3);
-  remainingGames.forEach((game, g) => {
-    const { regulationWin, overtimeOrShootoutWin, overtimeOrShootoutLoss } = outcomes.get(game.id)!;
-    homes[g] = indexOf.get(game.homeTeamId)!;
-    aways[g] = indexOf.get(game.awayTeamId)!;
+  const setThresholds = (g: number, { regulationWin, overtimeOrShootoutWin, overtimeOrShootoutLoss }: OutcomeProbabilities) => {
     thresholds[3 * g] = regulationWin;
     thresholds[3 * g + 1] = regulationWin + overtimeOrShootoutWin;
     thresholds[3 * g + 2] = regulationWin + overtimeOrShootoutWin + overtimeOrShootoutLoss;
+  };
+  remainingGames.forEach((game, g) => {
+    homes[g] = indexOf.get(game.homeTeamId)!;
+    aways[g] = indexOf.get(game.awayTeamId)!;
+    setThresholds(g, outcomes.get(game.id)!);
   });
 
   const random = seededRandom(seed);
+  const sampleRandom = seededRandom(seed ^ SAMPLE_SEED_MIX);
   const points = new Float64Array(teams);
   const order = teamIds.map((_, index) => index);
   const rankCounts = teamIds.map(() => new Int32Array(teams));
 
   for (let run = 0; run < runs; run++) {
+    if (sampleOutcomes) sampleOutcomes(sampleRandom).forEach((sampled, g) => setThresholds(g, sampled));
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
     for (let d = 0; d < draws.length; d++) draws[d] = random();
     for (let g = 0; g < remainingGames.length; g++) {

@@ -62,6 +62,8 @@ export function seasonSimulationBackTest(
         new Map(input.remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
         simulationSeed(matchDay, model.id),
         runs,
+        undefined,
+        model.sampleOutcomes?.(input),
       );
       return input.currentTable.map(({ teamId, gamesPlayed }): SeasonSimulationScore => {
         const { probabilities, rankDistribution } = simulation.get(teamId)!;

@@ -282,3 +282,38 @@ describe("simulateSeason: draw layout", () => {
     expect(run([ab, cd], [ab, cd])).toEqual(simulateSeason(points, [ab, cd], outcomes, 11, 500));
   });
 });
+
+describe("simulateSeason: sampled Outcome Probabilities", () => {
+  const even = { regulationWin: 0.5, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 0.5 };
+  const game = (id: string, homeTeamId: number, awayTeamId: number): Game => ({ id, startsAt: "2026-10-10T19:45:00+02:00", homeTeamId, awayTeamId });
+  const games = [game("ab", 1, 2), game("cd", 3, 4), game("ac", 1, 3)];
+  const outcomes = new Map(games.map((g) => [g.id, even]));
+  const points = new Map([1, 2, 3, 4].map((teamId) => [teamId, 0]));
+
+  it("leaves the Games' and ties' draws as they are without a sampler, whatever the sampler draws", () => {
+    let calls = 0;
+    const sampler = (random: () => number) => {
+      calls++;
+      random();
+      random();
+      return games.map(() => even);
+    };
+    expect(simulateSeason(points, games, outcomes, 11, 500, games, sampler)).toEqual(simulateSeason(points, games, outcomes, 11, 500));
+    expect(calls).toBe(500);
+  });
+
+  it("plays each run from the sampler's Outcome Probabilities", () => {
+    const homeWins = { regulationWin: 1, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 0 };
+    const awayWins = { regulationWin: 0, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0, regulationLoss: 1 };
+    // Half the runs, by the sampler's own draw, team 1 wins both its Games; the other half it loses both.
+    const sampler = (random: () => number) => {
+      const first = random() < 0.5;
+      return games.map((g) => (g.homeTeamId === 1 ? (first ? homeWins : awayWins) : even));
+    };
+    const result = simulateSeason(points, games, outcomes, 11, 2000, games, sampler);
+    const { rankDistribution } = result.get(1)!;
+    expect(rankDistribution[0]).toBeGreaterThan(0.4);
+    expect(rankDistribution[0]).toBeLessThan(0.6);
+    expect(rankDistribution[0]! + rankDistribution[2]! + rankDistribution[3]!).toBeCloseTo(1, 12);
+  });
+});
