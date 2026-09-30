@@ -10,7 +10,12 @@ A Projection Model with Outcome Probabilities may now also give a sampler (`samp
 
 - **Lower the carry-over share instead**: rejected. It would give up per-Game accuracy to hide a flaw in the simulation.
 - **Hot simulation** (update Ratings with K inside each run): rejected. The earlier hot-simulation study (#41) found it no better for the Elo Model. Its spread also comes from K, not from how far the Ratings may be off.
-- **A σ that shrinks with Games played**: deferred to #102. A constant σ leaves the carry-over slightly underconfident late in the Season, but that costs little Rank RPS, and the extra parameter would be tuned on three Seasons.
+- **A σ that shrinks with Games played**: rejected (#102). A team's σ would fall with its own Played Games n as σ₀·√(n₀/(n₀+n)). The Starting Rating study tuned σ₀ over 0–150 and n₀ over {4, 8, 13, 26, 52, 104, ∞} per fold and compared the shrinking σ with a constant σ re-tuned over the same σ₀ range (#106). The ship rule, agreed before running, required a better pooled Rank RPS and a better Rank RPS in at least 2 of the 3 test Seasons. The shrinking σ did neither:
+  - Pooled Rank RPS was 0.0823 against 0.0821.
+  - Per Season, 2023/24, 2024/25 and 2025/26 scored 0.0830, 0.0890 and 0.0744 against 0.0830, 0.0884 and 0.0744.
+  - The pooled difference was +0.0002, with a paired 95% cluster-bootstrap interval of −0.0001 to +0.0005.
+  
+  It did bring late-Season outer tenths closer to Level + σ (13.5% against 11.6% at Games 27–39), but at no gain in Rank RPS or Cut Line Brier. `createEloModel` keeps the option (`ratingUncertaintyHalfLife`), off by default, and the site's Elo Model stays at a constant σ = 50.
 
 ## Consequences
 

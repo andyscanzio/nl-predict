@@ -19,6 +19,11 @@ export interface EloParameters {
    * N(0, σ) before playing out the Remaining Games (ADR 0005). None when omitted or 0.
    */
   ratingUncertainty?: number;
+  /**
+   * The Played Games at which a team's σ has fallen to σ₀/√2: its σ is σ₀·√(n₀/(n₀+n)) after n Played Games, with no
+   * floor. Constant σ when omitted or ∞.
+   */
+  ratingUncertaintyHalfLife?: number;
 }
 
 /** A standard normal draw (Box–Muller) from two uniform draws. */
@@ -81,7 +86,7 @@ export function eloRatings(
  * Ratings moved by its own draws.
  */
 export function createEloModel(parameters: EloParameters): ProjectionModel<"elo"> {
-  const { homeAdvantage, ratingUncertainty = 0 } = parameters;
+  const { homeAdvantage, ratingUncertainty = 0, ratingUncertaintyHalfLife = Infinity } = parameters;
   return {
     id: "elo",
     name: "Elo Model",
@@ -106,10 +111,22 @@ export function createEloModel(parameters: EloParameters): ProjectionModel<"elo"
         const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
         const homes = remainingGames.map((game) => indexOf.get(game.homeTeamId)!);
         const aways = remainingGames.map((game) => indexOf.get(game.awayTeamId)!);
+        const playedCounts = new Map<TeamId, number>();
+        for (const game of playedGames) {
+          playedCounts.set(game.homeTeamId, (playedCounts.get(game.homeTeamId) ?? 0) + 1);
+          playedCounts.set(game.awayTeamId, (playedCounts.get(game.awayTeamId) ?? 0) + 1);
+        }
+        // Each team's σ(n) = σ₀·√(n₀/(n₀+n)); exactly σ₀ at n₀ = ∞.
+        const sigmas = teamIds.map((teamId) => {
+          const n = playedCounts.get(teamId) ?? 0;
+          return Number.isFinite(ratingUncertaintyHalfLife)
+            ? ratingUncertainty * Math.sqrt(ratingUncertaintyHalfLife / (ratingUncertaintyHalfLife + n))
+            : ratingUncertainty;
+        });
         const runRatings = new Float64Array(teamIds.length);
         return (random) => {
           // One draw per team, in Current Table order.
-          teamIds.forEach((teamId, t) => (runRatings[t] = ratings.get(teamId)! + ratingUncertainty * standardNormal(random)));
+          teamIds.forEach((teamId, t) => (runRatings[t] = ratings.get(teamId)! + sigmas[t]! * standardNormal(random)));
           return remainingGames.map((_, g) =>
             outcomesFromExpectedPoints(3 * expectedHomeScore(runRatings[homes[g]!]!, runRatings[aways[g]!]!, homeAdvantage), otsoRate),
           );
