@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "snapshotAt": "2026-09-28T00:18:57.259Z",
+ "snapshotAt": "2026-09-30T01:07:17.745Z",
  "teams": [
   {
    "id": 102128,
@@ -496,43 +496,78 @@
    "id": "20271105000043",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 103144,
-   "awayTeamId": 103141
+   "awayTeamId": 103141,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000044",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 101152,
-   "awayTeamId": 101151
+   "awayTeamId": 101151,
+   "result": {
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000045",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 103138,
-   "awayTeamId": 102126
+   "awayTeamId": 102126,
+   "result": {
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000046",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 103140,
-   "awayTeamId": 101149
+   "awayTeamId": 101149,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000047",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 101060,
-   "awayTeamId": 101144
+   "awayTeamId": 101144,
+   "result": {
+    "homeGoals": 2,
+    "awayGoals": 5,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000048",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 102127,
-   "awayTeamId": 101150
+   "awayTeamId": 101150,
+   "result": {
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000049",
    "startsAt": "2026-09-29T19:45:00+02:00",
    "homeTeamId": 101139,
-   "awayTeamId": 102128
+   "awayTeamId": 102128,
+   "result": {
+    "homeGoals": 6,
+    "awayGoals": 3,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000067",
