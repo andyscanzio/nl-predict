@@ -76,6 +76,8 @@ docs/adr/       architecture decision records
 
 The page shows when the snapshot was last changed.
 
+Visits are counted with [GoatCounter](https://www.goatcounter.com/), without cookies or personal data. To keep your own browser out of the counts, open <https://andyscanzio.github.io/nl-predict/#toggle-goatcounter> once.
+
 ## Disclaimer
 
 A hobby project, not affiliated with the National League or the SIHF. Results data comes from the unofficial SIHF data API.
