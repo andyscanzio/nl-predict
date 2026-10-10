@@ -11,7 +11,7 @@ One National League campaign spanning two calendar years (e.g. 2026/27), identif
 _Avoid_: Year, campaign
 
 **Regular Season**:
-The 52-game-per-team phase of a Season whose final table is what we project; playoffs are out of scope.
+The 52-game-per-team phase of a Season whose final table is what we project, and which seeds the Post-Season.
 _Avoid_: Qualification, league phase
 
 **Game**:
@@ -42,6 +42,34 @@ _Avoid_: Result type
 
 **Points**:
 Table points earned from a Game: 3 for a regulation win, 2 for an OT/SO win, 1 for an OT/SO loss, 0 for a regulation loss. Every Game hands out exactly 3 Points between its two teams.
+
+### Post-Season
+
+**Post-Season**:
+The Play-In and the Playoffs that follow the Regular Season. Ranks 11–14 (Playouts, relegation) are out of scope.
+_Avoid_: Playoffs (when the Play-In is meant too)
+
+**Play-In**:
+The two-round contest among Regular Season ranks 7–10 for the last two Playoff places: 7 v 8 (the winner qualifies) and 9 v 10 (the loser is out), then the 7 v 8 loser against the 9 v 10 winner (the winner qualifies). Each tie is a home-and-away pair of Games on aggregate goals; the two qualifiers take Playoff seeds 7 and 8 in their Regular Season order.
+_Avoid_: Pre-Playoffs (the format before 2023/24)
+
+**Playoffs**:
+Three best-of-seven rounds (quarterfinals, semifinals, final) among Regular Season ranks 1–6 and the two Play-In qualifiers, re-paired by Regular Season rank before every round (best remaining against worst remaining). The better-ranked team hosts the first, third, fifth and seventh Games. Every Post-Season Game has a winner: overtime is sudden death, with no shootout.
+
+**Champion**:
+The winner of the Playoff final.
+
+**Playoff Simulation**:
+A Season Simulation whose every run carries on past the Regular Season through the Play-In and the Playoffs, with that run's Outcome Probabilities and What-If Results, to estimate each team's chance of reaching each Playoff round and of becoming Champion.
+_Avoid_: Post-season simulation, bracket simulation
+
+**Round Chances**:
+A team's Playoff Simulation chances of reaching the Quarterfinal (by Cut Line or through the Play-In), the Semifinal and the Final, and of becoming Champion.
+_Avoid_: Playoff chance (that is the Cut Line's direct qualification), playoff odds
+
+**Projected Bracket**:
+The Play-In and Playoffs as they would go if the Regular Season finished exactly as the Projected Table. Each tie shows its favourite's chance of winning it, and the favourite advances. It answers "if the table ends as projected, who wins?", so it is never a team's title chance; that comes from the Playoff Simulation.
+_Avoid_: Predicted bracket, playoff odds
 
 ### Form
 
@@ -185,4 +213,4 @@ A Rank Distribution's score for one team against its Cut Line: the squared error
 Where a team's actual final rank falls at the extremes of its Rank Distribution: the chance of finishing above it plus half the chance of finishing at it is below 0.1 or above 0.9. A calibrated forecast spread over many ranks lands there for about 20% of teams, so much more means it was overconfident; a forecast concentrated on a few ranks, as late in the Season, scores lower even when calibrated. Unlike the middle 80%, it is not flattered by a forecast that puts its weight on a few ranks.
 
 **Cut Lines**:
-The Regular Season boundaries: ranks 1–6 go straight to the playoffs, 7–10 to the play-in, 11–14 are eliminated.
+The Regular Season boundaries: ranks 1–6 go straight to the playoffs, 7–10 to the play-in, 11–14 are eliminated. A Cut Line's "Playoffs" always means direct qualification; reaching the Playoffs by either route is the Quarterfinal chance.
