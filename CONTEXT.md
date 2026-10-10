@@ -115,8 +115,16 @@ A Projection Model that keeps a Rating per team, updated after every Played Game
 An Elo Model's running estimate of a team's strength, starting each Season from its Starting Rating.
 
 **Starting Rating**:
-A team's Rating before its first Game of a Season: its Rating at the end of the previous Season, carried over in full, with a promoted team taking over the Starting Rating of the team it replaces (the league average on an expansion).
-_Avoid_: Seed, seeding (the Season Simulation's random draws are seeded), initial rating
+A team's Rating before its first Game of a Season, set by the Elo Model's start: the Carried-Over Start unless a visitor picks the Level Start.
+_Avoid_: Seed, seeding (the Season Simulation's random draws are seeded), initial rating, starting rate
+
+**Carried-Over Start**:
+The Elo Model's default start: each team's Starting Rating is its Rating at the end of the previous Season, carried over in full, with a promoted team taking over the Starting Rating of the team it replaces (the league average on an expansion).
+_Avoid_: Historical start, historical rating
+
+**Level Start**:
+The Elo Model's alternative start: every team's Starting Rating is the league-average 1500, so last Season counts for nothing. Everything else about the Elo Model stays the same. It is a variant of the Elo Model, not a Projection Model of its own, so it is never the Default Model.
+_Avoid_: Flat start, reset, 1500 start
 
 **Rating Uncertainty**:
 How far an Elo Model's Ratings may be off, in Rating points: each Season Simulation run moves every team's Rating by its own random draw of that spread before playing out the Remaining Games, so the Rank Distributions allow for the Ratings being estimates.
