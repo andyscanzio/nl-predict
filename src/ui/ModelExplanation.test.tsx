@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { ModelExplanation } from "./ModelExplanation.tsx";
-import { PROJECTION_MODELS } from "../domain/projectionModels.ts";
+import { ALL_MODELS, PROJECTION_MODELS } from "../domain/projectionModels.ts";
+import { eloLevelStartModel } from "../domain/eloModel.ts";
 import { LEAGUE_HOME_POINTS_PER_GAME, MATCHUP_PRIOR_GAMES } from "../domain/matchupModel.ts";
 import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
 import { SIMULATION_RUNS } from "../domain/seasonSimulation.ts";
 
-function panel(model: (typeof PROJECTION_MODELS)[number]) {
+function panel(model: (typeof ALL_MODELS)[number]) {
   return render(<ModelExplanation model={model} />);
 }
 
@@ -41,6 +42,15 @@ describe("ModelExplanation", () => {
     const seasonRateText = text(panel(PROJECTION_MODELS.find((model) => model.id === "season-rate")!));
     expect(seasonRateText).toContain(`as if it had also played ${SEASON_RATE_PRIOR_GAMES} games at the league-average 1.5`);
     expect(seasonRateText).not.toContain("no played games");
+  });
+
+  it("explains the Level Start: every team at 1500, and why the Carried-Over Start is the default", () => {
+    const read = text(panel(eloLevelStartModel));
+    expect(read).toContain("How the projection works: Elo Model (Level Start)");
+    expect(read).toContain("Every team starts the season level on 1500");
+    expect(read).not.toContain("the rating it ended last season with");
+    expect(read).toContain("predicted better in back-testing");
+    expect(read).toContain("That expectation becomes outcome probabilities");
   });
 
   it("explains the Matchup Model's shrinkage toward the league's home and away averages, without the other-venue fallback", () => {

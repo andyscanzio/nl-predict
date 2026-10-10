@@ -6,6 +6,7 @@ import type { ProjectedTableRow, ProjectionModel } from "../domain/project.ts";
 import { DEFAULT_MODEL, PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { formatGameDate } from "./format.ts";
+import { eloLevelStartModel, eloModel } from "../domain/eloModel.ts";
 
 const teams: Teams = new Map([
   [1, { id: 1, name: "HC Davos", acronym: "HCD" }],
@@ -178,6 +179,44 @@ describe("ProjectedTable", () => {
         expect(option.text.startsWith(model.name)).toBe(true);
         expect(option.text.length).toBeGreaterThan(model.name.length + 20);
       }
+    });
+
+    describe("Elo Model start switch", () => {
+      /** The switch's buttons, as their text and whether each is pressed. */
+      function startButtons(html: string) {
+        const group = html.match(/<div class="history-toggle start-toggle"[^>]*>(.*?)<\/div>/)?.[1] ?? "";
+        return [...group.matchAll(/<button[^>]*aria-pressed="(true|false)"[^>]*>(.*?)<\/button>/g)].map((match) => ({
+          pressed: match[1] === "true",
+          text: text(match[2]!),
+        }));
+      }
+
+      it("appears only while the Elo Model is picked", () => {
+        expect(startButtons(panel([row()], pointsModel))).toEqual([]);
+        expect(startButtons(panel([row()], eloModel))).toHaveLength(2);
+      });
+
+      it("presses Last Season under the Carried-Over Start", () => {
+        expect(startButtons(panel([row()], eloModel))).toEqual([
+          { pressed: true, text: "Last Season" },
+          { pressed: false, text: "Level (1500)" },
+        ]);
+      });
+
+      it("presses Level (1500) under the Level Start, with the Elo Model's row still checked", () => {
+        const html = panel([row()], eloLevelStartModel);
+        expect(startButtons(html)).toEqual([
+          { pressed: false, text: "Last Season" },
+          { pressed: true, text: "Level (1500)" },
+        ]);
+        const checked = [...html.matchAll(/<input[^>]*name="model"[^>]*>/g)].map((match) => match[0]).filter((input) => input.includes("checked"));
+        expect(checked).toHaveLength(1);
+        expect(checked[0]).toContain('value="elo"');
+      });
+
+      it("still lists the four Projection Models", () => {
+        expect(options(panel([row()], eloLevelStartModel)).map((option) => option.id)).toEqual(PROJECTION_MODELS.map((model) => model.id));
+      });
     });
 
     it("marks the Default Model, and only it, as best in back-test", () => {

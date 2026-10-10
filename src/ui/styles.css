@@ -313,8 +313,15 @@ body {
   border-radius: 5px;
 }
 
+.model-option {
+  display: flex;
+  flex-direction: column;
+  border-radius: 3px;
+}
+
 .model-options label {
   position: relative;
+  flex: 1;
   cursor: pointer;
 }
 
@@ -358,11 +365,56 @@ body {
   color: var(--amber);
 }
 
+/* The whole option lights up, so the Elo Model's start switch sits inside the lit segment. */
+.model-option:has(input:checked) {
+  background: #ffb000;
+  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+}
+
 .model-options input:checked + span,
 .model-options input:checked + span .model-default {
   color: #000;
-  background: #ffb000;
-  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+}
+
+.elo-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.5rem;
+  padding: 0 0.7rem 0.45rem;
+}
+
+.elo-start-label {
+  font: 700 0.58rem var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #000;
+}
+
+/* The chart metric toggle, inked black on the amber segment. */
+.history-toggle.start-toggle {
+  border-color: rgb(0 0 0 / 0.4);
+}
+
+.history-toggle.start-toggle button {
+  color: rgb(0 0 0 / 0.65);
+}
+
+.history-toggle.start-toggle button + button {
+  border-left-color: rgb(0 0 0 / 0.4);
+}
+
+.history-toggle.start-toggle button:hover {
+  color: #000;
+}
+
+.history-toggle.start-toggle button[aria-pressed="true"] {
+  background: #000;
+  color: #ffb000;
+}
+
+.history-toggle.start-toggle button:focus-visible {
+  outline-color: #000;
 }
 
 .model-options input:focus-visible + span {
@@ -1359,6 +1411,10 @@ footer a {
 
   .model-options label > span {
     padding: 0.3rem 0.45rem;
+  }
+
+  .elo-start {
+    padding: 0 0.45rem 0.35rem;
   }
 
   .model-name {

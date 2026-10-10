@@ -4,6 +4,7 @@ import {
   ELO_CARRY_OVER,
   ELO_HOME_ADVANTAGE,
   ELO_K,
+  eloLevelStartModel,
   eloModel,
   eloModelFor,
   eloRatings,
@@ -255,5 +256,32 @@ describe("Elo Model: committed Starting Ratings", () => {
     const { points } = predictGames(eloModelFor(STARTING_RATINGS.season - 1), projectionModelInput([game], asOf)).get(game.id)!;
     const level = createEloModel({ k: ELO_K, homeAdvantage: ELO_HOME_ADVANTAGE });
     expect(points).toEqual(predictGames(level, projectionModelInput([game], asOf)).get(game.id)!.points);
+  });
+});
+
+describe("Elo Model: Level Start", () => {
+  const strongest = STARTING_RATINGS.ratings.reduce((a, b) => (b.rating > a.rating ? b : a)).teamId;
+  const weakest = STARTING_RATINGS.ratings.reduce((a, b) => (b.rating < a.rating ? b : a)).teamId;
+
+  it("is a variant of the Elo Model with its own id and name", () => {
+    expect(eloLevelStartModel.id).toBe("elo-level");
+    expect(eloLevelStartModel.name).toBe("Elo Model (Level Start)");
+    expect(eloLevelStartModel.kind).toBe("outcomes");
+  });
+
+  it("starts every team at the league average, with the shipped K, Home Advantage and Rating Uncertainty", () => {
+    const game = scheduled(weakest, strongest);
+    const { points } = predictGames(eloLevelStartModel, projectionModelInput([game], asOf)).get(game.id)!;
+    const level = createEloModel({ k: ELO_K, homeAdvantage: ELO_HOME_ADVANTAGE });
+    expect(points).toEqual(predictGames(level, projectionModelInput([game], asOf)).get(game.id)!.points);
+    expect("sampleOutcomes" in eloLevelStartModel).toBe(true);
+  });
+
+  it("ignores last Season, unlike the Carried-Over Start", () => {
+    const game = scheduled(weakest, strongest);
+    const input = projectionModelInput([game], asOf);
+    const carried = predictGames(eloModel, input).get(game.id)!.points.home;
+    const level = predictGames(eloLevelStartModel, input).get(game.id)!.points.home;
+    expect(level).toBeGreaterThan(carried);
   });
 });

@@ -1,19 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { render } from "preact-render-to-string";
 import { App } from "./App.tsx";
-import { DEFAULT_MODEL } from "../domain/projectionModels.ts";
-import { project, type WhatIf } from "../domain/project.ts";
+import { DEFAULT_MODEL, type ProjectionModelId } from "../domain/projectionModels.ts";
+import { eloLevelStartModel } from "../domain/eloModel.ts";
+import { project, type ProjectionModel, type WhatIf } from "../domain/project.ts";
 import type { Game, Snapshot } from "../domain/types.ts";
 import recordedSnapshot from "../domain/__fixtures__/snapshot-2026-09-27.json";
 
 const snapshot = recordedSnapshot as Snapshot;
 
-function page(now: Date, whatIf: WhatIf = new Map()) {
+function page(now: Date, whatIf: WhatIf = new Map(), model: ProjectionModel<ProjectionModelId> = DEFAULT_MODEL) {
   return render(
     <App
       snapshot={snapshot}
       now={now}
-      model={DEFAULT_MODEL}
+      model={model}
       history={[]}
       whatIf={whatIf}
       onModelChange={() => {}}
@@ -56,6 +57,23 @@ describe("App", () => {
     expect(html).not.toContain("ticker");
   });
 
+  describe("under the Elo Model's Level Start", () => {
+    const asOf = new Date(snapshot.snapshotAt);
+
+    it("names the variant in the Headline and the model explanation", () => {
+      const html = page(asOf, new Map(), eloLevelStartModel);
+      expect(/<section class="headline"[^>]*>(.*?)<\/section>/.exec(html)![1]).toContain("Elo Model (Level Start) projection:");
+      expect(headings(html)).toContain("How the projection works: Elo Model (Level Start)");
+    });
+
+    it("keeps a What-If, the same as under the Carried-Over Start", () => {
+      const [gameId] = project(snapshot.games, asOf, DEFAULT_MODEL).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
+      const html = page(asOf, new Map([[gameId!, "regulationWin"]]), eloLevelStartModel);
+      expect(html).toMatch(/<span class="headline-tag"[^>]*>\s*What-if\s*<\/span>/);
+      expect(html).toContain('class="warning what-if-banner"');
+    });
+  });
+
   describe("with a What-If", () => {
     const asOf = new Date(snapshot.snapshotAt);
     const nextRoundIds = project(snapshot.games, asOf, DEFAULT_MODEL).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
@@ -96,7 +114,8 @@ describe("App", () => {
 
     it("presses the picked button of the Game and none of the others", () => {
       const html = page(asOf, new Map([[nextRoundIds[0]!, "overtimeOrShootoutLoss"]]));
-      const pressed = [...html.matchAll(/<button[^>]*aria-pressed="true"[^>]*>(.*?)<\/button>/g)].map((match) => match[1]);
+      const upcoming = html.slice(html.indexOf("<h2>Upcoming games</h2>"), html.indexOf("<h2>Current table"));
+      const pressed = [...upcoming.matchAll(/<button[^>]*aria-pressed="true"[^>]*>(.*?)<\/button>/g)].map((match) => match[1]);
       expect(pressed).toEqual(["Away OT"]);
     });
 

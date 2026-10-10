@@ -4,7 +4,8 @@ import type { CutLineProbabilities } from "../domain/seasonSimulation.ts";
 import type { CutLine } from "../domain/cutLines.ts";
 import { FORM_WINDOW_SIZE, type FormWindowGame } from "../domain/form.ts";
 import type { TeamId } from "../domain/types.ts";
-import { DEFAULT_MODEL, PROJECTION_MODELS, type ProjectionModelId } from "../domain/projectionModels.ts";
+import { DEFAULT_MODEL, pickerModelOf, PROJECTION_MODELS, type PickerModelId, type ProjectionModelId } from "../domain/projectionModels.ts";
+import { eloLevelStartModel, eloModel, INITIAL_RATING } from "../domain/eloModel.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { ChartMetric } from "./projectionChart.ts";
 import { formatForm, formatGameDate, SIMULATION_RUNS_LABEL } from "./format.ts";
@@ -153,12 +154,46 @@ function FormChips({
 }
 
 /** Each Projection Model in one line, under its name in the picker; a model without an entry fails type-checking. */
-const MODEL_SUMMARIES: Record<ProjectionModelId, string> = {
+const MODEL_SUMMARIES: Record<PickerModelId, string> = {
   elo: "Ratings updated after every game; strong opponents count more",
   "season-rate": "Points per game this season, whatever the venue or opponent",
   matchup: "The home team's home form against the away team's away form",
   "split-form-rate": "Home and away form, ignoring opponents; gives no chances",
 };
+
+/** The Elo Model's two starts, in switch order: the Carried-Over Start (the default) and the Level Start. */
+const ELO_STARTS = [
+  { model: eloModel, label: "Last Season" },
+  { model: eloLevelStartModel, label: `Level (${INITIAL_RATING})` },
+];
+
+/** Switches the Elo Model between its Carried-Over Start and its Level Start; shown only while the Elo Model is picked. */
+function EloStartSwitch({
+  model,
+  onChange,
+}: {
+  model: ProjectionModel<ProjectionModelId>;
+  onChange: (model: ProjectionModel<ProjectionModelId>) => void;
+}) {
+  return (
+    <div class="elo-start">
+      <span class="elo-start-label" aria-hidden="true">
+        Start
+      </span>
+      <div class="history-toggle start-toggle" role="group" aria-label="Elo Model start">
+        {ELO_STARTS.map((start) => {
+          const pressed = start.model.id === model.id;
+          // Like a radio: pressing the current start again changes nothing, so it adds no history entry.
+          return (
+            <button key={start.model.id} type="button" aria-pressed={pressed} onClick={() => pressed || onChange(start.model)}>
+              {start.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function ModelPicker({
   model,
@@ -167,6 +202,8 @@ function ModelPicker({
   model: ProjectionModel<ProjectionModelId>;
   onChange: (model: ProjectionModel<ProjectionModelId>) => void;
 }) {
+  // The Level Start shows as the Elo Model's row, with its switch set to Level.
+  const picked = pickerModelOf(model);
   return (
     <fieldset class="model-picker">
       <legend class="visually-hidden">Projection model</legend>
@@ -175,20 +212,24 @@ function ModelPicker({
       </span>
       <div class="model-options">
         {PROJECTION_MODELS.map((option) => (
-          <label key={option.id}>
-            <input
-              type="radio"
-              name="model"
-              value={option.id}
-              checked={option.id === model.id}
-              onChange={() => onChange(option)}
-            />
-            <span>
-              <span class="model-name">{option.name}</span>
-              {option.id === DEFAULT_MODEL.id && <span class="model-default">Default · best in back-test</span>}
-              <span class="model-summary">{MODEL_SUMMARIES[option.id]}</span>
-            </span>
-          </label>
+          // The switch sits beside the label, not in it: a label may hold no other control than its own.
+          <div key={option.id} class="model-option">
+            <label>
+              <input
+                type="radio"
+                name="model"
+                value={option.id}
+                checked={option.id === picked.id}
+                onChange={() => onChange(option)}
+              />
+              <span>
+                <span class="model-name">{option.name}</span>
+                {option.id === DEFAULT_MODEL.id && <span class="model-default">Default · best in back-test</span>}
+                <span class="model-summary">{MODEL_SUMMARIES[option.id]}</span>
+              </span>
+            </label>
+            {option.id === eloModel.id && picked.id === eloModel.id && <EloStartSwitch model={model} onChange={onChange} />}
+          </div>
         ))}
       </div>
     </fieldset>

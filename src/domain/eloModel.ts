@@ -179,6 +179,13 @@ export const eloModel = createEloModel({
 const levelEloModel = createEloModel({ k: ELO_K, homeAdvantage: ELO_HOME_ADVANTAGE, ratingUncertainty: ELO_RATING_UNCERTAINTY });
 
 /**
+ * The Elo Model's Level Start: every team starts at INITIAL_RATING, with the same K, Home Advantage and Rating Uncertainty.
+ * A variant a visitor can switch the Elo Model to, never the Default Model; its own id keeps it apart wherever models are
+ * keyed by id (Season Simulation draws, Projection History, the URL).
+ */
+export const eloLevelStartModel: ProjectionModel<"elo-level"> = { ...levelEloModel, id: "elo-level", name: "Elo Model (Level Start)" };
+
+/**
  * The Elo Model to Back-Test a Season with: the Starting Ratings belong to STARTING_RATINGS.season only, so any other
  * Season starts level, with the same K, Home Advantage and Rating Uncertainty.
  */
