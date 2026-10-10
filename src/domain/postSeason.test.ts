@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { bestOfSevenChance, playInTieChance, postSeasonGameWinChance, projectedBracket, type Tie } from "./postSeason.ts";
+import {
+  bestOfSevenChance,
+  playInTieChance,
+  postSeasonGameWinChance,
+  projectedBracket,
+  simulatePostSeason,
+  type PostSeasonRound,
+  type Tie,
+} from "./postSeason.ts";
+import { seededRandom } from "./seasonSimulation.ts";
 import type { TeamId } from "./types.ts";
 
 /** Teams 1 to 10 in Regular Season order: team n finished nth. */
@@ -96,5 +105,74 @@ describe("projectedBracket", () => {
 
   it("only reads ranks 1 to 10", () => {
     expect(projectedBracket([...ranking, 11, 12, 13, 14], certain({}))).toEqual(projectedBracket(ranking, certain({})));
+  });
+});
+
+describe("simulatePostSeason", () => {
+  const reached = (rounds: Map<TeamId, PostSeasonRound>) => Object.fromEntries(rounds);
+
+  it("plays the bracket by Regular Season rank with the better-ranked team always winning", () => {
+    expect(reached(simulatePostSeason(ranking, certain({}), seededRandom(1)))).toEqual({
+      1: "champion",
+      2: "final",
+      3: "semifinal",
+      4: "semifinal",
+      5: "quarterfinal",
+      6: "quarterfinal",
+      7: "quarterfinal",
+      8: "quarterfinal",
+      9: "none",
+      10: "none",
+    });
+  });
+
+  it("keeps a team that loses 7 v 8 and then qualifies as seed 7, against seed 2", () => {
+    // 8 beats everyone: it wins 7 v 8, then 7 beats 9 in the decider and, kept as seed 7, loses to seed 2.
+    const rounds = simulatePostSeason(ranking, certain({ 8: 0.5 }), seededRandom(1));
+    expect(rounds.get(7)).toBe("quarterfinal");
+    expect(rounds.get(9)).toBe("none");
+    // Seed 8 beats seed 1, then the Semifinals pair 2 v 8 and 3 v 4: 8 reaches the Final and wins it against 3.
+    expect(rounds.get(1)).toBe("quarterfinal");
+    expect(rounds.get(2)).toBe("semifinal");
+    expect(rounds.get(3)).toBe("final");
+    expect(rounds.get(4)).toBe("semifinal");
+    expect(rounds.get(8)).toBe("champion");
+  });
+
+  it("puts the 9 v 10 winner through the decider, and the loser never reaches the Quarterfinal", () => {
+    const rounds = simulatePostSeason(ranking, certain({ 10: 0.5 }), seededRandom(1));
+    expect(rounds.get(9)).toBe("none");
+    expect(rounds.get(8)).toBe("none");
+    expect(rounds.get(10)).toBe("champion");
+  });
+
+  it("only reads ranks 1 to 10, and teams below them reach no round", () => {
+    const rounds = simulatePostSeason([...ranking, 11, 12, 13, 14], certain({}), seededRandom(1));
+    expect([11, 12, 13, 14].map((teamId) => rounds.get(teamId))).toEqual(["none", "none", "none", "none"]);
+  });
+
+  it("always has 8 Quarterfinalists, 4 Semifinalists, 2 Finalists and 1 Champion, and never the 9 v 10 loser", () => {
+    const random = seededRandom(7);
+    const homeWin = (home: TeamId, away: TeamId) => 0.3 + 0.04 * ((home * 7 + away * 3) % 10);
+    const order: PostSeasonRound[] = ["none", "quarterfinal", "semifinal", "final", "champion"];
+    for (let run = 0; run < 500; run++) {
+      const rounds = simulatePostSeason(ranking, homeWin, random);
+      const reaching = (round: PostSeasonRound) => [...rounds.values()].filter((r) => order.indexOf(r) >= order.indexOf(round)).length;
+      expect([reaching("quarterfinal"), reaching("semifinal"), reaching("final"), reaching("champion")]).toEqual([8, 4, 2, 1]);
+      expect(rounds.get(9) === "none" || rounds.get(10) === "none").toBe(true);
+    }
+  });
+
+  it("wins a tie with its exact chance", () => {
+    // The home team wins 0.6 of Games: seed 1 wins its Quarterfinal with the best-of-seven chance.
+    const random = seededRandom(3);
+    const runs = 20_000;
+    let seedOneThrough = 0;
+    for (let run = 0; run < runs; run++) {
+      if (simulatePostSeason(ranking, () => 0.6, random).get(1) !== "quarterfinal") seedOneThrough++;
+    }
+    const chance = bestOfSevenChance(0.6, 0.4);
+    // Within four standard errors of the exact chance.
+    expect(Math.abs(seedOneThrough / runs - chance)).toBeLessThan(4 * Math.sqrt((chance * (1 - chance)) / runs));
   });
 });

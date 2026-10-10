@@ -89,17 +89,55 @@ export function playPostSeason<T extends Tie>(ranking: readonly TeamId[], decide
   return { playIn: { sevenEight, nineTen, decider }, quarterfinals, semifinals, final, champion: final.winner };
 }
 
+/** The better-ranked team's exact chance of winning a tie: a best-of-seven series, or a Play-In tie on neutral ice. */
+function higherTieChance(higher: TeamId, lower: TeamId, series: boolean, homeWin: HomeWinChance): number {
+  return series ? bestOfSevenChance(homeWin(higher, lower), 1 - homeWin(lower, higher)) : playInTieChance(higher, lower, homeWin);
+}
+
 /**
  * The Projected Bracket from a final ranking: each tie's chance is exact, and its favourite (the better-ranked team on
  * an even tie) advances.
  */
 export function projectedBracket(ranking: readonly TeamId[], homeWin: HomeWinChance): ProjectedBracket {
   return playPostSeason(ranking, (higher, lower, series) => {
-    const higherChance = series
-      ? bestOfSevenChance(homeWin(higher, lower), 1 - homeWin(lower, higher))
-      : playInTieChance(higher, lower, homeWin);
+    const higherChance = higherTieChance(higher, lower, series, homeWin);
     return higherChance >= 0.5
       ? { higher, lower, winner: higher, favouriteChance: higherChance }
       : { higher, lower, winner: lower, favouriteChance: 1 - higherChance };
   });
+}
+
+/** The Playoff rounds a team can reach, in order: the Quarterfinal, Semifinal and Final, then the title. */
+export const PLAYOFF_ROUNDS = ["quarterfinal", "semifinal", "final", "champion"] as const;
+
+/** The furthest a team got in one Post-Season: no Playoff place, or one of PLAYOFF_ROUNDS. */
+export type PostSeasonRound = "none" | (typeof PLAYOFF_ROUNDS)[number];
+
+/**
+ * A team's Round Chances from a Playoff Simulation: of reaching the Quarterfinal (by Cut Line or through the Play-In),
+ * the Semifinal and the Final, and of becoming Champion.
+ */
+export type RoundChances = Record<(typeof PLAYOFF_ROUNDS)[number], number>;
+
+/**
+ * Plays one Post-Season from a final ranking, drawing each tie's winner with its exact chance (one draw of `random` per
+ * tie, ten in all), and gives the furthest round every team of `ranking` reached.
+ */
+export function simulatePostSeason(
+  ranking: readonly TeamId[],
+  homeWin: HomeWinChance,
+  random: () => number,
+): Map<TeamId, PostSeasonRound> {
+  const bracket = playPostSeason(ranking, (higher, lower, series) => ({
+    higher,
+    lower,
+    winner: random() < higherTieChance(higher, lower, series, homeWin) ? higher : lower,
+  }));
+  const rounds = new Map<TeamId, PostSeasonRound>(ranking.map((teamId) => [teamId, "none"]));
+  const reach = (ties: Tie[], round: PostSeasonRound) => ties.forEach((tie) => rounds.set(tie.higher, round).set(tie.lower, round));
+  reach(bracket.quarterfinals, "quarterfinal");
+  reach(bracket.semifinals, "semifinal");
+  reach([bracket.final], "final");
+  rounds.set(bracket.champion, "champion");
+  return rounds;
 }

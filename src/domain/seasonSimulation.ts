@@ -1,5 +1,6 @@
 import { cutLineFor, type CutLine } from "./cutLines.ts";
 import type { OutcomeProbabilities } from "./outcomes.ts";
+import { PLAYOFF_ROUNDS, postSeasonGameWinChance, simulatePostSeason, type RoundChances } from "./postSeason.ts";
 import type { Game, TeamId } from "./types.ts";
 
 /** Seasons played out by a Season Simulation. */
@@ -13,11 +14,15 @@ export interface CutLineProbabilities {
   first: number;
 }
 
+export type { RoundChances };
+
 /** A team's Season Simulation result: its Cut Line chances, and the Rank Distribution they are summed from. */
 export interface SimulationResult {
   probabilities: CutLineProbabilities;
   /** Probability of finishing at each rank of the final table; index 0 is 1st, one entry per team in the Season. */
   rankDistribution: number[];
+  /** Present only when the runs play the Post-Season (a Playoff Simulation). */
+  roundChances?: RoundChances;
 }
 
 /** 32-bit FNV-1a hash of a string. */
@@ -47,6 +52,9 @@ export function seededRandom(seed: number): () => number {
 /** Mixed into the seed for the second generator, the one `sampleOutcomes` draws from. */
 const SAMPLE_SEED_MIX = 0x9e3779b9;
 
+/** Mixed into the seed for the third generator, the one the Post-Season draws from. */
+const POST_SEASON_SEED_MIX = 0x85ebca6b;
+
 /**
  * One Season Simulation run's Outcome Probabilities for the Remaining Games, in their order, drawn with `random` (see
  * ProjectionModel.sampleOutcomes, ADR 0005).
@@ -65,6 +73,12 @@ export type OutcomeSampler = (random: () => number) => readonly OutcomeProbabili
  * draws from a second generator, seeded from `seed`, so the Games' and ties' draws stay exactly those without it, and a
  * What-If leaves the sampler's draws unchanged too. A sampler may give more Outcome Probabilities than there are
  * `remainingGames` (the Post-Season's pairings, appended after them); only the leading ones are played.
+ *
+ * With `pairings` (one synthetic Game per ordered pair of teams, see pairingGames), it is a Playoff Simulation: each run
+ * then plays the Post-Season from its own final ranking, deciding every Post-Season Game with the pairing's Outcome
+ * Probabilities in `outcomes`, or that run's own from `sampleOutcomes` (given after the Remaining Games, in the order of
+ * `pairings`). The Post-Season draws from a third generator, seeded from `seed`, ten draws a run, so every other draw,
+ * and with it every Rank Distribution, is exactly that without `pairings`, and a What-If leaves its draws unchanged too.
  */
 export function simulateSeason(
   currentPoints: ReadonlyMap<TeamId, number>,
@@ -74,6 +88,7 @@ export function simulateSeason(
   runs: number = SIMULATION_RUNS,
   drawLayout: readonly Game[] = remainingGames,
   sampleOutcomes?: OutcomeSampler,
+  pairings?: readonly Game[],
 ): Map<TeamId, SimulationResult> {
   const teamIds = [...currentPoints.keys()];
   const indexOf = new Map(teamIds.map((teamId, index) => [teamId, index]));
@@ -98,8 +113,20 @@ export function simulateSeason(
     setThresholds(g, outcomes.get(game.id)!);
   });
 
+  // Per ordered pair of team indices (home × teams + away): the home team's Post-Season Game win chance.
+  const homeWinChances = new Float64Array(teams * teams);
+  const pairingAt = Int32Array.from(pairings ?? [], (game) => indexOf.get(game.homeTeamId)! * teams + indexOf.get(game.awayTeamId)!);
+  const setHomeWins = (outcomesOf: (p: number) => OutcomeProbabilities) => {
+    for (let p = 0; p < pairingAt.length; p++) homeWinChances[pairingAt[p]!] = postSeasonGameWinChance(outcomesOf(p));
+  };
+  setHomeWins((p) => outcomes.get(pairings![p]!.id)!);
+  const homeWin = (home: TeamId, away: TeamId) => homeWinChances[indexOf.get(home)! * teams + indexOf.get(away)!]!;
+  // How many runs each team reached each of PLAYOFF_ROUNDS.
+  const roundCounts = teamIds.map(() => new Int32Array(PLAYOFF_ROUNDS.length));
+
   const random = seededRandom(seed);
   const sampleRandom = seededRandom(seed ^ SAMPLE_SEED_MIX);
+  const postSeasonRandom = seededRandom(seed ^ POST_SEASON_SEED_MIX);
   const points = new Float64Array(teams);
   const order = teamIds.map((_, index) => index);
   const rankCounts = teamIds.map(() => new Int32Array(teams));
@@ -108,6 +135,7 @@ export function simulateSeason(
     if (sampleOutcomes) {
       const sampled = sampleOutcomes(sampleRandom);
       for (let g = 0; g < remainingGames.length; g++) setThresholds(g, sampled[g]!);
+      if (pairings) setHomeWins((p) => sampled[remainingGames.length + p]!);
     }
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
     for (let d = 0; d < draws.length; d++) draws[d] = random();
@@ -123,11 +151,21 @@ export function simulateSeason(
     order.sort((a, b) => points[b]! - points[a]!);
 
     order.forEach((team, index) => rankCounts[team]![index]!++);
+
+    if (pairings) {
+      const rounds = simulatePostSeason(order.map((t) => teamIds[t]!), homeWin, postSeasonRandom);
+      for (const [teamId, round] of rounds) {
+        const counts = roundCounts[indexOf.get(teamId)!]!;
+        const furthest = round === "none" ? -1 : PLAYOFF_ROUNDS.indexOf(round);
+        for (let r = 0; r <= furthest; r++) counts[r]!++;
+      }
+    }
   }
 
   return new Map(
     teamIds.map((teamId, index) => {
       const counts = rankCounts[index]!;
+      const rounds = roundCounts[index]!;
       const zones: Record<CutLine, number> = { playoffs: 0, "play-in": 0, eliminated: 0 };
       counts.forEach((count, rankIndex) => (zones[cutLineFor(rankIndex + 1)] += count));
       return [
@@ -140,6 +178,9 @@ export function simulateSeason(
             first: counts[0]! / runs,
           },
           rankDistribution: Array.from(counts, (count) => count / runs),
+          ...(pairings && {
+            roundChances: Object.fromEntries(PLAYOFF_ROUNDS.map((round, r) => [round, rounds[r]! / runs])) as RoundChances,
+          }),
         },
       ];
     }),
