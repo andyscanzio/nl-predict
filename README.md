@@ -17,6 +17,8 @@ Every model predicts each Remaining Game from the Games played so far. Pick one 
 | **Matchup Model** | `matchup` | The home team's Home Form against the away team's Away Form, over each team's last five Games at that venue, each shrunk toward the league's home or away average. |
 | **Split Form Rate** | `split-form-rate` | Each team earns its Home Form at home and Away Form away, ignoring opponents. Gives Points only, no probabilities. |
 
+The Elo Model carries every team's Rating over from last Season. Its Start switch (`?model=elo-level`) starts every team level at 1500 instead, to show how much last Season shapes the projection.
+
 All models except Split Form Rate give Outcome Probabilities per Game (regulation win, OT/SO win, OT/SO loss, regulation loss), which drive a Season Simulation that plays out the rest of the Season many times to estimate each team's Rank Distribution. The Default Model is the one that scores best in the Back-Test (`npm run backtest`).
 
 The exact terms are defined in [CONTEXT.md](CONTEXT.md); the design decisions behind them are in [docs/adr/](docs/adr/).

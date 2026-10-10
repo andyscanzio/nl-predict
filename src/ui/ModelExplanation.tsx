@@ -9,7 +9,25 @@ import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import { SEASON_RATE_PRIOR_GAMES } from "../domain/seasonRate.ts";
 import { SIMULATION_RUNS_LABEL } from "./format.ts";
 
-/** How each Projection Model turns Played Games into projected Points; a model without an entry fails type-checking. */
+/** How the Elo Model moves Ratings and predicts a Remaining Game, whichever start it has. */
+const ELO_UPDATES = (
+  <>
+    After each played game, the home team's rating rises by {ELO_K} × (the share of the 3 points it took − the share the
+    ratings expected) and the away team's falls by the same, so beating a strong team counts for more than beating a weak
+    one. The home team gets a home advantage of {ELO_HOME_ADVANTAGE} rating points. For each remaining game, the two
+    current ratings plus home advantage give the home team its expected share of the 3 points.
+  </>
+);
+
+const ELO_RATING_UNCERTAINTY_PARAGRAPH = (
+  <p>
+    Ratings are only estimates, so each simulated season first moves every team's rating by its own random amount,
+    typically within ±{ELO_RATING_UNCERTAINTY} points, before playing the remaining games out. K, home advantage and that
+    spread were tuned by back-testing the 2023/24 to 2025/26 regular seasons.
+  </p>
+);
+
+/** How each Projection Model, and the Elo Model's Level Start, turns Played Games into projected Points; a model without an entry fails type-checking. */
 const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
   "split-form-rate": (
     <>
@@ -56,16 +74,21 @@ const MODEL_EXPLANATIONS: Record<ProjectionModelId, ComponentChildren> = {
       <p>
         Every team starts the season on the rating it ended last season with, carried through every season since{" "}
         {seasonLabel(STARTING_RATINGS.fromSeasons[0]!)}; {INITIAL_RATING} is the league average, and a promoted team
-        takes over the rating of the team it replaced. After each played game, the home team's rating rises by {ELO_K} ×
-        (the share of the 3 points it took − the share the ratings expected) and the away team's falls by the same, so
-        beating a strong team counts for more than beating a weak one. The home team gets a home advantage of{" "}
-        {ELO_HOME_ADVANTAGE} rating points. For each remaining game, the two current ratings plus home advantage give the
-        home team its expected share of the 3 points.
+        takes over the rating of the team it replaced. {ELO_UPDATES}
       </p>
+      {ELO_RATING_UNCERTAINTY_PARAGRAPH}
+    </>
+  ),
+  "elo-level": (
+    <>
       <p>
-        Ratings are only estimates, so each simulated season first moves every team's rating by its own random
-        amount, typically within ±{ELO_RATING_UNCERTAINTY} points, before playing the remaining games out. K, home
-        advantage and that spread were tuned by back-testing the 2023/24 to 2025/26 regular seasons.
+        Every team starts the season level on {INITIAL_RATING}, the league average, so last season counts for nothing.{" "}
+        {ELO_UPDATES}
+      </p>
+      {ELO_RATING_UNCERTAINTY_PARAGRAPH}
+      <p>
+        This is the Elo Model's level start. Carrying every rating over from last season predicted better in
+        back-testing, so that stays the Elo Model's default start.
       </p>
     </>
   ),

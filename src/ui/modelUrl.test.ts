@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
-import { DEFAULT_MODEL, PROJECTION_MODELS } from "../domain/projectionModels.ts";
-import { eloModel } from "../domain/eloModel.ts";
+import { ALL_MODELS, DEFAULT_MODEL } from "../domain/projectionModels.ts";
+import { eloLevelStartModel, eloModel } from "../domain/eloModel.ts";
 import { matchupModel } from "../domain/matchupModel.ts";
 import { seasonRate } from "../domain/seasonRate.ts";
 import { splitFormRate } from "../domain/splitFormRate.ts";
@@ -14,6 +14,7 @@ describe("modelFromUrl", () => {
     ["season-rate", seasonRate],
     ["matchup", matchupModel],
     ["elo", eloModel],
+    ["elo-level", eloLevelStartModel],
   ])("reads ?model=%s", (id, model) => {
     expect(modelFromUrl(`${PAGE}?model=${id}`)).toBe(model);
   });
@@ -42,6 +43,6 @@ describe("urlWithModel", () => {
   });
 
   it("round-trips through modelFromUrl", () => {
-    for (const model of PROJECTION_MODELS) expect(modelFromUrl(urlWithModel(PAGE, model))).toBe(model);
+    for (const model of ALL_MODELS) expect(modelFromUrl(urlWithModel(PAGE, model))).toBe(model);
   });
 });
