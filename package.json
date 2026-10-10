@@ -1,6 +1,7 @@
 {
   "name": "nl-predict",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -11,6 +12,8 @@
     "preview": "vite preview",
     "typecheck": "tsc",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "coverage-badge": "node scripts/coverageBadge.ts",
     "snapshot": "node scripts/snapshot.ts",
     "backtest": "node scripts/backtest.ts",
     "study": "node scripts/study.ts",
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.3",
+    "@vitest/coverage-v8": "^5.0.2",
     "preact-render-to-string": "^6.7.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
