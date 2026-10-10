@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { App } from "./App.tsx";
 import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
 import { urlWithWhatIf, whatIfFromUrl } from "./whatIfUrl.ts";
+import { playoffsFlag } from "./playoffsFlag.ts";
 import type { ProjectionModel, WhatIf } from "../domain/project.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import histories from "virtual:projection-history";
@@ -12,6 +13,7 @@ import "@fontsource-variable/oxanium";
 import "./styles.css";
 
 const now = new Date();
+const playoffs = playoffsFlag(import.meta.env.VITE_PLAYOFFS);
 
 /** Keeps the picked Projection Model and the What-If in the URL, so links are shareable and Back/Forward step through picks. */
 function Root() {
@@ -39,6 +41,7 @@ function Root() {
       snapshot={snapshot as Snapshot}
       now={now}
       model={model}
+      playoffs={playoffs}
       history={histories[model.id]}
       whatIf={whatIf}
       onModelChange={pick}

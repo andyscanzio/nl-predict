@@ -12,6 +12,7 @@ import { cutLineFor, type CutLine } from "./cutLines.ts";
 import { simulateSeason, simulationSeed, type CutLineProbabilities, type OutcomeSampler } from "./seasonSimulation.ts";
 import { swissCalendarDay } from "./swissDay.ts";
 import { pairingGames, pairingOutcomesOf, type PairingOutcomes } from "./pairings.ts";
+import { postSeasonGameWinChance, projectedBracket, type ProjectedBracket } from "./postSeason.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -188,13 +189,18 @@ export interface Projection {
    * the same Played Games (and What-If) as the Projected Table; null for Points-only models.
    */
   pairingOutcomes?: PairingOutcomes | null;
+  /**
+   * Present only under the Post-Season option: the Projected Bracket of the Projected Table's ranks 1–10, decided by
+   * the pairingOutcomes; null for Points-only models.
+   */
+  projectedBracket?: ProjectedBracket | null;
 }
 
 export interface ProjectOptions {
   /**
    * The Post-Season: the model also predicts one synthetic Game per ordered pair of teams, appended after the Remaining
-   * Games, giving the Projection's pairingOutcomes; a model's sampler gives each run's pairings too, though the Season
-   * Simulation does not play them yet. Off by default.
+   * Games, giving the Projection's pairingOutcomes and projectedBracket; a model's sampler gives each run's pairings
+   * too, though the Season Simulation does not play them yet. Off by default.
    */
   postSeason?: boolean;
 }
@@ -654,6 +660,9 @@ export function project(
     }),
   }));
 
+  const pairingOutcomes =
+    postSeason && model.kind === "outcomes" ? pairingOutcomesOf(teamIds, (gameId) => predictions.get(gameId)!.outcomes!) : null;
+
   return {
     matchDay,
     currentTable: realInput.currentTable,
@@ -663,7 +672,13 @@ export function project(
     nextRound,
     whatIf: applied,
     ...(postSeason && {
-      pairingOutcomes: model.kind === "outcomes" ? pairingOutcomesOf(teamIds, (gameId) => predictions.get(gameId)!.outcomes!) : null,
+      pairingOutcomes,
+      projectedBracket:
+        pairingOutcomes &&
+        projectedBracket(
+          projectedTable.map((row) => row.teamId),
+          (home, away) => postSeasonGameWinChance(pairingOutcomes.get(home)!.get(away)!),
+        ),
     }),
   };
 }

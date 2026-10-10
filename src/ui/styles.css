@@ -1343,6 +1343,93 @@ footer a {
   white-space: nowrap;
 }
 
+/* ───────── Projected Bracket ───────── */
+
+/* Rounds stack top to bottom; a round's ties sit side by side as far as the width allows, one per row on a phone. */
+.bracket {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0;
+}
+
+.bracket-round-heading {
+  margin: 0 0 0.4rem;
+  font: 600 0.68rem var(--display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracket-ties {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bracket-tie {
+  min-width: 0;
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bracket-tie-label {
+  display: block;
+  padding: 0.3rem 0.6rem 0;
+  font: 600 0.65rem var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracket-team {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  color: var(--muted);
+}
+
+.bracket-team + .bracket-team {
+  border-top: 1px solid var(--line);
+}
+
+.bracket-team.winner {
+  color: var(--fg);
+}
+
+.bracket-seed {
+  font: 700 0.85rem var(--display);
+}
+
+.bracket-team .team {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bracket-pct {
+  font: 700 0.95rem var(--display);
+  color: var(--led-text);
+}
+
+.bracket-champion {
+  margin: 0;
+  font: 600 0.8rem var(--display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracket-champion strong {
+  font-size: 1.05rem;
+  color: var(--led-text);
+}
+
 /* ───────── Narrow screens ───────── */
 
 /* Below the full 60rem layout, acronyms leave room for the percentages; then Form gives way. */
