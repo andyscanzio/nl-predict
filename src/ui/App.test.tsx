@@ -83,7 +83,7 @@ describe("App", () => {
         `How the projection works: ${DEFAULT_MODEL.name}`,
       ]);
       expect(html).toContain("not title odds");
-      expect(html).toContain("Projected champion:");
+      expect(html).toContain("Projected champion</span>");
     });
 
     it("seeds the Projected Bracket from the Projected Table shown, What-If included", () => {
@@ -92,7 +92,7 @@ describe("App", () => {
       const { projectedBracket } = project(snapshot.games, asOf, DEFAULT_MODEL, whatIf, undefined, { postSeason: true });
       const champion = snapshot.teams.find((team) => team.id === projectedBracket!.champion)!;
       expect(page(asOf, whatIf, DEFAULT_MODEL, true)).toMatch(
-        new RegExp(`Projected champion:.*?<span class="team-name">${champion.name}</span>`, "s"),
+        new RegExp(`<p class="bracket-champion">.*?<span class="team-name">${champion.name}</span>`, "s"),
       );
     });
 

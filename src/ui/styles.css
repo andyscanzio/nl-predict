@@ -1381,52 +1381,46 @@ footer a {
 
 /* ───────── Projected Bracket ───────── */
 
-/* Rounds stack top to bottom; a round's ties sit side by side as far as the width allows, one per row on a phone. */
-.bracket {
-  display: grid;
-  gap: 1rem;
-  padding-top: 0;
-}
-
+/*
+ * The Play-In flows into a left-to-right tree: Quarterfinals, Semifinals, Final, Champion. Every round splits the same
+ * height into equal slots, so each tie sits level with the midpoint of the two it comes from, and the connectors are
+ * borders reaching halfway across the gap from either side. The tree always fits its panel: narrower, it shows acronyms;
+ * at phone width, the Champion moves below the tree.
+ */
 .bracket-round-heading {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.5rem;
   font: 600 0.68rem var(--display);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-.bracket-ties {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.bracket-tie-label {
+  margin: 0.5rem 0 0.25rem;
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracket-tie-label:first-child {
+  margin-top: 0;
 }
 
 .bracket-tie {
-  min-width: 0;
+  width: 100%;
   background: var(--inset);
   border: 1px solid var(--line);
   border-radius: 6px;
   font-variant-numeric: tabular-nums;
 }
 
-.bracket-tie-label {
-  display: block;
-  padding: 0.3rem 0.6rem 0;
-  font: 600 0.65rem var(--display);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .bracket-team {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.35rem 0.6rem;
+  gap: 0.45rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
@@ -1435,11 +1429,14 @@ footer a {
 }
 
 .bracket-team.winner {
+  font-weight: 600;
   color: var(--fg);
 }
 
 .bracket-seed {
-  font: 700 0.85rem var(--display);
+  min-width: 1.1rem;
+  font: 700 0.8rem var(--display);
+  color: var(--muted);
 }
 
 .bracket-team .team {
@@ -1448,22 +1445,244 @@ footer a {
   overflow-wrap: anywhere;
 }
 
+.bracket-seed.via-play-in,
+.bracket-key .via-play-in {
+  color: var(--play-in);
+}
+
 .bracket-pct {
-  font: 700 0.95rem var(--display);
+  font: 700 0.85rem var(--display);
+}
+
+.bracket-team.winner .bracket-pct {
   color: var(--led-text);
 }
 
+.bracket-play-in {
+  background: var(--panel-strip);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.bracket-play-in-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) auto minmax(0, 15rem);
+  justify-content: start;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bracket-play-in-arrow {
+  font: 700 1.4rem var(--display);
+  color: var(--muted);
+}
+
+.panel-body .bracket-exits {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0;
+  font: 600 0.68rem var(--display);
+  color: var(--muted);
+}
+
+.bracket-exit.in {
+  color: var(--playoffs);
+}
+
+.bracket-exit.out {
+  color: var(--eliminated);
+}
+
+.panel-body .bracket-key {
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.bracket-body {
+  container-type: inline-size;
+  padding: 0.75rem 1rem 1rem;
+}
+
+@media (max-width: 36rem) {
+  .bracket-body {
+    padding-inline: 0.75rem;
+  }
+}
+
+.bracket-tree {
+  --gap: 1.6rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 0.8fr);
+  column-gap: var(--gap);
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+}
+
+.bracket-slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 22rem;
+}
+
+.bracket-slot {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0;
+}
+
+/* Out of a pair of ties: the top one's line runs down to the pair's midpoint, the bottom one's up to it. */
+.bracket-round:nth-child(-n + 2) .bracket-slot::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  width: calc(var(--gap) / 2);
+  border-right: 2px solid var(--line);
+}
+
+.bracket-round:nth-child(-n + 2) .bracket-slot:nth-child(odd)::after {
+  top: 50%;
+  bottom: 0;
+  border-top: 2px solid var(--line);
+}
+
+.bracket-round:nth-child(-n + 2) .bracket-slot:nth-child(even)::after {
+  top: 0;
+  height: 50%;
+  border-bottom: 2px solid var(--line);
+}
+
+/* Into a tie, from the pair's midpoint; the final runs straight on into the Champion. */
+.bracket-round:nth-child(n + 2) .bracket-slot::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: calc(var(--gap) / 2);
+  border-top: 2px solid var(--line);
+}
+
+.bracket-round:nth-child(3) .bracket-slot::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  width: calc(var(--gap) / 2);
+  border-top: 2px solid var(--line);
+}
+
+.panel-body .bracket-champion,
 .bracket-champion {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
   margin: 0;
-  font: 600 0.8rem var(--display);
-  letter-spacing: 0.14em;
+  padding: 0.9rem 0.6rem;
+  text-align: center;
+  background: var(--led-screen);
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  box-shadow: 0 0 18px var(--led-glow);
+}
+
+.bracket-trophy {
+  font-size: 1.6rem;
+}
+
+.bracket-champion strong {
+  font: 700 1.05rem var(--display);
+  color: var(--led-text);
+}
+
+.bracket-champion-seed {
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-.bracket-champion strong {
-  font-size: 1.05rem;
-  color: var(--led-text);
+/* The Play-In stacks on a phone, its arrow turned down. */
+@media (max-width: 36rem) {
+  .bracket-play-in-flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bracket-play-in-arrow {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+}
+
+/* Too narrow for full names in four columns: acronyms. */
+@container (max-width: 48rem) {
+  .bracket-tree {
+    --gap: 1.2rem;
+  }
+
+  .bracket-tree .team-name {
+    display: none;
+  }
+
+  .bracket-tree .team-acronym {
+    display: inline;
+  }
+}
+
+/* Phone width: three tight columns, the Champion a banner below them. */
+@container (max-width: 30rem) {
+  .bracket-tree {
+    --gap: 0.7rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+
+  .bracket-team {
+    gap: 0.3rem;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.85rem;
+  }
+
+  .bracket-seed {
+    min-width: 0.8rem;
+  }
+
+  .bracket-team .team {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .bracket-pct {
+    font-size: 0.8rem;
+  }
+
+  .bracket-tree .bracket-round-heading {
+    letter-spacing: 0.08em;
+  }
+
+  .bracket-round:nth-child(3) .bracket-slot::after,
+  .bracket-round:nth-child(4) .bracket-slot::before {
+    display: none;
+  }
+
+  .bracket-round:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+
+  .bracket-round:nth-child(4) .bracket-round-heading {
+    display: none;
+  }
+
+  .bracket-round:nth-child(4) .bracket-slots {
+    min-height: 0;
+  }
 }
 
 /* ───────── Narrow screens ───────── */
