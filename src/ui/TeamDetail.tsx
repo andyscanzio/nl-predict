@@ -313,13 +313,12 @@ function ProjectionHistoryChart({
   );
 }
 
-/** What a team's row of the Projected Table expands to: its Round Chances (under the Post-Season flag), its Rank Distribution (where the model has one), Projection History chart and home and away Form Windows. */
+/** What a team's row of the Projected Table expands to: its Round Chances and Rank Distribution (where the model has them), Projection History chart and home and away Form Windows. */
 export function TeamDetail({
   row,
   history,
   teams,
   showProbabilities,
-  showRoundChances,
   chartMetric,
   onChartMetricChange,
   whatIfActive,
@@ -329,8 +328,6 @@ export function TeamDetail({
   teams: Teams;
   /** The model has Outcome Probabilities; without them each Form Window shows the rate it projects at. */
   showProbabilities: boolean;
-  /** The Post-Season flag is on: show the row's Round Chances, where the model gives them. */
-  showRoundChances: boolean;
   chartMetric: ChartMetric;
   onChartMetricChange: (metric: ChartMetric) => void;
   /** A What-If is applied to the row; the chart stays real and says so. */
@@ -340,7 +337,7 @@ export function TeamDetail({
   const anyEmpty = row.homeFormWindow.length === 0 || row.awayFormWindow.length === 0;
   return (
     <div class={anyEmpty ? "form-windows single" : "form-windows"}>
-      {showRoundChances && row.roundChances && <RoundChancesDetail chances={row.roundChances} real={row.realProjection?.roundChances} />}
+      {row.roundChances && <RoundChancesDetail chances={row.roundChances} real={row.realProjection?.roundChances} />}
       <div class="rank-row">
         {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} real={row.realProjection?.rankDistribution} />}
         <ProjectionHistoryChart

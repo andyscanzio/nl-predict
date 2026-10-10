@@ -176,7 +176,6 @@ export function App({
   snapshot,
   now,
   model,
-  postSeason,
   history,
   whatIf,
   onModelChange,
@@ -185,8 +184,6 @@ export function App({
   snapshot: Snapshot;
   now: Date;
   model: ProjectionModel<ProjectionModelId>;
-  /** The Post-Season feature flag (VITE_PLAYOFFS, read by the entry point): shows the Projected Bracket. */
-  postSeason: boolean;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
   /** The What-If asked for, e.g. by the URL; only its Results for the real Next Round's Games are applied. */
@@ -200,8 +197,8 @@ export function App({
 }) {
   // Kept per snapshot, As-Of Date and model, so picking a What-If Result reruns only the What-If projection.
   const realProjection = useMemo(
-    () => project(snapshot.games, now, model, undefined, undefined, { postSeason }),
-    [snapshot, now, model, postSeason],
+    () => project(snapshot.games, now, model, undefined, undefined, { postSeason: true }),
+    [snapshot, now, model],
   );
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
   const {
@@ -213,8 +210,8 @@ export function App({
     whatIf: appliedWhatIf,
     projectedBracket,
   } = useMemo(
-    () => project(snapshot.games, now, model, whatIf, realProjection, { postSeason }),
-    [snapshot, now, model, whatIf, realProjection, postSeason],
+    () => project(snapshot.games, now, model, whatIf, realProjection, { postSeason: true }),
+    [snapshot, now, model, whatIf, realProjection],
   );
   // Entries that did not apply (Played, out of the Next Round, unknown) must not linger in the URL.
   const stale = !sameWhatIf(whatIf, appliedWhatIf);
@@ -274,7 +271,6 @@ export function App({
             <ProjectedTable
               rows={projectedTable}
               model={model}
-              postSeason={postSeason}
               history={history}
               whatIfActive={whatIfActive}
               teams={teams}
