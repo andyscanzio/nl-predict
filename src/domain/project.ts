@@ -193,7 +193,8 @@ export interface Projection {
 export interface ProjectOptions {
   /**
    * The Post-Season: the model also predicts one synthetic Game per ordered pair of teams, appended after the Remaining
-   * Games, giving the Projection's pairingOutcomes and each Season Simulation run's sampled pairings. Off by default.
+   * Games, giving the Projection's pairingOutcomes; a model's sampler gives each run's pairings too, though the Season
+   * Simulation does not play them yet. Off by default.
    */
   postSeason?: boolean;
 }
@@ -584,7 +585,7 @@ export function project(
     applied.size === 0
       ? null
       : new Map(
-          (realProjection ?? project(games, asOf, model, undefined, undefined, { postSeason })).projectedTable.map((row) => [
+          (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
             row.teamId,
             { rank: row.rank,
               projectedPoints: row.projectedPoints,

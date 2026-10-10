@@ -9,12 +9,13 @@ import recordedSnapshot from "./__fixtures__/snapshot-2026-09-27.json";
 const snapshot = recordedSnapshot as Snapshot;
 const input = projectionModelInput(snapshot.games, new Date(snapshot.snapshotAt));
 const teamIds = input.currentTable.map((row) => row.teamId);
+const pairingCount = teamIds.length * (teamIds.length - 1);
 const withPairings = { ...input, remainingGames: [...input.remainingGames, ...pairingGames(teamIds)] };
 
 describe("pairingGames", () => {
   it("has one Game per ordered pair of teams, never a team against itself", () => {
     const games = pairingGames(teamIds);
-    expect(games).toHaveLength(14 * 13);
+    expect(games).toHaveLength(pairingCount);
     expect(games.every((game) => game.homeTeamId !== game.awayTeamId)).toBe(true);
     expect(new Set(games.map((game) => game.id)).size).toBe(games.length);
     expect(games.map((game) => game.id)).toContain(pairingGameId(teamIds[0]!, teamIds[1]!));
@@ -54,7 +55,7 @@ for (const model of ALL_MODELS) {
         for (let run = 0; run < 3; run++) {
           const sampledWithout = without(randomWithout);
           const sampledWith = withThem(randomWith);
-          expect(sampledWith).toHaveLength(input.remainingGames.length + 14 * 13);
+          expect(sampledWith).toHaveLength(input.remainingGames.length + pairingCount);
           expect(sampledWith.slice(0, input.remainingGames.length)).toEqual(sampledWithout);
         }
       });
