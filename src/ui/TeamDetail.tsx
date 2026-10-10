@@ -6,7 +6,7 @@ import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { Decision, TeamId } from "../domain/types.ts";
 import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
 import { formatForm, formatGameDate, ordinal } from "./format.ts";
-import { chartMetrics, projectionChart, shownMetric, type ChartMetric } from "./projectionChart.ts";
+import { chartMetrics, projectionChart, shownMetric, tooltipAt, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { SIDES } from "./formSides.ts";
@@ -161,11 +161,12 @@ function RankHistogram({
 const METRIC_LABELS: Record<ChartMetric, { title: string; toggle: string }> = {
   playoffs: { title: "Playoff chance over the season", toggle: "Playoff %" },
   points: { title: "Projected points over the season", toggle: "Points" },
+  rank: { title: "Projected rank over the season", toggle: "Rank" },
 };
 
 /**
- * A team's playoff chance or projected Points over the Season: its line bold, the other teams' faint. A model without
- * Outcome Probabilities has only the Points view, and so no toggle.
+ * A team's playoff chance, projected Points or Projected Rank over the Season: its line bold, the other teams' faint. A model
+ * without Outcome Probabilities has no playoff view, and a toggle only once the Rank view has two points to draw.
  */
 function ProjectionHistoryChart({
   history,
@@ -182,7 +183,7 @@ function ProjectionHistoryChart({
   onMetricChange: (metric: ChartMetric) => void;
   whatIfActive: boolean;
 }) {
-  // The Match Day being pointed at, on the chosen team's line: hovered with a mouse, or tapped on a phone.
+  // The Match Day being pointed at, as a step of the x scale shared by every view: hovered with a mouse, or tapped on a phone.
   const [active, setActive] = useState<number | null>(null);
   const metrics = chartMetrics(history);
   const metric = shownMetric(chosenMetric, metrics);
@@ -190,9 +191,9 @@ function ProjectionHistoryChart({
   if (!metric || !chart) return null;
   const pointAt = (event: PointerEvent) => {
     const svg = (event.currentTarget as SVGElement).ownerSVGElement!;
-    setActive(matchDayAtPointer(event.clientX, svg.getBoundingClientRect(), chart.tooltips.length));
+    setActive(matchDayAtPointer(event.clientX, svg.getBoundingClientRect(), chart.steps));
   };
-  const tip = active === null ? null : chart.tooltips[active];
+  const tip = active === null ? null : chart.tooltips[tooltipAt(chart, active)];
   const tipBox = tip && tooltipBox(tip);
   const lowSample = lowSampleBox(chart.lowSample);
   return (
@@ -231,7 +232,9 @@ function ProjectionHistoryChart({
         {[0, 1].map((share) => (
           <line key={share} class="history-edge" x1={plotX(0)} x2={plotX(1)} y1={plotY(share)} y2={plotY(share)} />
         ))}
-        {chart.guideY !== null && <line class="history-guide" x1={plotX(0)} x2={plotX(1)} y1={plotY(chart.guideY)} y2={plotY(chart.guideY)} />}
+        {chart.guides.map((share) => (
+          <line key={share} class="history-guide" x1={plotX(0)} x2={plotX(1)} y1={plotY(share)} y2={plotY(share)} />
+        ))}
         {chart.yTicks.map(({ y: share, text }) => (
           <text key={text} class="history-label" x={AXIS_LABEL.x} y={plotY(share)} text-anchor="end" dominant-baseline="middle">
             {text}

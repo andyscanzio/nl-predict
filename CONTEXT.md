@@ -84,6 +84,10 @@ _Avoid_: Head-to-head games, mini-league
 The expected final Regular Season standings produced by a Projection Model, ranked by projected Points with ties broken by Current Table position.
 _Avoid_: Leaderboard, prediction
 
+**Projected Rank**:
+A team's position in the Projected Table. It is a single place, not a probability, so it can differ from the most likely rank of the team's Rank Distribution.
+_Avoid_: Expected rank, expected final ranking (that suggests the mean of the Rank Distribution)
+
 **Headline**:
 The one-sentence summary of the Projected Table shown above it: who finishes first, who finishes last, and the team climbing the most places, if any.
 _Avoid_: Ticker, crawl
@@ -136,7 +140,7 @@ A team's probability of finishing at each rank of the final Regular Season table
 _Avoid_: Rank spread, finishing chances
 
 **Projection History**:
-A team's projected Points and Season Simulation results under one Projection Model, as they stood before the first Game of the Season and at the end of every Match Day played since. It shows what the model as it is today would have said at each point, not what the page showed then, so changing a model changes its whole history.
+A team's projected Points, Projected Rank and Season Simulation results under one Projection Model, as they stood before the first Game of the Season and at the end of every Match Day played since. It shows what the model as it is today would have said at each point, not what the page showed then, so changing a model changes its whole history.
 _Avoid_: Trend, timeline
 
 **What-If Result**:
