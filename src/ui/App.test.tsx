@@ -14,14 +14,14 @@ function page(
   now: Date,
   whatIf: WhatIf = new Map(),
   model: ProjectionModel<ProjectionModelId> = DEFAULT_MODEL,
-  playoffs = false,
+  postSeason = false,
 ) {
   return render(
     <App
       snapshot={snapshot}
       now={now}
       model={model}
-      playoffs={playoffs}
+      postSeason={postSeason}
       history={[]}
       whatIf={whatIf}
       onModelChange={() => {}}
@@ -64,7 +64,7 @@ describe("App", () => {
     expect(html).not.toContain("ticker");
   });
 
-  describe("behind the playoffs flag", () => {
+  describe("behind the Post-Season flag", () => {
     const asOf = new Date(snapshot.snapshotAt);
 
     it("shows no Projected Bracket with the flag off, exactly as without the Post-Season", () => {

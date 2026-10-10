@@ -54,7 +54,7 @@ describe("ProjectedBracket", () => {
     expect(texts(html, "li", "bracket-tie")[3]).toBe(`01 Team 1 T1 ${chance}% 08 Team 8 T8`);
   });
 
-  it("names the projected Champion", () => {
+  it("names the Projected Bracket's Champion", () => {
     expect(texts(html, "p", "bracket-champion")).toEqual(["Projected champion: Team 1 T1"]);
   });
 });

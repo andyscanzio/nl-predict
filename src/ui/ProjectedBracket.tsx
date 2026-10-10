@@ -1,4 +1,4 @@
-import type { ProjectedBracket as Bracket, ProjectedTie } from "../domain/postSeason.ts";
+import type { ProjectedBracket as ProjectedBracketTies, ProjectedTie } from "../domain/postSeason.ts";
 import type { TeamId } from "../domain/types.ts";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
 import { formatPercent } from "./winSplit.ts";
@@ -60,7 +60,7 @@ export function ProjectedBracket({
   ranks,
   teams,
 }: {
-  bracket: Bracket;
+  bracket: ProjectedBracketTies;
   /** Each team's Projected Table rank. */
   ranks: ReadonlyMap<TeamId, number>;
   teams: Teams;

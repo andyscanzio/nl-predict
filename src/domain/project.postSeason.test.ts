@@ -11,7 +11,7 @@ const snapshot = recordedSnapshot as Snapshot;
 const asOf = new Date(snapshot.snapshotAt);
 
 /** A Projection as it is without the Post-Season option: its pairings and Projected Bracket dropped. */
-const withoutPairings = ({ pairingOutcomes: _, projectedBracket: __, ...projection }: Projection) => projection;
+const withoutPostSeason = ({ pairingOutcomes: _, projectedBracket: __, ...projection }: Projection) => projection;
 
 /** The Projected Bracket a projection should carry: from its Projected Table's ranks and its pairings. */
 const expectedBracket = ({ projectedTable, pairingOutcomes }: Projection) =>
@@ -77,14 +77,14 @@ describe("project with the Post-Season option", () => {
       });
 
       it("changes nothing else, down to every Rank Distribution and Cut Line chance", () => {
-        expect(withoutPairings(on)).toEqual(off);
+        expect(withoutPostSeason(on)).toEqual(off);
       });
 
       it("changes nothing else with a What-If either", () => {
         const { game } = off.nextRound[0]!.games[0]!;
         const whatIf = new Map([[game.id, "regulationLoss" as const]]);
         const whatIfOn = project(snapshot.games, asOf, model, whatIf, undefined, { postSeason: true });
-        expect(withoutPairings(whatIfOn)).toEqual(project(snapshot.games, asOf, model, whatIf));
+        expect(withoutPostSeason(whatIfOn)).toEqual(project(snapshot.games, asOf, model, whatIf));
       });
     });
   }
@@ -100,7 +100,7 @@ describe("project with the Post-Season option", () => {
       const on = project(snapshot.games, asOf, splitFormRate, undefined, undefined, { postSeason: true });
       expect(on.pairingOutcomes).toBeNull();
       expect(on.projectedBracket).toBeNull();
-      expect(withoutPairings(on)).toEqual(project(snapshot.games, asOf, splitFormRate));
+      expect(withoutPostSeason(on)).toEqual(project(snapshot.games, asOf, splitFormRate));
     });
   });
 
