@@ -3,15 +3,17 @@ import type { ProjectedTableRow } from "../domain/project.ts";
 import type { FormWindowGame } from "../domain/form.ts";
 import { splitFormRatesOf } from "../domain/splitFormRate.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
+import { PLAYOFF_ROUNDS, type RoundChances } from "../domain/postSeason.ts";
 import type { Decision, TeamId } from "../domain/types.ts";
 import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
-import { formatForm, formatGameDate, ordinal } from "./format.ts";
+import { formatForm, formatGameDate, ordinal, SIMULATION_RUNS_LABEL } from "./format.ts";
 import { chartMetrics, projectionChart, shownMetric, tooltipAt, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { SIDES } from "./formSides.ts";
 import { fullTeamName, type Teams } from "./TeamName.tsx";
 import { formatPercent } from "./winSplit.ts";
+import { WhatIfChance } from "./WhatIfChance.tsx";
 
 const DECISION_LABELS: Record<Decision, string> = {
   regulation: "",
@@ -96,6 +98,33 @@ function FormWindowDetail({
           ))}
         </tbody>
       </table>
+    </section>
+  );
+}
+
+/** Each Playoff round by name: never "Playoffs", which the Cut Lines keep for finishing 1–6. */
+const ROUND_LABELS: Record<keyof RoundChances, { label: string; title: string }> = {
+  quarterfinal: { label: "Quarterfinal", title: "Chance of reaching the quarterfinal: finishing 1–6, or 7–10 and winning the play-in" },
+  semifinal: { label: "Semifinal", title: "Chance of reaching the semifinal" },
+  final: { label: "Final", title: "Chance of reaching the final" },
+  champion: { label: "Champion", title: "Chance of winning the final" },
+};
+
+/** A team's Round Chances, each with its What-If Change from the Real Projection; a rise is always good. */
+function RoundChancesDetail({ chances, real }: { chances: RoundChances; real: RoundChances | null | undefined }) {
+  return (
+    <section class="round-chances">
+      <h3>Post-season · % of {SIMULATION_RUNS_LABEL} simulated seasons</h3>
+      <dl>
+        {PLAYOFF_ROUNDS.map((round) => (
+          <div key={round} title={ROUND_LABELS[round].title}>
+            <dt>{ROUND_LABELS[round].label}</dt>
+            <dd class={chances[round] === 0 ? "none" : undefined}>
+              <WhatIfChance probability={chances[round]} real={real?.[round]} rise="good" unit="%" />
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -284,12 +313,13 @@ function ProjectionHistoryChart({
   );
 }
 
-/** What a team's row of the Projected Table expands to: its Rank Distribution (where the model has one), Projection History chart and home and away Form Windows. */
+/** What a team's row of the Projected Table expands to: its Round Chances (under the Post-Season flag), its Rank Distribution (where the model has one), Projection History chart and home and away Form Windows. */
 export function TeamDetail({
   row,
   history,
   teams,
   showProbabilities,
+  showRoundChances,
   chartMetric,
   onChartMetricChange,
   whatIfActive,
@@ -299,6 +329,8 @@ export function TeamDetail({
   teams: Teams;
   /** The model has Outcome Probabilities; without them each Form Window shows the rate it projects at. */
   showProbabilities: boolean;
+  /** The Post-Season flag is on: show the row's Round Chances, where the model gives them. */
+  showRoundChances: boolean;
   chartMetric: ChartMetric;
   onChartMetricChange: (metric: ChartMetric) => void;
   /** A What-If is applied to the row; the chart stays real and says so. */
@@ -308,6 +340,7 @@ export function TeamDetail({
   const anyEmpty = row.homeFormWindow.length === 0 || row.awayFormWindow.length === 0;
   return (
     <div class={anyEmpty ? "form-windows single" : "form-windows"}>
+      {showRoundChances && row.roundChances && <RoundChancesDetail chances={row.roundChances} real={row.realProjection?.roundChances} />}
       <div class="rank-row">
         {row.rankDistribution && <RankHistogram distribution={row.rankDistribution} projectedRank={row.rank} real={row.realProjection?.rankDistribution} />}
         <ProjectionHistoryChart

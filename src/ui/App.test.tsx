@@ -100,9 +100,13 @@ describe("App", () => {
       expect(headings(page(asOf, new Map(), splitFormRate, true))).not.toContain("Projected bracket");
     });
 
-    it("leaves the rest of the page as it is with the flag on", () => {
-      const withoutBracket = (html: string) => html.replace(/<section class="panel"><h2>Projected bracket<\/h2>.*?<\/section>(?=<section class="panel")/s, "");
-      expect(withoutBracket(page(asOf, new Map(), DEFAULT_MODEL, true))).toBe(page(asOf));
+    it("leaves the rest of the page as it is with the flag on, but for the pointers to the Round Chances", () => {
+      const withoutPostSeason = (html: string) =>
+        html
+          .replace(/<section class="panel"><h2>Projected bracket<\/h2>.*?<\/section>(?=<section class="panel")/s, "")
+          .replace(/<li>Quarterfinal · Semifinal · Final · Champion:[^<]*<\/li>/, "")
+          .replaceAll("Show round chances, ", "Show ");
+      expect(withoutPostSeason(page(asOf, new Map(), DEFAULT_MODEL, true))).toBe(page(asOf));
     });
   });
 

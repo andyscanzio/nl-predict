@@ -896,6 +896,7 @@ tbody th {
 }
 
 .form-window,
+.round-chances,
 .rank-histogram,
 .history-chart {
   min-width: 0;
@@ -923,6 +924,40 @@ tbody th {
 
 .form-window tr.what-if {
   font-style: italic;
+  color: var(--muted);
+}
+
+/* Round Chances: a row of their own above the Rank Distribution, two by two, or four across where they fit. */
+.round-chances {
+  grid-column: 1 / -1;
+}
+
+.round-chances dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  .round-chances dl {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.round-chances dt {
+  font: 600 0.68rem var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.round-chances dd {
+  margin: 0;
+  font: 700 1.2rem/1.1 var(--display);
+}
+
+.round-chances dd.none {
   color: var(--muted);
 }
 
@@ -1080,6 +1115,7 @@ tbody th {
 }
 
 .form-window h3,
+.round-chances h3,
 .rank-histogram h3,
 .history-chart h3 {
   margin: 0 0 0.25rem;

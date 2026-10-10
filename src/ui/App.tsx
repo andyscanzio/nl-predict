@@ -274,6 +274,7 @@ export function App({
             <ProjectedTable
               rows={projectedTable}
               model={model}
+              postSeason={postSeason}
               history={history}
               whatIfActive={whatIfActive}
               teams={teams}

@@ -62,9 +62,10 @@ function panel(
     showProbabilities?: boolean;
     chartMetric?: ChartMetric;
     whatIfActive?: boolean;
+    showRoundChances?: boolean;
   } = {},
 ) {
-  const { showProbabilities = true, chartMetric = "playoffs", whatIfActive = false } = overrides;
+  const { showProbabilities = true, chartMetric = "playoffs", whatIfActive = false, showRoundChances = false } = overrides;
   return render(
     <TeamDetail
       row={overrides.row ?? row()}
@@ -74,6 +75,7 @@ function panel(
       chartMetric={chartMetric}
       onChartMetricChange={() => {}}
       whatIfActive={whatIfActive}
+      showRoundChances={showRoundChances}
     />,
   );
 }
@@ -192,6 +194,59 @@ describe("TeamDetail", () => {
       const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null) });
       expect(html).not.toContain("rank-histogram");
       expect(text(html)).not.toContain("Rank distribution");
+    });
+  });
+
+  describe("Round Chances", () => {
+    const roundChances = { quarterfinal: 0.9, semifinal: 0.55, final: 0.3, champion: 0.12 };
+    const section = (html: string) => /<section class="round-chances">(.*?)<\/section>/.exec(html)?.[1];
+
+    it("are absent with the Post-Season flag off, even when the row has them", () => {
+      const html = panel({ row: row({ roundChances }) });
+      expect(html).toBe(panel());
+      expect(section(html)).toBeUndefined();
+    });
+
+    it("show each round's chance, labelled by round and never as Playoffs", () => {
+      const html = section(panel({ showRoundChances: true, row: row({ roundChances }) }))!;
+      expect(text(html)).toContain("Quarterfinal 90%");
+      expect(text(html)).toContain("Semifinal 55%");
+      expect(text(html)).toContain("Final 30%");
+      expect(text(html)).toContain("Champion 12%");
+      expect(html).not.toMatch(/playoffs/i);
+    });
+
+    it("are absent for a Points-only model, whose row has none", () => {
+      expect(section(panel({ showRoundChances: true, showProbabilities: false, row: row({ roundChances: null }) }))).toBeUndefined();
+    });
+
+    describe("during a What-If", () => {
+      const withReal = (real: typeof roundChances) =>
+        section(
+          panel({
+            showRoundChances: true,
+            whatIfActive: true,
+            row: row({
+              roundChances,
+              realProjection: { rank: 2, projectedPoints: 30.4, probabilities: null, rankDistribution: null, roundChances: real },
+            }),
+          }),
+        )!;
+
+      it("show each round's What-If Change from the Real Projection, a rise as good and a fall as bad", () => {
+        const html = withReal({ quarterfinal: 0.95, semifinal: 0.55, final: 0.25, champion: 0.09 });
+        const changes = [...html.matchAll(/<small class="what-if-change (\w+)"[^>]*>(.*?)<\/small>/g)].map((m) => [m[1], m[2]]);
+        expect(changes).toEqual([
+          ["bad", "−5"],
+          ["good", "+5"],
+          ["good", "+3"],
+        ]);
+        expect(text(html)).toContain("12 percent, up 3 from the real projection");
+      });
+
+      it("show no What-If Change for a team the What-If doesn't reach", () => {
+        expect(withReal(roundChances)).not.toContain("what-if-change");
+      });
     });
   });
 

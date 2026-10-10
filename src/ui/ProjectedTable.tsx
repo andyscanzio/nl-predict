@@ -8,12 +8,12 @@ import { DEFAULT_MODEL, pickerModelOf, PROJECTION_MODELS, type PickerModelId, ty
 import { eloLevelStartModel, eloModel, INITIAL_RATING } from "../domain/eloModel.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import type { ChartMetric } from "./projectionChart.ts";
-import { formatForm, formatGameDate, SIMULATION_RUNS_LABEL } from "./format.ts";
+import { formatForm, formatGameDate, signed, SIMULATION_RUNS_LABEL } from "./format.ts";
 import { lowSampleSentence, lowSampleShare } from "./lowSample.ts";
 import { SIDES } from "./formSides.ts";
 import { TeamDetail } from "./TeamDetail.tsx";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
-import { formatPercent } from "./winSplit.ts";
+import { WhatIfChance } from "./WhatIfChance.tsx";
 
 const PROJECTED_COLUMNS = 9;
 
@@ -60,11 +60,6 @@ function Movement({ movement, comparison }: { movement: number; comparison: stri
   );
 }
 
-/** A signed number with a real minus sign. */
-function signed(value: number): string {
-  return value > 0 ? `+${value}` : `−${-value}`;
-}
-
 /** The projected Points, with the What-If Change from the Real Projection stacked under it when the rounded values differ. */
 function ProjectedPoints({ row }: { row: ProjectedTableRow }) {
   const points = Math.round(row.projectedPoints);
@@ -83,35 +78,10 @@ function ProjectedPoints({ row }: { row: ProjectedTableRow }) {
   );
 }
 
-/** A printed percent as a number: "<1" counts as 0 and ">99" as 100. */
-function printedPercent(probability: number): number {
-  const printed = formatPercent(probability);
-  return printed === "<1" ? 0 : printed === ">99" ? 100 : Number(printed);
-}
-
-/**
- * A chance percent, with its What-If Change from the Real Projection stacked under it when the printed values differ.
- * A rise in PO or 1st is good and a fall bad, Out is the other way round, and PI is neutral.
- */
+/** A chance percent with its What-If Change: a rise in PO or 1st is good and a fall bad, Out is the other way round, and PI is neutral. */
 function Chance({ column, row }: { column: (typeof PROBABILITY_COLUMNS)[number]; row: ProjectedTableRow }) {
-  const probability = row.probabilities![column.key];
-  const printed = formatPercent(probability);
-  const real = row.realProjection?.probabilities;
-  const change = real ? printedPercent(probability) - printedPercent(real[column.key]) : 0;
-  if (change === 0) return <>{printed}</>;
-  const direction = change > 0 ? "up" : "down";
-  const tone = column.key === "playIn" ? "neutral" : (change > 0) === (column.key !== "eliminated") ? "good" : "bad";
-  return (
-    <>
-      <span class="visually-hidden">
-        {printed} percent, {direction} {Math.abs(change)} from the real projection
-      </span>
-      <span aria-hidden="true">{printed}</span>
-      <small class={`what-if-change ${tone}`} aria-hidden="true">
-        {signed(change)}
-      </small>
-    </>
-  );
+  const rise = column.key === "playIn" ? "neutral" : column.key === "eliminated" ? "bad" : "good";
+  return <WhatIfChance probability={row.probabilities![column.key]} real={row.realProjection?.probabilities?.[column.key]} rise={rise} />;
 }
 
 /** One chip per Form Window Game, newest first: green for wins, red for losses, half-filled for OT/SO. */
@@ -240,6 +210,7 @@ function ModelPicker({
 export function ProjectedTable({
   rows,
   model,
+  postSeason,
   history,
   whatIfActive,
   teams,
@@ -247,6 +218,8 @@ export function ProjectedTable({
 }: {
   rows: ProjectedTableRow[];
   model: ProjectionModel<ProjectionModelId>;
+  /** The Post-Season flag: each team's detail shows its Round Chances, for a model with Outcome Probabilities. */
+  postSeason: boolean;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
   /** A What-If is applied to `rows`; the Projection History in each team's detail ignores it and says so. */
@@ -258,7 +231,12 @@ export function ProjectedTable({
   const showChanges = rows.some((row) => row.realProjection);
   const movementComparison = showChanges ? "the real projected rank" : "current rank";
   const showProbabilities = model.kind === "outcomes";
-  const expandTarget = showProbabilities ? "finishing ranks and form window games" : "form window games";
+  const showRoundChances = postSeason && showProbabilities;
+  const expandTarget = showRoundChances
+    ? "round chances, finishing ranks and form window games"
+    : showProbabilities
+      ? "finishing ranks and form window games"
+      : "form window games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   // When every team is Low Sample, one legend line says so instead of a badge on every row.
@@ -376,6 +354,7 @@ export function ProjectedTable({
                         whatIfActive={whatIfActive}
                         teams={teams}
                         showProbabilities={showProbabilities}
+                        showRoundChances={showRoundChances}
                         chartMetric={chartMetric}
                         onChartMetricChange={setChartMetric}
                       />
@@ -408,6 +387,8 @@ export function ProjectedTable({
         ) : (
           <li>No % columns: {model.name} gives no outcome probabilities (see below)</li>
         )}
+        {showRoundChances && <li>Quarterfinal · Semifinal · Final · Champion: chances of reaching each round, in each team's detail</li>}
+        {postSeason && !showProbabilities && <li>No round chances: {model.name} gives no outcome probabilities to play the post-season with</li>}
       </ul>
     </section>
   );

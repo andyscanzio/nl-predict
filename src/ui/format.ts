@@ -87,3 +87,8 @@ export function ordinal(n: number) {
 
 /** The Season Simulation's run count as the page prints it, e.g. "10,000". */
 export const SIMULATION_RUNS_LABEL = SIMULATION_RUNS.toLocaleString("en-GB");
+
+/** A signed number with a real minus sign. */
+export function signed(value: number): string {
+  return value > 0 ? `+${value}` : `−${-value}`;
+}
