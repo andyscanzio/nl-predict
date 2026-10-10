@@ -14,14 +14,12 @@ function page(
   now: Date,
   whatIf: WhatIf = new Map(),
   model: ProjectionModel<ProjectionModelId> = DEFAULT_MODEL,
-  postSeason = false,
 ) {
   return render(
     <App
       snapshot={snapshot}
       now={now}
       model={model}
-      postSeason={postSeason}
       history={[]}
       whatIf={whatIf}
       onModelChange={() => {}}
@@ -36,10 +34,11 @@ function headings(html: string) {
 }
 
 describe("App", () => {
-  it("renders the projected table, upcoming games, current table and model explanation in order", () => {
+  it("renders the projected table, projected bracket, upcoming games, current table and model explanation in order", () => {
     const html = page(new Date(snapshot.snapshotAt));
     expect(headings(html)).toEqual([
       "Projected table",
+      "Projected bracket",
       "Upcoming games",
       "Current table",
       `How the projection works: ${DEFAULT_MODEL.name}`,
@@ -64,24 +63,11 @@ describe("App", () => {
     expect(html).not.toContain("ticker");
   });
 
-  describe("behind the Post-Season flag", () => {
+  describe("the Projected Bracket", () => {
     const asOf = new Date(snapshot.snapshotAt);
 
-    it("shows no Projected Bracket with the flag off, exactly as without the Post-Season", () => {
+    it("names the projected champion, as no title odds", () => {
       const html = page(asOf);
-      expect(headings(html)).not.toContain("Projected bracket");
-      expect(html).not.toContain("bracket");
-    });
-
-    it("shows the Projected Bracket right below the Projected Table with the flag on", () => {
-      const html = page(asOf, new Map(), DEFAULT_MODEL, true);
-      expect(headings(html)).toEqual([
-        "Projected table",
-        "Projected bracket",
-        "Upcoming games",
-        "Current table",
-        `How the projection works: ${DEFAULT_MODEL.name}`,
-      ]);
       expect(html).toContain("not title odds");
       expect(html).toContain("Projected champion</span>");
     });
@@ -91,22 +77,13 @@ describe("App", () => {
       const whatIf = new Map([[gameId!, "regulationLoss" as const]]);
       const { projectedBracket } = project(snapshot.games, asOf, DEFAULT_MODEL, whatIf, undefined, { postSeason: true });
       const champion = snapshot.teams.find((team) => team.id === projectedBracket!.champion)!;
-      expect(page(asOf, whatIf, DEFAULT_MODEL, true)).toMatch(
+      expect(page(asOf, whatIf)).toMatch(
         new RegExp(`<p class="bracket-champion">.*?<span class="team-name">${champion.name}</span>`, "s"),
       );
     });
 
-    it("shows no Projected Bracket for a Points-only model", () => {
-      expect(headings(page(asOf, new Map(), splitFormRate, true))).not.toContain("Projected bracket");
-    });
-
-    it("leaves the rest of the page as it is with the flag on, but for the pointers to the Round Chances", () => {
-      const withoutPostSeason = (html: string) =>
-        html
-          .replace(/<section class="panel"><h2>Projected bracket<\/h2>.*?<\/section>(?=<section class="panel")/s, "")
-          .replace(/<li>Quarterfinal · Semifinal · Final · Champion:[^<]*<\/li>/, "")
-          .replaceAll("Show round chances, ", "Show ");
-      expect(withoutPostSeason(page(asOf, new Map(), DEFAULT_MODEL, true))).toBe(page(asOf));
+    it("is absent for a Points-only model", () => {
+      expect(headings(page(asOf, new Map(), splitFormRate))).not.toContain("Projected bracket");
     });
   });
 

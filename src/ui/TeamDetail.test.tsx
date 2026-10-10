@@ -62,10 +62,9 @@ function panel(
     showProbabilities?: boolean;
     chartMetric?: ChartMetric;
     whatIfActive?: boolean;
-    showRoundChances?: boolean;
   } = {},
 ) {
-  const { showProbabilities = true, chartMetric = "playoffs", whatIfActive = false, showRoundChances = false } = overrides;
+  const { showProbabilities = true, chartMetric = "playoffs", whatIfActive = false } = overrides;
   return render(
     <TeamDetail
       row={overrides.row ?? row()}
@@ -75,7 +74,6 @@ function panel(
       chartMetric={chartMetric}
       onChartMetricChange={() => {}}
       whatIfActive={whatIfActive}
-      showRoundChances={showRoundChances}
     />,
   );
 }
@@ -201,14 +199,8 @@ describe("TeamDetail", () => {
     const roundChances = { quarterfinal: 0.9, semifinal: 0.55, final: 0.3, champion: 0.12 };
     const section = (html: string) => /<section class="round-chances">(.*?)<\/section>/.exec(html)?.[1];
 
-    it("are absent with the Post-Season flag off, even when the row has them", () => {
-      const html = panel({ row: row({ roundChances }) });
-      expect(html).toBe(panel());
-      expect(section(html)).toBeUndefined();
-    });
-
     it("show each round's chance, labelled by round and never as Playoffs", () => {
-      const html = section(panel({ showRoundChances: true, row: row({ roundChances }) }))!;
+      const html = section(panel({ row: row({ roundChances }) }))!;
       expect(text(html)).toContain("Quarterfinal 90%");
       expect(text(html)).toContain("Semifinal 55%");
       expect(text(html)).toContain("Final 30%");
@@ -217,14 +209,13 @@ describe("TeamDetail", () => {
     });
 
     it("are absent for a Points-only model, whose row has none", () => {
-      expect(section(panel({ showRoundChances: true, showProbabilities: false, row: row({ roundChances: null }) }))).toBeUndefined();
+      expect(section(panel({ showProbabilities: false, row: row({ roundChances: null }) }))).toBeUndefined();
     });
 
     describe("during a What-If", () => {
       const withReal = (real: typeof roundChances) =>
         section(
           panel({
-            showRoundChances: true,
             whatIfActive: true,
             row: row({
               roundChances,

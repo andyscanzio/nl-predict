@@ -210,7 +210,6 @@ function ModelPicker({
 export function ProjectedTable({
   rows,
   model,
-  postSeason,
   history,
   whatIfActive,
   teams,
@@ -218,8 +217,6 @@ export function ProjectedTable({
 }: {
   rows: ProjectedTableRow[];
   model: ProjectionModel<ProjectionModelId>;
-  /** The Post-Season flag: each team's detail shows its Round Chances, for a model with Outcome Probabilities. */
-  postSeason: boolean;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
   /** A What-If is applied to `rows`; the Projection History in each team's detail ignores it and says so. */
@@ -231,8 +228,7 @@ export function ProjectedTable({
   const showChanges = rows.some((row) => row.realProjection);
   const movementComparison = showChanges ? "the real projected rank" : "current rank";
   const showProbabilities = model.kind === "outcomes";
-  const showRoundChances = postSeason && showProbabilities;
-  const expandTarget = showRoundChances
+  const expandTarget = showProbabilities
     ? "round chances, finishing ranks and form window games"
     : showProbabilities
       ? "finishing ranks and form window games"
@@ -354,7 +350,6 @@ export function ProjectedTable({
                         whatIfActive={whatIfActive}
                         teams={teams}
                         showProbabilities={showProbabilities}
-                        showRoundChances={showRoundChances}
                         chartMetric={chartMetric}
                         onChartMetricChange={setChartMetric}
                       />
@@ -383,12 +378,16 @@ export function ProjectedTable({
         )}
         <li>Left: remaining home · away games</li>
         {showProbabilities ? (
-          <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated seasons</li>
+          <>
+            <li>Playoffs (PO) · Play-in (PI) · Eliminated (Out) · 1st: % of {SIMULATION_RUNS_LABEL} simulated seasons</li>
+            <li>Quarterfinal · Semifinal · Final · Champion: chances of reaching each round, in each team's detail</li>
+          </>
         ) : (
-          <li>No % columns: {model.name} gives no outcome probabilities (see below)</li>
+          <>
+            <li>No % columns: {model.name} gives no outcome probabilities (see below)</li>
+            <li>No round chances: {model.name} gives no outcome probabilities to play the post-season with</li>
+          </>
         )}
-        {showRoundChances && <li>Quarterfinal · Semifinal · Final · Champion: chances of reaching each round, in each team's detail</li>}
-        {postSeason && !showProbabilities && <li>No round chances: {model.name} gives no outcome probabilities to play the post-season with</li>}
       </ul>
     </section>
   );
