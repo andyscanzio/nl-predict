@@ -104,8 +104,10 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run coverage
       - run: npm run build
+      # After the build, which empties dist/, so the README's coverage badge can read it from the site.
+      - run: npm run coverage-badge
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

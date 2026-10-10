@@ -11,5 +11,12 @@ export default defineConfig({
     // The Monte Carlo projections run ~1.5s locally but 2-3x slower on the shared CI runner, where the 5s default
     // started timing out once the Post-Season tests added load.
     testTimeout: 30_000,
+    // `npm run coverage` measures the site's code only; the deploy turns the summary into the README's coverage badge.
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/**/__fixtures__/**"],
+      reporter: ["text-summary", "json-summary"],
+    },
   },
 });

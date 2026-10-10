@@ -1,5 +1,12 @@
 # NL Predict
 
+[![Refresh and deploy](https://github.com/andyscanzio/nl-predict/actions/workflows/refresh-and-deploy.yml/badge.svg?branch=main)](https://github.com/andyscanzio/nl-predict/actions/workflows/refresh-and-deploy.yml)
+[![Test](https://github.com/andyscanzio/nl-predict/actions/workflows/test.yml/badge.svg)](https://github.com/andyscanzio/nl-predict/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fandyscanzio.github.io%2Fnl-predict%2Fcoverage.json)](https://andyscanzio.github.io/nl-predict/coverage.json)
+[![Snapshot](https://img.shields.io/github/last-commit/andyscanzio/nl-predict/main?path=data%2Fgames.json&label=snapshot)](data/games.json)
+[![Live site](https://img.shields.io/badge/live-github.io-blue)](https://andyscanzio.github.io/nl-predict/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+
 Projects the final Regular Season standings of the Swiss ice hockey National League.
 
 **Live site: <https://andyscanzio.github.io/nl-predict/>**
@@ -37,6 +44,7 @@ Requires Node 24 or later.
 npm install
 npm run dev          # local dev server
 npm test             # run the tests (Vitest)
+npm run coverage     # run the tests with a coverage summary
 npm run typecheck    # TypeScript check
 npm run build        # type-check and build to dist/
 npm run preview      # serve the built site
@@ -76,6 +84,8 @@ docs/adr/       architecture decision records
 - Pushes to `main` redeploy without refreshing.
 - A manual run (`gh workflow run refresh-and-deploy.yml`, or "Run workflow" on the Actions tab) refreshes and always redeploys.
 
+Each deploy also runs the tests with coverage and publishes the result as `coverage.json` next to the site, which the README's coverage badge reads. Pushes that touch only tests don't deploy, so the badge catches up at the next deploy.
+
 The page shows when the snapshot was last changed.
 
 Visits are counted with [GoatCounter](https://www.goatcounter.com/), without cookies or personal data. To keep your own browser out of the counts, open <https://andyscanzio.github.io/nl-predict/#toggle-goatcounter> once.
@@ -83,3 +93,5 @@ Visits are counted with [GoatCounter](https://www.goatcounter.com/), without coo
 ## Disclaimer
 
 A hobby project, not affiliated with the National League or the SIHF. Results data comes from the unofficial SIHF data API.
+
+The code is released under the [MIT License](LICENSE). The Games data in `data/` comes from SIHF and is not covered by it.
