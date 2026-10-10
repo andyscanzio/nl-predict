@@ -1,0 +1,25 @@
+name: Test
+
+# Typecheck and test every pull request, so a broken change shows up before it reaches main.
+on:
+  pull_request:
+
+# A new push to the PR supersedes the run for the previous one.
+concurrency:
+  group: test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
