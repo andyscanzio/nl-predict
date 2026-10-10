@@ -8,9 +8,25 @@ on:
     - cron: "0 22 * * *"
     - cron: "0 6 * * *"
   workflow_dispatch:
-  # Code changes on main redeploy without refreshing the snapshot.
+  # Code changes on main redeploy without refreshing the snapshot. Only paths that feed the built site count, so
+  # pushes touching just docs, tests or the offline scripts don't redeploy.
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "!src/**/*.test.ts"
+      - "!src/**/*.test.tsx"
+      - "!src/**/__fixtures__/**"
+      - "data/**"
+      - "index.html"
+      - "vite.config.ts"
+      - "tsconfig.json"
+      - "package.json"
+      - "package-lock.json"
+      # The Vite plugin that computes the Projection History at build time.
+      - "scripts/projectionHistoryPlugin.ts"
+      - "scripts/historyCache.ts"
+      - ".github/workflows/refresh-and-deploy.yml"
 
 jobs:
   refresh:
