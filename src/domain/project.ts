@@ -9,8 +9,16 @@ import {
 } from "./form.ts";
 import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilities } from "./outcomes.ts";
 import { cutLineFor, type CutLine } from "./cutLines.ts";
-import { simulateSeason, simulationSeed, type CutLineProbabilities, type OutcomeSampler } from "./seasonSimulation.ts";
+import {
+  simulateSeason,
+  simulationSeed,
+  type CutLineProbabilities,
+  type OutcomeSampler,
+  type RoundChances,
+} from "./seasonSimulation.ts";
 import { swissCalendarDay } from "./swissDay.ts";
+import { pairingGames, pairingOutcomesOf, type PairingOutcomes } from "./pairings.ts";
+import { postSeasonGameWinChance, projectedBracket, type ProjectedBracket } from "./postSeason.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -99,6 +107,8 @@ export interface RealProjectionRow {
   probabilities: CutLineProbabilities | null;
   /** The team's real Rank Distribution; null for Points-only models. */
   rankDistribution: number[] | null;
+  /** Present only under the Post-Season option: the team's real Round Chances; null for Points-only models. */
+  roundChances?: RoundChances | null;
 }
 
 export interface ProjectedTableRow {
@@ -131,6 +141,8 @@ export interface ProjectedTableRow {
   probabilities: CutLineProbabilities | null;
   /** Chance of finishing at each rank of the final table (index 0 = 1st) from the Season Simulation; null for Points-only models. */
   rankDistribution: number[] | null;
+  /** Present only under the Post-Season option: Round Chances from the Playoff Simulation; null for Points-only models. */
+  roundChances?: RoundChances | null;
 }
 
 /** A team with fewer Played Games than this is Low Sample, under every Projection Model. */
@@ -182,6 +194,26 @@ export interface Projection {
   nextRound: NextRoundDay[];
   /** The What-If applied: the What-If Results asked for whose Game is in the real Next Round; empty when none. */
   whatIf: WhatIf;
+  /**
+   * Present only under the Post-Season option: the model's Outcome Probabilities for every ordered pair of teams, from
+   * the same Played Games (and What-If) as the Projected Table; null for Points-only models.
+   */
+  pairingOutcomes?: PairingOutcomes | null;
+  /**
+   * Present only under the Post-Season option: the Projected Bracket of the Projected Table's ranks 1–10, decided by
+   * the pairingOutcomes; null for Points-only models.
+   */
+  projectedBracket?: ProjectedBracket | null;
+}
+
+export interface ProjectOptions {
+  /**
+   * The Post-Season: the model also predicts one synthetic Game per ordered pair of teams, appended after the Remaining
+   * Games, giving the Projection's pairingOutcomes and projectedBracket, and the Season Simulation becomes a Playoff
+   * Simulation, giving each Projected Table row its roundChances (a model's sampler gives each run's pairings too).
+   * Off by default.
+   */
+  postSeason?: boolean;
 }
 
 /** The Match Day of a projection made before any Game has been played. */
@@ -525,6 +557,10 @@ function whatIfGame(game: Game, outcome: WhatIfOutcome): Game {
  * With a What-If applied, each Projected Table row also carries the team's Real Projection rank and projected Points.
  * `realProjection` may be the already computed Real Projection for the same Games, As-Of Date and model; when it is
  * not given, it is computed here.
+ *
+ * Under the Post-Season option (see ProjectOptions), the synthetic pairing Games are never Remaining Games: projected
+ * Points, the Next Round, integrity issues and the Season Simulation's Regular Season results are exactly those without
+ * it. With a What-If, `realProjection` must then be made under the option too, for its Round Chances.
  */
 export function project(
   games: Game[],
@@ -532,6 +568,7 @@ export function project(
   model: ProjectionModel,
   whatIf: WhatIf = new Map(),
   realProjection?: Projection,
+  { postSeason = false }: ProjectOptions = {},
 ): Projection {
   const realInput = projectionModelInput(games, asOf);
   const realNextRound = nextRoundOf(realInput.remainingGames, asOf, realInput.currentTable.length);
@@ -547,11 +584,18 @@ export function project(
           new Set(applied.keys()),
         );
   if (applied.size === 0 && realProjection) return realProjection;
+  if (postSeason && realProjection && !("roundChances" in realProjection.projectedTable[0]!)) {
+    throw new Error("Under the Post-Season option, the Real Projection must be made under it too");
+  }
   const { currentTable, formWindows, remainingGames } = input;
   const realRanks = new Map(realInput.currentTable.map((row) => [row.teamId, row.rank]));
   const matchDay = matchDayOf(realInput.playedGames);
 
-  const predictions = predictGames(model, input);
+  const teamIds = currentTable.map((row) => row.teamId);
+  // The model predicts the pairings along with the Remaining Games, after them, so a sampler's draws stay the same.
+  const pairings = postSeason ? pairingGames(teamIds) : [];
+  const modelInput = postSeason ? { ...input, remainingGames: [...remainingGames, ...pairings] } : input;
+  const predictions = predictGames(model, modelInput);
   const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
   for (const game of remainingGames) {
     const { points } = predictions.get(game.id)!;
@@ -563,14 +607,18 @@ export function project(
     applied.size === 0
       ? null
       : new Map(
-          (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
-            row.teamId,
-            { rank: row.rank,
-              projectedPoints: row.projectedPoints,
-              probabilities: row.probabilities,
-              rankDistribution: row.rankDistribution,
-            },
-          ]),
+          (realProjection ?? project(games, asOf, model, undefined, undefined, { postSeason })).projectedTable.map(
+            (row): [TeamId, RealProjectionRow] => [
+              row.teamId,
+              {
+                rank: row.rank,
+                projectedPoints: row.projectedPoints,
+                probabilities: row.probabilities,
+                rankDistribution: row.rankDistribution,
+                ...(postSeason && { roundChances: row.roundChances ?? null }),
+              },
+            ],
+          ),
         );
 
   const simulation =
@@ -578,11 +626,12 @@ export function project(
       ? simulateSeason(
           new Map(currentTable.map((row) => [row.teamId, row.points])),
           remainingGames,
-          new Map(remainingGames.map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
+          new Map([...remainingGames, ...pairings].map((game) => [game.id, predictions.get(game.id)!.outcomes!])),
           simulationSeed(matchDay, model.id),
           undefined,
           realInput.remainingGames,
-          model.sampleOutcomes?.(input),
+          model.sampleOutcomes?.(modelInput),
+          postSeason ? pairings : undefined,
         )
       : null;
 
@@ -612,6 +661,7 @@ export function project(
       lowSample: row.gamesPlayed < LOW_SAMPLE_GAMES,
       probabilities: simulation?.get(row.teamId)?.probabilities ?? null,
       rankDistribution: simulation?.get(row.teamId)?.rankDistribution ?? null,
+      ...(postSeason && { roundChances: simulation?.get(row.teamId)?.roundChances ?? null }),
     };
   });
 
@@ -632,6 +682,9 @@ export function project(
     }),
   }));
 
+  const pairingOutcomes =
+    postSeason && model.kind === "outcomes" ? pairingOutcomesOf(teamIds, (gameId) => predictions.get(gameId)!.outcomes!) : null;
+
   return {
     matchDay,
     currentTable: realInput.currentTable,
@@ -640,5 +693,14 @@ export function project(
     anyGamesPlayed: realInput.playedGames.length > 0,
     nextRound,
     whatIf: applied,
+    ...(postSeason && {
+      pairingOutcomes,
+      projectedBracket:
+        pairingOutcomes &&
+        projectedBracket(
+          projectedTable.map((row) => row.teamId),
+          (home, away) => postSeasonGameWinChance(pairingOutcomes.get(home)!.get(away)!),
+        ),
+    }),
   };
 }

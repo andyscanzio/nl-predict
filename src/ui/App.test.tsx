@@ -3,18 +3,25 @@ import { render } from "preact-render-to-string";
 import { App } from "./App.tsx";
 import { DEFAULT_MODEL, type ProjectionModelId } from "../domain/projectionModels.ts";
 import { eloLevelStartModel } from "../domain/eloModel.ts";
+import { splitFormRate } from "../domain/splitFormRate.ts";
 import { project, type ProjectionModel, type WhatIf } from "../domain/project.ts";
 import type { Game, Snapshot } from "../domain/types.ts";
 import recordedSnapshot from "../domain/__fixtures__/snapshot-2026-09-27.json";
 
 const snapshot = recordedSnapshot as Snapshot;
 
-function page(now: Date, whatIf: WhatIf = new Map(), model: ProjectionModel<ProjectionModelId> = DEFAULT_MODEL) {
+function page(
+  now: Date,
+  whatIf: WhatIf = new Map(),
+  model: ProjectionModel<ProjectionModelId> = DEFAULT_MODEL,
+  postSeason = false,
+) {
   return render(
     <App
       snapshot={snapshot}
       now={now}
       model={model}
+      postSeason={postSeason}
       history={[]}
       whatIf={whatIf}
       onModelChange={() => {}}
@@ -55,6 +62,52 @@ describe("App", () => {
     expect(headline).toContain(`${DEFAULT_MODEL.name} projection:`);
     expect(headline).not.toContain("<button");
     expect(html).not.toContain("ticker");
+  });
+
+  describe("behind the Post-Season flag", () => {
+    const asOf = new Date(snapshot.snapshotAt);
+
+    it("shows no Projected Bracket with the flag off, exactly as without the Post-Season", () => {
+      const html = page(asOf);
+      expect(headings(html)).not.toContain("Projected bracket");
+      expect(html).not.toContain("bracket");
+    });
+
+    it("shows the Projected Bracket right below the Projected Table with the flag on", () => {
+      const html = page(asOf, new Map(), DEFAULT_MODEL, true);
+      expect(headings(html)).toEqual([
+        "Projected table",
+        "Projected bracket",
+        "Upcoming games",
+        "Current table",
+        `How the projection works: ${DEFAULT_MODEL.name}`,
+      ]);
+      expect(html).toContain("not title odds");
+      expect(html).toContain("Projected champion</span>");
+    });
+
+    it("seeds the Projected Bracket from the Projected Table shown, What-If included", () => {
+      const [gameId] = project(snapshot.games, asOf, DEFAULT_MODEL).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
+      const whatIf = new Map([[gameId!, "regulationLoss" as const]]);
+      const { projectedBracket } = project(snapshot.games, asOf, DEFAULT_MODEL, whatIf, undefined, { postSeason: true });
+      const champion = snapshot.teams.find((team) => team.id === projectedBracket!.champion)!;
+      expect(page(asOf, whatIf, DEFAULT_MODEL, true)).toMatch(
+        new RegExp(`<p class="bracket-champion">.*?<span class="team-name">${champion.name}</span>`, "s"),
+      );
+    });
+
+    it("shows no Projected Bracket for a Points-only model", () => {
+      expect(headings(page(asOf, new Map(), splitFormRate, true))).not.toContain("Projected bracket");
+    });
+
+    it("leaves the rest of the page as it is with the flag on, but for the pointers to the Round Chances", () => {
+      const withoutPostSeason = (html: string) =>
+        html
+          .replace(/<section class="panel"><h2>Projected bracket<\/h2>.*?<\/section>(?=<section class="panel")/s, "")
+          .replace(/<li>Quarterfinal · Semifinal · Final · Champion:[^<]*<\/li>/, "")
+          .replaceAll("Show round chances, ", "Show ");
+      expect(withoutPostSeason(page(asOf, new Map(), DEFAULT_MODEL, true))).toBe(page(asOf));
+    });
   });
 
   describe("under the Elo Model's Level Start", () => {

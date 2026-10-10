@@ -42,8 +42,18 @@ function row(overrides: Partial<ProjectedTableRow> = {}): ProjectedTableRow {
 
 const history: ProjectionHistory = [];
 
-function panel(rows: ProjectedTableRow[], model: ProjectionModel<ProjectionModelId> = outcomesModel) {
-  return render(<ProjectedTable rows={rows} model={model} history={history} whatIfActive={false} teams={teams} onModelChange={() => {}} />);
+function panel(rows: ProjectedTableRow[], model: ProjectionModel<ProjectionModelId> = outcomesModel, postSeason = false) {
+  return render(
+    <ProjectedTable
+      rows={rows}
+      model={model}
+      postSeason={postSeason}
+      history={history}
+      whatIfActive={false}
+      teams={teams}
+      onModelChange={() => {}}
+    />,
+  );
 }
 
 /** The text a visitor reads, without markup. */
@@ -106,6 +116,34 @@ describe("ProjectedTable", () => {
       const html = panel([row({ probabilities: undefined, rankDistribution: undefined })], pointsModel);
       expect(html).not.toContain("pct");
       expect(text(html)).toContain(`No % columns: ${pointsModel.name} gives no outcome probabilities`);
+    });
+  });
+
+  describe("behind the Post-Season flag", () => {
+    const roundChances = { quarterfinal: 0.9, semifinal: 0.55, final: 0.3, champion: 0.12 };
+
+    it("mentions no Round Chances with the flag off, exactly as without the Post-Season", () => {
+      const html = panel([row({ roundChances })]);
+      expect(html).toBe(panel([row()]));
+      expect(text(html)).not.toMatch(/quarterfinal|champion|round chances/i);
+    });
+
+    it("points to each team's Round Chances, by round, with the flag on", () => {
+      const html = panel([row({ roundChances })], outcomesModel, true);
+      expect(text(html)).toContain("Quarterfinal · Semifinal · Final · Champion");
+      expect(teamRows(html)[0]!.html).toContain('title="Show round chances, finishing ranks and form window games"');
+    });
+
+    it("leaves the Cut Line columns' labels and meaning as they are with the flag on", () => {
+      const cutLineParts = (html: string) => [...html.matchAll(/<th class="num pct"[^>]*>.*?<\/th>/g)].map((m) => m[0]);
+      expect(cutLineParts(panel([row({ roundChances })], outcomesModel, true))).toEqual(cutLineParts(panel([row()])));
+      expect(text(panel([row({ roundChances })], outcomesModel, true))).toContain("Playoffs (PO) · Play-in (PI)");
+    });
+
+    it("says why there are no Round Chances under Split Form Rate", () => {
+      const html = panel([row({ probabilities: null, rankDistribution: null, roundChances: null })], pointsModel, true);
+      expect(text(html)).toContain(`No round chances: ${pointsModel.name} gives no outcome probabilities`);
+      expect(text(html)).not.toContain("Quarterfinal · Semifinal");
     });
   });
 

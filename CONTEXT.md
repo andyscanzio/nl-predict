@@ -68,7 +68,7 @@ A team's Playoff Simulation chances of reaching the Quarterfinal (by Cut Line or
 _Avoid_: Playoff chance (that is the Cut Line's direct qualification), playoff odds
 
 **Projected Bracket**:
-The Play-In and Playoffs as they would go if the Regular Season finished exactly as the Projected Table. Each tie shows its favourite's chance of winning it, and the favourite advances. It answers "if the table ends as projected, who wins?", so it is never a team's title chance; that comes from the Playoff Simulation.
+The Play-In and Playoffs as they would go if the Regular Season finished exactly as the Projected Table. Each tie shows both sides' chances of winning it, and the favourite advances. It answers "if the table ends as projected, who wins?", so it is never a team's title chance; that comes from the Playoff Simulation.
 _Avoid_: Predicted bracket, playoff odds
 
 ### Form
