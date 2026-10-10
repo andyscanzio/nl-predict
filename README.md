@@ -5,9 +5,6 @@
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fandyscanzio.github.io%2Fnl-predict%2Fcoverage.json)](https://andyscanzio.github.io/nl-predict/coverage.json)
 [![Snapshot](https://img.shields.io/github/last-commit/andyscanzio/nl-predict/main?path=data%2Fgames.json&label=snapshot)](data/games.json)
 [![Live site](https://img.shields.io/badge/live-github.io-blue)](https://andyscanzio.github.io/nl-predict/)
-![Node](https://img.shields.io/badge/node-%E2%89%A524-339933?logo=nodedotjs&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-![Preact](https://img.shields.io/badge/Preact-673AB8?logo=preact&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 Projects the final Regular Season standings of the Swiss ice hockey National League.
