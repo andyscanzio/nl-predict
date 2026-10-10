@@ -40,16 +40,19 @@ function row(overrides: Partial<ProjectedTableRow> = {}): ProjectedTableRow {
   };
 }
 
-/** A Projection History of two Match Days over teams 1 and 2, with playoff chances unless `playoffs` is null (a Points-only model). */
-function history(playoffs: number | null = 0.5): ProjectionHistory {
-  const point = (matchDay: string, projectedPoints: number): HistoryPoint => ({
+/**
+ * A Projection History of two Match Days over teams 1 and 2, with playoff chances unless `playoffs` is null (a Points-only model).
+ * The teams start apart unless `levelStart`, which leaves the Rank view only one point to draw.
+ */
+function history(playoffs: number | null = 0.5, levelStart = false): ProjectionHistory {
+  const point = (matchDay: string, projectedPoints: number, gap: number): HistoryPoint => ({
     matchDay,
     teams: {
-      1: { projectedPoints, gamesPlayed: 10, playoffs, first: playoffs && 0.1 },
-      2: { projectedPoints: projectedPoints + 2, gamesPlayed: 10, playoffs, first: playoffs && 0.1 },
+      1: { projectedPoints, rank: gap > 0 ? 2 : 1, gamesPlayed: 10, playoffs, first: playoffs && 0.1 },
+      2: { projectedPoints: projectedPoints + gap, rank: gap > 0 ? 1 : 2, gamesPlayed: 10, playoffs, first: playoffs && 0.1 },
     },
   });
-  return [point("season-start", 20), point("2026-09-26", 24)];
+  return [point("season-start", 20, levelStart ? 0 : 2), point("2026-09-26", 24, 2)];
 }
 
 function panel(
@@ -274,6 +277,26 @@ describe("TeamDetail", () => {
       expect(html).toContain('class="history-toggle"');
       expect(html).toMatch(/aria-pressed="true"[^>]*>Points<\/button>/);
       expect(html).toMatch(/aria-pressed="false"[^>]*>Playoff %<\/button>/);
+      expect(html).toMatch(/aria-pressed="false"[^>]*>Rank<\/button>/);
+    });
+
+    it("charts the Projected Rank when that is the chosen metric", () => {
+      const html = panel({ chartMetric: "rank" });
+      expect(html).toContain("<h3>Projected rank over the season</h3>");
+      expect(html).toMatch(/aria-pressed="true"[^>]*>Rank<\/button>/);
+    });
+
+    it("gives a Points-only model a Points and Rank toggle", () => {
+      const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null), chartMetric: "rank" });
+      expect(html).toContain("<h3>Projected rank over the season</h3>");
+      expect(html).toMatch(/aria-pressed="false"[^>]*>Points<\/button>/);
+      expect(html).not.toContain("Playoff %");
+    });
+
+    it("hides the Rank option until it has two points, falling back to the next view", () => {
+      const html = panel({ history: history(0.5, true), chartMetric: "rank" });
+      expect(html).not.toMatch(/>Rank<\/button>/);
+      expect(html).toContain("<h3>Playoff chance over the season</h3>");
     });
 
     it("charts the playoff chance when that is the chosen metric", () => {
@@ -281,7 +304,7 @@ describe("TeamDetail", () => {
     });
 
     it("leaves out the metric toggle when the model can chart only Points, and shows Points whatever was chosen", () => {
-      const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null), chartMetric: "playoffs" });
+      const html = panel({ showProbabilities: false, row: row({ rankDistribution: null, probabilities: null }), history: history(null, true), chartMetric: "playoffs" });
       expect(html).not.toContain("history-toggle");
       expect(html).toContain("<h3>Projected points over the season</h3>");
     });

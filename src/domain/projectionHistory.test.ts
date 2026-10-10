@@ -76,6 +76,7 @@ describe("projectionHistory", () => {
       for (const row of live.projectedTable) {
         expect(last.teams[row.teamId]).toEqual({
           projectedPoints: row.projectedPoints,
+          rank: row.rank,
           gamesPlayed: live.currentTable.find((t) => t.teamId === row.teamId)!.gamesPlayed,
           playoffs: row.probabilities?.playoffs ?? null,
           first: row.probabilities?.first ?? null,
@@ -83,6 +84,15 @@ describe("projectionHistory", () => {
       }
     });
   }
+
+  it("ranks the teams 1 to 14 at every point, by the Projected Table's own tie-breaks", () => {
+    for (const model of MODELS) {
+      for (const point of historyOf(model)) {
+        const ranks = Object.values(point.teams).map((team) => team.rank);
+        expect(ranks.sort((a, b) => a - b)).toEqual(Array.from({ length: snapshot.teams.length }, (_, index) => index + 1));
+      }
+    }
+  });
 
   it("gives Split Form Rate real projected Points and no chances", () => {
     for (const point of historyOf(splitFormRate)) {

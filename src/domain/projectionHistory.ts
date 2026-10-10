@@ -6,6 +6,8 @@ import type { Game, TeamId } from "./types.ts";
 /** One team's standing in a Projection History point. */
 export interface TeamHistoryPoint {
   projectedPoints: number;
+  /** Projected Rank: the team's place in the Projected Table, with its tie-breaks. */
+  rank: number;
   /** Played Games at that point; Low Sample is derived from it. */
   gamesPlayed: number;
   /** Playoff and 1st-place chances from the Season Simulation; null for Points-only models. */
@@ -46,6 +48,7 @@ function pointAsOf(games: Game[], asOf: Date, model: ProjectionModel): HistoryPo
   for (const row of projectedTable) {
     teams[row.teamId] = {
       projectedPoints: row.projectedPoints,
+      rank: row.rank,
       gamesPlayed: gamesPlayed.get(row.teamId)!,
       playoffs: row.probabilities?.playoffs ?? null,
       first: row.probabilities?.first ?? null,
