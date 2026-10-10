@@ -11,6 +11,7 @@ import { expectedPointsOf, otsoRate, type ExpectedPoints, type OutcomeProbabilit
 import { cutLineFor, type CutLine } from "./cutLines.ts";
 import { simulateSeason, simulationSeed, type CutLineProbabilities, type OutcomeSampler } from "./seasonSimulation.ts";
 import { swissCalendarDay } from "./swissDay.ts";
+import { pairingGames, pairingOutcomesOf, type PairingOutcomes } from "./pairings.ts";
 import type { Game, TeamId } from "./types.ts";
 
 export interface CurrentTableRow {
@@ -182,6 +183,19 @@ export interface Projection {
   nextRound: NextRoundDay[];
   /** The What-If applied: the What-If Results asked for whose Game is in the real Next Round; empty when none. */
   whatIf: WhatIf;
+  /**
+   * Present only under the Post-Season option: the model's Outcome Probabilities for every ordered pair of teams, from
+   * the same Played Games (and What-If) as the Projected Table; null for Points-only models.
+   */
+  pairingOutcomes?: PairingOutcomes | null;
+}
+
+export interface ProjectOptions {
+  /**
+   * The Post-Season: the model also predicts one synthetic Game per ordered pair of teams, appended after the Remaining
+   * Games, giving the Projection's pairingOutcomes and each Season Simulation run's sampled pairings. Off by default.
+   */
+  postSeason?: boolean;
 }
 
 /** The Match Day of a projection made before any Game has been played. */
@@ -525,6 +539,9 @@ function whatIfGame(game: Game, outcome: WhatIfOutcome): Game {
  * With a What-If applied, each Projected Table row also carries the team's Real Projection rank and projected Points.
  * `realProjection` may be the already computed Real Projection for the same Games, As-Of Date and model; when it is
  * not given, it is computed here.
+ *
+ * Under the Post-Season option (see ProjectOptions), the synthetic pairing Games are never Remaining Games: projected
+ * Points, the Next Round, integrity issues and the Season Simulation's results are exactly those without it.
  */
 export function project(
   games: Game[],
@@ -532,6 +549,7 @@ export function project(
   model: ProjectionModel,
   whatIf: WhatIf = new Map(),
   realProjection?: Projection,
+  { postSeason = false }: ProjectOptions = {},
 ): Projection {
   const realInput = projectionModelInput(games, asOf);
   const realNextRound = nextRoundOf(realInput.remainingGames, asOf, realInput.currentTable.length);
@@ -551,7 +569,10 @@ export function project(
   const realRanks = new Map(realInput.currentTable.map((row) => [row.teamId, row.rank]));
   const matchDay = matchDayOf(realInput.playedGames);
 
-  const predictions = predictGames(model, input);
+  const teamIds = currentTable.map((row) => row.teamId);
+  // The model predicts the pairings along with the Remaining Games, after them, so a sampler's draws stay the same.
+  const modelInput = postSeason ? { ...input, remainingGames: [...remainingGames, ...pairingGames(teamIds)] } : input;
+  const predictions = predictGames(model, modelInput);
   const projectedPoints = new Map(currentTable.map((row) => [row.teamId, row.points]));
   for (const game of remainingGames) {
     const { points } = predictions.get(game.id)!;
@@ -563,7 +584,7 @@ export function project(
     applied.size === 0
       ? null
       : new Map(
-          (realProjection ?? project(games, asOf, model)).projectedTable.map((row) => [
+          (realProjection ?? project(games, asOf, model, undefined, undefined, { postSeason })).projectedTable.map((row) => [
             row.teamId,
             { rank: row.rank,
               projectedPoints: row.projectedPoints,
@@ -582,7 +603,7 @@ export function project(
           simulationSeed(matchDay, model.id),
           undefined,
           realInput.remainingGames,
-          model.sampleOutcomes?.(input),
+          model.sampleOutcomes?.(modelInput),
         )
       : null;
 
@@ -640,5 +661,8 @@ export function project(
     anyGamesPlayed: realInput.playedGames.length > 0,
     nextRound,
     whatIf: applied,
+    ...(postSeason && {
+      pairingOutcomes: model.kind === "outcomes" ? pairingOutcomesOf(teamIds, (gameId) => predictions.get(gameId)!.outcomes!) : null,
+    }),
   };
 }

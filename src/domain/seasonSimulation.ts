@@ -63,7 +63,8 @@ export type OutcomeSampler = (random: () => number) => readonly OutcomeProbabili
  *
  * With `sampleOutcomes`, each run first takes its own Outcome Probabilities from it instead of `outcomes`. The sampler
  * draws from a second generator, seeded from `seed`, so the Games' and ties' draws stay exactly those without it, and a
- * What-If leaves the sampler's draws unchanged too.
+ * What-If leaves the sampler's draws unchanged too. A sampler may give more Outcome Probabilities than there are
+ * `remainingGames` (the Post-Season's pairings, appended after them); only the leading ones are played.
  */
 export function simulateSeason(
   currentPoints: ReadonlyMap<TeamId, number>,
@@ -104,7 +105,10 @@ export function simulateSeason(
   const rankCounts = teamIds.map(() => new Int32Array(teams));
 
   for (let run = 0; run < runs; run++) {
-    if (sampleOutcomes) sampleOutcomes(sampleRandom).forEach((sampled, g) => setThresholds(g, sampled));
+    if (sampleOutcomes) {
+      const sampled = sampleOutcomes(sampleRandom);
+      for (let g = 0; g < remainingGames.length; g++) setThresholds(g, sampled[g]!);
+    }
     for (let t = 0; t < teams; t++) points[t] = startingPoints[t]!;
     for (let d = 0; d < draws.length; d++) draws[d] = random();
     for (let g = 0; g < remainingGames.length; g++) {
