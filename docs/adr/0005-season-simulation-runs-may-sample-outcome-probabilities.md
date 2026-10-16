@@ -21,3 +21,7 @@ A Projection Model with Outcome Probabilities may now also give a sampler (`samp
 
 - The sampler draws from a second generator, seeded from the same Match Day and model. The Games' and ties' draws are unchanged, so a model without a sampler gives the same numbers as before. A What-If also keeps the Real Projection's Rating draws, so What-If Change still shows only the What-If Results.
 - The Elo Model's Season Simulation does about one Outcome Probabilities calculation per Remaining Game per run, so it takes longer in the browser and in the build's Projection History.
+
+## Addendum: the Learned Model's Strength Uncertainty (#152)
+
+The Learned Model is the second user of `sampleOutcomes`. Each run draws u ~ N(0, τ) per team, in Current Table order, and adds the home team's draw minus the away team's to every Game's linear predictor before the cut points, so a team's draw moves all its Games together. τ is on the logit scale and constant. `npm run learned-weights` tunes it by an inner walk-forward: each finished Season after the first training Season is projected with weights fitted only on the Seasons before it, and τ is the grid value (0 to 1.0 in steps of 0.025, extended while the optimum is on the edge) with the lowest pooled Rank RPS. For 2026/27 it is 0.275: 0.07631 against 0.07727 without it. The sampler reads the Game's linear predictor once per projection and needs one exponential per team per run, so a sampled Projection History adds about 2.8 s over an unsampled one, against 3.7 s for the Elo Model's.

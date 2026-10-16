@@ -27,7 +27,7 @@ export interface EloParameters {
 }
 
 /** A standard normal draw (Box–Muller) from two uniform draws. */
-function standardNormal(random: () => number): number {
+export function standardNormal(random: () => number): number {
   return Math.sqrt(-2 * Math.log(1 - random())) * Math.cos(2 * Math.PI * random());
 }
 
