@@ -94,6 +94,7 @@ export function fitOrderedLogit(rows: readonly OrderedLogitRow[], options: Order
   const l2 = options.l2 ?? 0;
   const d = rows[0]?.features.length ?? 0;
   const size = CUTS + d;
+  if (rows.length === 0) throw new Error("Cannot fit an ordered logit without rows");
 
   // Start at the marginal cut points with no effect from the features.
   const counts = [0, 0, 0, 0];

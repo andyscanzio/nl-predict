@@ -53,6 +53,11 @@ describe("learnedFeatures", () => {
     expect(features([], schedule).slice(2)).toEqual([0, 1]);
   });
 
+  it("ignores undated Games in the schedule", () => {
+    const schedule = [game("", 1, 3), game("2026-10-09T19:45:00+02:00", 2, 4)];
+    expect(features([], schedule).slice(2)).toEqual([0, 1]);
+  });
+
   it("honours a wider back-to-back rule", () => {
     const schedule = [game("2026-10-08T19:45:00+02:00", 1, 3)];
     expect(features([], schedule).slice(2)).toEqual([0, 0]);

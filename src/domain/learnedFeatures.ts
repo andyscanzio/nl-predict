@@ -78,9 +78,14 @@ export function learnedFeatures(
     if (!dated) return parameters.undatedBackToBack;
     const day = swissCalendarDay(startsAt);
     const recent = new Set(Array.from({ length: parameters.backToBackDays }, (_, i) => swissDayBefore(day, i + 1)));
-    return schedule.some(
-      (other) => (other.homeTeamId === teamId || other.awayTeamId === teamId) && recent.has(swissCalendarDay(Date.parse(other.startsAt))),
-    )
+    return schedule.some((other) => {
+      const otherStart = Date.parse(other.startsAt);
+      return (
+        !Number.isNaN(otherStart) &&
+        (other.homeTeamId === teamId || other.awayTeamId === teamId) &&
+        recent.has(swissCalendarDay(otherStart))
+      );
+    })
       ? 1
       : 0;
   };
