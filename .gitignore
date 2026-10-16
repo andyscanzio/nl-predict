@@ -5,3 +5,6 @@ coverage
 
 # Local-only data: past Season snapshots and study outputs, never pushed
 /data/local/
+
+# macOS Finder metadata
+.DS_Store
