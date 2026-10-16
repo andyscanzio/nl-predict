@@ -38,6 +38,7 @@ const readSnapshot = async (path: string) => JSON.parse(await readFile(path, "ut
 const upcoming = await readSnapshot(values.games);
 const lastSeason = upcoming.season - 1;
 const firstTrainingSeason = Number(values["first-training-season"]);
+if (firstTrainingSeason < WARM_UP_FIRST_SEASON) throw new Error("Training cannot start before the warm-up chain");
 if (STARTING_RATINGS.season !== upcoming.season) {
   throw new Error(`data/starting-ratings.json is for ${seasonLabel(STARTING_RATINGS.season)}; run npm run starting-ratings first`);
 }
@@ -58,7 +59,6 @@ for (let season = firstTrainingSeason; season <= lastSeason; season++) {
   }
   fromSeasons.push(season);
 }
-if (firstTrainingSeason < WARM_UP_FIRST_SEASON) throw new Error("Training cannot start before the warm-up chain");
 
 // Rounded so the file is the same on any machine's floating point, and the model serves exactly what is committed.
 const round = (x: number) => Math.round(x * 1e6) / 1e6;
