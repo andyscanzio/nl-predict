@@ -1,0 +1,74 @@
+Headroom check (PROTOTYPE): 1092 test Games, 2023, 2024, 2025; training from 2021; Prior Games 10
+
+Pooled and per-Season mean per-Game scores (lower is better)
+model                     Brier  LogLoss      RPS    Brier 2023 Brier 2024 Brier 2025
+Elo Model                0.6494   1.2071   0.2241        0.6508     0.6531     0.6444
+OL Rating diff           0.6478   1.1956   0.2245        0.6488     0.6505     0.6440
+OL + goal diff           0.6462   1.1937   0.2238        0.6451     0.6500     0.6436
+OL + back-to-back        0.6454   1.1928   0.2235        0.6459     0.6460     0.6444
+OL + progress×diff       0.6451   1.1922   0.2234        0.6456     0.6452     0.6445
+Win logit + OT/SO Rate   0.6498   1.2058   0.2242        0.6496     0.6544     0.6454
+
+Brier difference vs the Elo Model (negative = better), 95% cluster bootstrap over match days, Seasons better
+OL Rating diff          -0.0017  [-0.0061, 0.0029]  3/3  (-0.26%)
+OL + goal diff          -0.0032  [-0.0075, 0.0012]  3/3  (-0.49%)
+OL + back-to-back       -0.0040  [-0.0091, 0.0011]  3/3  (-0.62%)
+OL + progress×diff      -0.0043  [-0.0097, 0.0011]  2/3  (-0.67%)
+Win logit + OT/SO Rate   0.0003  [-0.0033, 0.0040]  1/3  (0.05%)
+
+OT/SO share by closeness (tertiles of |P(home win) − ½| under each model): predicted vs actual
+Elo Model             close 0.233 vs 0.203   mid 0.237 vs 0.250   lopsided 0.235 vs 0.245
+OL + back-to-back     close 0.229 vs 0.214   mid 0.220 vs 0.245   lopsided 0.187 vs 0.239
+Win logit + OT/SO Rateclose 0.237 vs 0.209   mid 0.236 vs 0.247   lopsided 0.233 vs 0.242
+
+Back-to-back base rates (all rows): home b2b 0.277, away b2b 0.284
+
+Fitted coefficients per fold (β per raw unit; cuts on the standardised scale)
+2023 OL Rating diff       n=698  cuts -0.789 -0.288 0.112  β/sd 7.05e-3
+2023 OL + goal diff       n=698  cuts -0.790 -0.286 0.115  β/sd 4.94e-3 2.12e-1
+2023 OL + back-to-back    n=698  cuts -0.793 -0.287 0.116  β/sd 4.81e-3 2.25e-1 -3.73e-1 3.68e-1
+2023 OL + progress×diff   n=698  cuts -0.793 -0.287 0.116  β/sd 6.06e-3 2.54e-1 -3.75e-1 3.71e-1 -2.90e-3
+2024 OL Rating diff       n=1062  cuts -0.800 -0.292 0.132  β/sd 6.17e-3
+2024 OL + goal diff       n=1062  cuts -0.803 -0.292 0.134  β/sd 3.91e-3 2.56e-1
+2024 OL + back-to-back    n=1062  cuts -0.805 -0.293 0.134  β/sd 3.84e-3 2.62e-1 -2.41e-1 2.98e-1
+2024 OL + progress×diff   n=1062  cuts -0.806 -0.293 0.134  β/sd 4.99e-3 2.94e-1 -2.44e-1 2.98e-1 -2.78e-3
+2025 OL Rating diff       n=1426  cuts -0.869 -0.349 0.098  β/sd 5.50e-3
+2025 OL + goal diff       n=1426  cuts -0.872 -0.349 0.099  β/sd 3.66e-3 2.29e-1
+2025 OL + back-to-back    n=1426  cuts -0.876 -0.351 0.099  β/sd 3.58e-3 2.37e-1 -3.49e-1 4.05e-1
+2025 OL + progress×diff   n=1426  cuts -0.876 -0.351 0.099  β/sd 4.84e-3 2.77e-1 -3.51e-1 4.06e-1 -3.15e-3
+
+=== --train-from 2022 ===
+Pooled and per-Season mean per-Game scores (lower is better)
+model                     Brier  LogLoss      RPS    Brier 2023 Brier 2024 Brier 2025
+Elo Model                0.6494   1.2071   0.2241        0.6508     0.6531     0.6444
+OL Rating diff           0.6473   1.1958   0.2244        0.6477     0.6485     0.6457
+OL + goal diff           0.6482   1.1970   0.2248        0.6507     0.6486     0.6453
+OL + back-to-back        0.6474   1.1961   0.2245        0.6504     0.6463     0.6454
+OL + progress×diff       0.6470   1.1956   0.2244        0.6501     0.6455     0.6455
+Win logit + OT/SO Rate   0.6536   1.2086   0.2262        0.6576     0.6567     0.6464
+
+Brier difference vs the Elo Model (negative = better), 95% cluster bootstrap over match days, Seasons better
+OL Rating diff          -0.0021  [-0.0063, 0.0022]  2/3  (-0.33%)
+OL + goal diff          -0.0013  [-0.0055, 0.0030]  2/3  (-0.20%)
+OL + back-to-back       -0.0021  [-0.0072, 0.0031]  2/3  (-0.32%)
+OL + progress×diff      -0.0024  [-0.0079, 0.0031]  2/3  (-0.37%)
+Win logit + OT/SO Rate   0.0041  [-0.0007, 0.0089]  0/3  (0.64%)
+
+
+=== --prior-games 5 ===
+
+Brier difference vs the Elo Model (negative = better), 95% cluster bootstrap over match days, Seasons better
+OL Rating diff          -0.0017  [-0.0061, 0.0029]  3/3  (-0.26%)
+OL + goal diff          -0.0033  [-0.0076, 0.0012]  3/3  (-0.50%)
+OL + back-to-back       -0.0041  [-0.0092, 0.0011]  3/3  (-0.63%)
+OL + progress×diff      -0.0043  [-0.0096, 0.0011]  3/3  (-0.66%)
+Win logit + OT/SO Rate   0.0003  [-0.0034, 0.0040]  1/3  (0.04%)
+
+=== --prior-games 20 ===
+
+Brier difference vs the Elo Model (negative = better), 95% cluster bootstrap over match days, Seasons better
+OL Rating diff          -0.0017  [-0.0061, 0.0029]  3/3  (-0.26%)
+OL + goal diff          -0.0031  [-0.0075, 0.0014]  3/3  (-0.47%)
+OL + back-to-back       -0.0039  [-0.0090, 0.0013]  2/3  (-0.59%)
+OL + progress×diff      -0.0044  [-0.0098, 0.0010]  2/3  (-0.67%)
+Win logit + OT/SO Rate   0.0005  [-0.0031, 0.0040]  1/3  (0.07%)
