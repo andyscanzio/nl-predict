@@ -1,0 +1,96 @@
+{
+  "season": 2026,
+  "fromSeasons": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "elo": {
+    "k": 10,
+    "homeAdvantage": 60,
+    "carryOver": 1
+  },
+  "startingRatings": [
+    {
+      "teamId": 101151,
+      "rating": 1603
+    },
+    {
+      "teamId": 103138,
+      "rating": 1578.3
+    },
+    {
+      "teamId": 101139,
+      "rating": 1563.5
+    },
+    {
+      "teamId": 103141,
+      "rating": 1537.2
+    },
+    {
+      "teamId": 103140,
+      "rating": 1527.2
+    },
+    {
+      "teamId": 101150,
+      "rating": 1514.2
+    },
+    {
+      "teamId": 101144,
+      "rating": 1502.6
+    },
+    {
+      "teamId": 101060,
+      "rating": 1496.4
+    },
+    {
+      "teamId": 102126,
+      "rating": 1496
+    },
+    {
+      "teamId": 102128,
+      "rating": 1471.8
+    },
+    {
+      "teamId": 101149,
+      "rating": 1453.2
+    },
+    {
+      "teamId": 102127,
+      "rating": 1451.9
+    },
+    {
+      "teamId": 101152,
+      "rating": 1451.6
+    },
+    {
+      "teamId": 103144,
+      "rating": 1353.3
+    }
+  ],
+  "features": [
+    "ratingDifference",
+    "goalDifference",
+    "homeBackToBack",
+    "awayBackToBack"
+  ],
+  "featureParameters": {
+    "priorGames": 10,
+    "backToBackDays": 1,
+    "undatedBackToBack": 0
+  },
+  "coefficients": [
+    0.003809,
+    0.130329,
+    -0.258862,
+    0.336662
+  ],
+  "cutPoints": [
+    -0.835459,
+    -0.317355,
+    0.151041
+  ],
+  "tau": 0
+}

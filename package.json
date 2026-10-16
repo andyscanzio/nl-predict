@@ -20,7 +20,8 @@
     "study:matchup": "node scripts/study.ts --study matchup",
     "study:starting-rating": "node scripts/startingRatingStudy.ts",
     "game-details": "node scripts/gameDetails.ts",
-    "starting-ratings": "node scripts/startingRatings.ts"
+    "starting-ratings": "node scripts/startingRatings.ts",
+    "learned-weights": "node scripts/learnedWeights.ts"
   },
   "dependencies": {
     "@fontsource-variable/oxanium": "^5.3.0",
