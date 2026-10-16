@@ -50,17 +50,21 @@ The Play-In and the Playoffs that follow the Regular Season. Ranks 11–14 (Play
 _Avoid_: Playoffs (when the Play-In is meant too)
 
 **Play-In**:
-The two-round contest among Regular Season ranks 7–10 for the last two Playoff places: 7 v 8 (the winner qualifies) and 9 v 10 (the loser is out), then the 7 v 8 loser against the 9 v 10 winner (the winner qualifies). Each tie is a home-and-away pair of Games on aggregate goals; the two qualifiers take Playoff seeds 7 and 8 in their Regular Season order.
+The two-round contest among Regular Season ranks 7–10 for the last two Playoff places: 7 v 8 (the winner qualifies) and 9 v 10 (the loser is out), then the 7 v 8 loser against the 9 v 10 winner (the winner qualifies). Each tie is a home-and-away pair of Games on aggregate goals, so a leg can end level; a level aggregate goes to overtime in the second leg, whose goal counts towards it; the two qualifiers take Playoff seeds 7 and 8 in their Regular Season order.
 _Avoid_: Pre-Playoffs (the format before 2023/24)
 
 **Playoffs**:
-Three best-of-seven rounds (quarterfinals, semifinals, final) among Regular Season ranks 1–6 and the two Play-In qualifiers, re-paired by Regular Season rank before every round (best remaining against worst remaining). The better-ranked team hosts the first, third, fifth and seventh Games. Every Post-Season Game has a winner: overtime is sudden death, with no shootout.
+Three best-of-seven rounds (quarterfinals, semifinals, final) among Regular Season ranks 1–6 and the two Play-In qualifiers, re-paired by Regular Season rank before every round (best remaining against worst remaining). The better-ranked team hosts the first, third, fifth and seventh Games. Every Playoff Game has a winner: overtime is sudden death, with no shootout.
+
+**Post-Season Game**:
+One scheduled or played Play-In or Playoff Game. It is not a Game: it never counts towards Points, Form, the Current Table, Match Days, Ratings or the Back-Test, and only fixes or continues ties in the Playoff Simulation and the Projected Bracket. Like a Game, it counts as played once it has a final score, even one awaiting official confirmation, and only if it was played by the As-Of Date.
+_Avoid_: Playoff game (when a Play-In Game is meant too)
 
 **Champion**:
 The winner of the Playoff final.
 
 **Playoff Simulation**:
-A Season Simulation whose every run carries on past the Regular Season through the Play-In and the Playoffs, with that run's Outcome Probabilities and What-If Results, to estimate each team's chance of reaching each Playoff round and of becoming Champion.
+A Season Simulation whose every run carries on past the Regular Season through the Play-In and the Playoffs, with that run's Outcome Probabilities and What-If Results, to estimate each team's chance of reaching each Playoff round and of becoming Champion. A tie already decided by Played Post-Season Games keeps its real winner; a Playoff series in progress plays on from its real score, its remaining Games at the format's venues; a Play-In tie with only its first leg played is still played as if neither leg had been.
 _Avoid_: Post-season simulation, bracket simulation
 
 **Round Chances**:
@@ -68,7 +72,7 @@ A team's Playoff Simulation chances of reaching the Quarterfinal (by Cut Line or
 _Avoid_: Playoff chance (that is the Cut Line's direct qualification), playoff odds
 
 **Projected Bracket**:
-The Play-In and Playoffs as they would go if the Regular Season finished exactly as the Projected Table. Each tie shows both sides' chances of winning it, and the favourite advances. It answers "if the table ends as projected, who wins?", so it is never a team's title chance; that comes from the Playoff Simulation.
+The Play-In and Playoffs as they would go if the Regular Season finished exactly as the Projected Table. Each tie shows both sides' chances of winning it, and the favourite advances; a tie already decided by Played Post-Season Games shows its real result instead and advances its real winner, and a series in progress shows its real score beside chances judged from it. It answers "if the table ends as projected, who wins?", so it is never a team's title chance; that comes from the Playoff Simulation.
 _Avoid_: Predicted bracket, playoff odds
 
 ### Form
