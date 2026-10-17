@@ -20,3 +20,17 @@ export async function warmUpRatings(lastSeason: number, dir = "data/local/season
   }
   return warmUpChain(seasons);
 }
+
+/** A Season's Starting Ratings from the warm-up chain: each team's Rating before its first Game. */
+export function chainStartingRatings(
+  chain: ReadonlyMap<string, { homeRating: number; awayRating: number }>,
+  playedGames: readonly PlayedGame[],
+): { teamId: number; rating: number }[] {
+  const first = new Map<number, number>();
+  for (const game of [...playedGames].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))) {
+    const { homeRating, awayRating } = chain.get(game.id)!;
+    if (!first.has(game.homeTeamId)) first.set(game.homeTeamId, homeRating);
+    if (!first.has(game.awayTeamId)) first.set(game.awayTeamId, awayRating);
+  }
+  return [...first].map(([teamId, rating]) => ({ teamId, rating }));
+}

@@ -16,6 +16,8 @@ export interface SeasonSimulationScore {
   gamesPlayed: number;
   /** Mean over ranks 1 to K−1 of the squared difference between the forecast and actual cumulative rank probabilities (K teams); 0 is perfect, 1 the worst. */
   rankRps: number;
+  /** Absolute gap between the team's projected final Points (its Points plus the expected Points of its Remaining Games) and its actual final Points. */
+  pointsError: number;
   /** Squared error summed over Playoffs, Play-in and Eliminated (0 is perfect, 2 the worst). */
   cutLineBrier: number;
   /** The actual final rank fell in the outer tenths of the Rank Distribution (see inOuterTenths); 20% of forecasts should. */
@@ -44,7 +46,9 @@ export function seasonSimulationBackTest(
   models: readonly OutcomesProjectionModel[],
   runs: number,
 ): SeasonSimulationBackTest[] {
-  const actualRanks = new Map(projectionModelInput(games, END_OF_SEASON).currentTable.map((row) => [row.teamId, row.rank]));
+  const finalTable = projectionModelInput(games, END_OF_SEASON).currentTable;
+  const actualRanks = new Map(finalTable.map((row) => [row.teamId, row.rank]));
+  const actualPoints = new Map(finalTable.map((row) => [row.teamId, row.points]));
   const inputs = projectionHistoryAsOfDates(games)
     .slice(0, -1)
     .map((asOf) => {
@@ -65,6 +69,12 @@ export function seasonSimulationBackTest(
         undefined,
         model.sampleOutcomes?.(input),
       );
+      const projectedPoints = new Map(input.currentTable.map((row) => [row.teamId, row.points]));
+      for (const game of input.remainingGames) {
+        const { points } = predictions.get(game.id)!;
+        projectedPoints.set(game.homeTeamId, projectedPoints.get(game.homeTeamId)! + points.home);
+        projectedPoints.set(game.awayTeamId, projectedPoints.get(game.awayTeamId)! + points.away);
+      }
       return input.currentTable.map(({ teamId, gamesPlayed }): SeasonSimulationScore => {
         const { probabilities, rankDistribution } = simulation.get(teamId)!;
         const actualRank = actualRanks.get(teamId)!;
@@ -75,6 +85,7 @@ export function seasonSimulationBackTest(
           matchDay,
           gamesPlayed,
           rankRps: rankProbabilityScore(rankDistribution, actualRank),
+          pointsError: Math.abs(projectedPoints.get(teamId)! - actualPoints.get(teamId)!),
           cutLineBrier: CUT_LINES.reduce((sum, zone) => sum + (zoneChances[zone] - Number(zone === actualZone)) ** 2, 0),
           outerTenths: inOuterTenths(rankDistribution, actualRank),
         };

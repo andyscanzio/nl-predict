@@ -28,7 +28,7 @@ import { fitOrderedLogit, ordinalOutcomeOf, type OrderedLogitRow } from "../src/
 import { seasonLabel } from "../src/domain/season.ts";
 import { seasonSimulationBackTest } from "../src/domain/seasonBackTest.ts";
 import type { Snapshot } from "../src/domain/types.ts";
-import { warmUpRatings, WARM_UP_FIRST_SEASON } from "./warmUp.ts";
+import { chainStartingRatings, warmUpRatings, WARM_UP_FIRST_SEASON } from "./warmUp.ts";
 
 const { values } = parseArgs({
   options: {
@@ -90,22 +90,13 @@ function weightsFor(season: number, fromSeasons: number[], startingRatings: Lear
   return { weights, games: fromSeasons.reduce((sum, s) => sum + playedGamesOf(s).length, 0) };
 }
 
-/** A finished Season's Starting Ratings from the warm-up chain: each team's Rating before its first Game. */
-function chainStartingRatings(season: number): LearnedWeights["startingRatings"] {
-  const first = new Map<number, number>();
-  for (const game of [...playedGamesOf(season)].sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))) {
-    const { homeRating, awayRating } = chain.get(game.id)!;
-    if (!first.has(game.homeTeamId)) first.set(game.homeTeamId, homeRating);
-    if (!first.has(game.awayTeamId)) first.set(game.awayTeamId, awayRating);
-  }
-  return [...first].map(([teamId, rating]) => ({ teamId, rating }));
-}
+const startingRatingsOf = (season: number) => chainStartingRatings(chain, playedGamesOf(season));
 
 // Inner walk-forward: weights per test Season, fitted on the Seasons before it only. They do not depend on τ.
 const testSeasons = seasonsFrom(firstTrainingSeason + 1, lastSeason);
 const folds = testSeasons.map((season) => ({
   season,
-  base: weightsFor(season, seasonsFrom(firstTrainingSeason, season - 1), chainStartingRatings(season), 0).weights,
+  base: weightsFor(season, seasonsFrom(firstTrainingSeason, season - 1), startingRatingsOf(season), 0).weights,
 }));
 const runs = Number(values.runs);
 
