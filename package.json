@@ -18,6 +18,7 @@
     "backtest": "node scripts/backtest.ts",
     "study": "node scripts/study.ts",
     "study:matchup": "node scripts/study.ts --study matchup",
+    "study:learned": "node scripts/learnedModelStudy.ts",
     "study:starting-rating": "node scripts/startingRatingStudy.ts",
     "game-details": "node scripts/gameDetails.ts",
     "starting-ratings": "node scripts/startingRatings.ts",
