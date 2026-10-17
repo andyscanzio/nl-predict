@@ -5,7 +5,7 @@
  *
  *   npm run study:learned
  *
- * This ticket (#153) covers rungs 1–2 of the ladder and the per-Game metrics. The later rungs and the Season Simulation
+ * Tickets #153 and #154 cover rungs 1–3 of the ladder and the per-Game metrics. The later rungs and the Season Simulation
  * metrics are added to this script by their own tickets; the rules below are fixed for all of them before the first run.
  *
  * Folds: walk-forward, testing 2023/24, 2024/25 and 2025/26. Each fold trains on every earlier Season from 2021/22, and
@@ -192,10 +192,13 @@ interface Rung {
   columns: number[];
   /** Whether the Prior-Games count and the back-to-back rule enter the rung's features. */
   tunesFeatures: boolean;
+  /** Whether the OT/SO cut points move with closeness |η| (partial proportional odds). */
+  closeness?: boolean;
 }
 const RUNGS: Rung[] = [
   { name: "Rung 1: Rating difference", columns: [0], tunesFeatures: false },
   { name: "Rung 2: agreed features", columns: [0, 1, 2, 3], tunesFeatures: true },
+  { name: "Rung 3: non-proportional OT/SO", columns: [0, 1, 2, 3], tunesFeatures: true, closeness: true },
 ];
 
 interface Setting {
@@ -222,13 +225,13 @@ const fitOn = (rung: Rung, setting: Setting, seasons: readonly number[]) =>
         outcome: row.outcome,
       }));
     }),
-    { l2: setting.l2 },
+    { l2: setting.l2, closeness: rung.closeness },
   );
 
 function predictWith(rung: Rung, setting: Setting, fit: ReturnType<typeof fitOn>, season: number): OutcomeVector[] {
   const features = featuresOf(season, setting.priorGames, setting.backToBackDays);
   return features.map((x) =>
-    vectorOf(outcomeProbabilitiesOf(linearPredictor(fit.coefficients, rung.columns.map((c) => x[c]!)), fit.cutPoints)),
+    vectorOf(outcomeProbabilitiesOf(linearPredictor(fit.coefficients, rung.columns.map((c) => x[c]!)), fit.cutPoints, fit.closeness)),
   );
 }
 
@@ -330,7 +333,7 @@ const lines: string[] = [];
 const out = (line = "") => lines.push(line);
 const seasonsText = TEST_SEASONS.map(seasonLabel).join(", ");
 
-out("Learned Model study: rungs 1–2 and per-Game metrics (#153)");
+out("Learned Model study: rungs 1–3 and per-Game metrics (#153, #154)");
 out(`Test Seasons ${seasonsText}; folds are walk-forward, each trained on every earlier Season from ${seasonLabel(FIRST_TRAINING_SEASON)}.`);
 out(`Elo chain warmed from 2017/18. Bootstrap: ${resamples} resamples of Match Days, seed ${seed}. Negative Δ favours the challenger.`);
 out();
@@ -352,7 +355,10 @@ for (const test of TEST_SEASONS) {
       `      validation Brier ${tuned.validationBrier.toFixed(5)} (best of ${tuned.options}: ${tuned.bestValidationBrier.toFixed(5)}); ` +
         `${tuned.unseparated} of ${tuned.options} settings not separated from the best`,
     );
-    out(`      fitted: coefficients ${fit.coefficients.map((c) => c.toPrecision(4)).join(", ")}; cut points ${fit.cutPoints.map((c) => c.toFixed(4)).join(", ")}`);
+    out(
+      `      fitted: coefficients ${fit.coefficients.map((c) => c.toPrecision(4)).join(", ")}; cut points ${fit.cutPoints.map((c) => c.toFixed(4)).join(", ")}` +
+        (fit.closeness ? `; closeness effect on the OT/SO cut points ${fit.closeness.map((c) => c.toFixed(4)).join(", ")}` : ""),
+    );
   }
 }
 out();
@@ -374,6 +380,8 @@ const comparisons: [string, string][] = [
   [RUNGS[0]!.name, "Elo Model"],
   [RUNGS[1]!.name, "Elo Model"],
   [RUNGS[1]!.name, RUNGS[0]!.name],
+  [RUNGS[2]!.name, "Elo Model"],
+  [RUNGS[2]!.name, RUNGS[1]!.name],
 ];
 out("Paired differences, challenger − baseline, with the Match Day cluster bootstrap");
 for (const [challenger, baseline] of comparisons) {
@@ -388,16 +396,21 @@ for (const [challenger, baseline] of comparisons) {
 out();
 
 const brier = METRICS[0];
-const rung2Pooled = delta(RUNGS[1]!.name, RUNGS[0]!.name, brier, indexesOf());
-const rung2Seasons = TEST_SEASONS.filter((s) => delta(RUNGS[1]!.name, RUNGS[0]!.name, brier, indexesOf(s)).mean < 0);
-const rung2Reached = rung2Pooled.mean < 0 && rung2Seasons.length >= 2;
 out("Ladder verdict so far");
 out(`  Rung 1 (Rating difference only): always reached.`);
-out(
-  `  Rung 2 vs rung 1: pooled Brier ${fmt(rung2Pooled.mean)}, better in ${rung2Seasons.length} of ${TEST_SEASONS.length} test Seasons` +
-    `${rung2Seasons.length ? ` (${rung2Seasons.map(seasonLabel).join(", ")})` : ""} → rung 2 ${rung2Reached ? "reached" : "not reached"}.`,
-);
-out(`  Highest rung reached so far: ${rung2Reached ? "2" : "1"}. Rungs 3–5 are not run yet. Selecting it makes its test score somewhat optimistic.`);
+let highest = 1;
+for (let r = 1; r < RUNGS.length; r++) {
+  const [rung, below] = [RUNGS[r]!.name, RUNGS[r - 1]!.name];
+  const pooled = delta(rung, below, brier, indexesOf());
+  const seasons = TEST_SEASONS.filter((s) => delta(rung, below, brier, indexesOf(s)).mean < 0);
+  const reached = highest === r && pooled.mean < 0 && seasons.length >= 2;
+  if (reached) highest = r + 1;
+  out(
+    `  Rung ${r + 1} vs rung ${r}: pooled Brier ${fmt(pooled.mean)}, better in ${seasons.length} of ${TEST_SEASONS.length} test Seasons` +
+      `${seasons.length ? ` (${seasons.map(seasonLabel).join(", ")})` : ""} → rung ${r + 1} ${reached ? "reached" : highest < r ? "not tried (a lower rung was not reached)" : "not reached"}.`,
+  );
+}
+out(`  Highest rung reached so far: ${highest}. Rungs 4–5 are not run yet. Selecting it makes its test score somewhat optimistic.`);
 out();
 
 const brierElo = scoresOf("Elo Model", brier);

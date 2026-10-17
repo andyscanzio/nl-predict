@@ -1,10 +1,11 @@
 import { statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import currentSnapshot from "../../data/games.json";
-import { ELO_CARRY_OVER, ELO_HOME_ADVANTAGE, ELO_K, STARTING_RATINGS } from "./eloModel.ts";
+import { standardNormal, ELO_CARRY_OVER, ELO_HOME_ADVANTAGE, ELO_K, STARTING_RATINGS } from "./eloModel.ts";
 import type { PlayedGame } from "./form.ts";
 import { DEFAULT_LEARNED_FEATURE_PARAMETERS, LEARNED_FEATURE_NAMES } from "./learnedFeatures.ts";
 import { createLearnedModel, LEARNED_WEIGHTS, type LearnedWeights } from "./learnedModel.ts";
+import { outcomeProbabilitiesOf } from "./orderedLogit.ts";
 import { expectedPointsOf } from "./outcomes.ts";
 import { predictGames, projectionModelInput } from "./project.ts";
 import { seededRandom } from "./seasonSimulation.ts";
@@ -145,6 +146,58 @@ describe("createLearnedModel: Strength Uncertainty", () => {
     const meanB = b.reduce((x, y) => x + y) / b.length;
     const covariance = a.reduce((sum, x, i) => sum + (x - meanA) * (b[i]! - meanB), 0) / a.length;
     expect(covariance).toBeLessThan(0);
+  });
+});
+
+describe("createLearnedModel: non-proportional OT/SO", () => {
+  const closeness: [number, number] = [0.3, -0.2];
+  const withCloseness: LearnedWeights = { ...fixture, closeness };
+  const games = [played("p", 2, 1, "2026-09-20T19:45:00+02:00"), game("a", 1, 2, "2026-10-10T19:45:00+02:00"), game("b", 3, 1, "2026-10-11T19:45:00+02:00")];
+  const input = projectionModelInput(games, asOf);
+  const modelOf = (weights: LearnedWeights) => {
+    const model = createLearnedModel(weights);
+    if (model.kind !== "outcomes") throw new Error("the Learned Model gives Outcome Probabilities");
+    return model;
+  };
+
+  it("moves the OT/SO cut points with |η|", () => {
+    const plain = predictGames(createLearnedModel(fixture), input).get("a")!.outcomes!;
+    const moved = predictGames(createLearnedModel(withCloseness), input).get("a")!.outcomes!;
+    expect(moved.regulationLoss).toBeCloseTo(plain.regulationLoss, 12);
+    expect(moved.overtimeOrShootoutLoss).not.toBeCloseTo(plain.overtimeOrShootoutLoss, 3);
+    const { regulationWin, overtimeOrShootoutWin, overtimeOrShootoutLoss, regulationLoss } = moved;
+    expect(regulationWin + overtimeOrShootoutWin + overtimeOrShootoutLoss + regulationLoss).toBeCloseTo(1, 12);
+  });
+
+  it("recomputes closeness from the shifted η in each Season Simulation run", () => {
+    const tau = 0.5;
+    const model = modelOf({ ...withCloseness, tau });
+    // Replay the draws: one standard normal per team in Current Table order, from the same random stream.
+    const sets = model.sampleOutcomes!(input)(seededRandom(3));
+    const draws = (() => {
+      const random = seededRandom(3);
+      return input.currentTable.map(() => standardNormal(random));
+    })();
+    const indexOf = new Map(input.currentTable.map((row, index) => [row.teamId, index]));
+    const base = modelOf({ ...withCloseness, tau: 0 });
+    input.remainingGames.forEach((remaining, g) => {
+      // η of the Game without shifts, recovered from the first cut point, which closeness leaves alone: P(regulation loss) = σ(c0 − η).
+      const p0 = base.predictOutcomes(input).get(remaining.id)!.regulationLoss;
+      const eta = fixture.cutPoints[0] - Math.log(p0 / (1 - p0));
+      const shifted = eta + tau * (draws[indexOf.get(remaining.homeTeamId)!]! - draws[indexOf.get(remaining.awayTeamId)!]!);
+      const expected = outcomeProbabilitiesOf(shifted, fixture.cutPoints, closeness);
+      for (const key of ["regulationWin", "overtimeOrShootoutWin", "overtimeOrShootoutLoss", "regulationLoss"] as const) {
+        expect(sets[g]![key]).toBeCloseTo(expected[key], 10);
+      }
+    });
+  });
+
+  it("still plays from the model's own Outcome Probabilities at a vanishing τ", () => {
+    const predicted = predictGames(createLearnedModel(withCloseness), input);
+    const sets = modelOf({ ...withCloseness, tau: 1e-9 }).sampleOutcomes!(input)(seededRandom(7));
+    input.remainingGames.forEach((remaining, g) => {
+      expect(sets[g]!.overtimeOrShootoutWin).toBeCloseTo(predicted.get(remaining.id)!.outcomes!.overtimeOrShootoutWin, 6);
+    });
   });
 });
 

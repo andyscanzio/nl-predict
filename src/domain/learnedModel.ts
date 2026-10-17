@@ -24,6 +24,8 @@ export interface LearnedWeights {
   featureParameters: LearnedFeatureParameters;
   coefficients: number[];
   cutPoints: [number, number, number];
+  /** Present for a non-proportional OT/SO fit: how the OT/SO cut points move with closeness |η| (see OrderedLogitFit). */
+  closeness?: [number, number];
   /** Strength Uncertainty τ on the logit scale, tuned by `npm run learned-weights`; 0 for none. */
   tau: number;
 }
@@ -73,7 +75,7 @@ export function createLearnedModel(weights: LearnedWeights): Extract<ProjectionM
     predictOutcomes(input) {
       const etas = linearPredictors(input);
       return new Map<string, OutcomeProbabilities>(
-        input.remainingGames.map((game, g) => [game.id, outcomeProbabilitiesOf(etas[g]!, weights.cutPoints)]),
+        input.remainingGames.map((game, g) => [game.id, outcomeProbabilitiesOf(etas[g]!, weights.cutPoints, weights.closeness)]),
       );
     },
     ...(weights.tau > 0 && {
@@ -83,6 +85,16 @@ export function createLearnedModel(weights: LearnedWeights): Extract<ProjectionM
         const indexOf = new Map(currentTable.map((row, index) => [row.teamId, index]));
         const homes = remainingGames.map((game) => indexOf.get(game.homeTeamId)!);
         const aways = remainingGames.map((game) => indexOf.get(game.awayTeamId)!);
+        if (weights.closeness) {
+          // Closeness |η| changes with the shift, so it is recomputed from each run's shifted η and the cut points are not shared.
+          const strengths = new Float64Array(currentTable.length);
+          return (random) => {
+            for (let t = 0; t < strengths.length; t++) strengths[t] = weights.tau * standardNormal(random);
+            return remainingGames.map((_, g) =>
+              outcomeProbabilitiesOf(etas[g]! + strengths[homes[g]!]! - strengths[aways[g]!]!, weights.cutPoints, weights.closeness),
+            );
+          };
+        }
         // σ(cut − η) = 1 / (1 + e^η · e^−cut), and e^(η + u_home − u_away) = e^η · e^u_home / e^u_away: per run only the
         // teams need an exp, so a Game costs a few multiplications and divisions, not three logistic evaluations.
         const oddsAtLevel = etas.map(Math.exp);
