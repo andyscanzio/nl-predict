@@ -7,8 +7,9 @@
  *
  * Tickets #153 and #154 cover rungs 1–3 of the ladder and the per-Game metrics; #155 the Season Simulation half (Strength
  * Uncertainty τ, Rank metrics against Elo, the picker and Default verdicts, the sensitivity runs) for the highest rung
- * reached. The later rungs are added to this script by their own tickets, and a rerun picks them up automatically; the
- * rules below are fixed for all of them before the first run.
+ * reached; #156 rung 4, screened on the local box-score backfill (data/local/game-details/, npm run game-details). The later
+ * rungs are added to this script by their own tickets, and a rerun picks them up automatically; the rules below are fixed
+ * for all of them before the first run.
  *
  * Folds: walk-forward, testing 2023/24, 2024/25 and 2025/26. Each fold trains on every earlier Season from 2021/22, and
  * the Elo chain is warmed from 2017/18 (the warm-up chain, scripts/warmUp.ts).
@@ -34,6 +35,16 @@
  *      difference, PP goals for − PP goals against per Game;
  *   5. nonlinear learners (small MLP, then GBM) on the best linear feature set, each required to beat the best linear
  *      rung.
+ * Rung 4 is four nested steps, each shrunk by the same Prior-Games scheme (one count for all inputs, tuned as before): 4a
+ * swaps regulation goal difference in for goal difference; 4b swaps goal difference over periods 1–2 in for that; 4c adds
+ * shot share; 4d adds special-teams net. Each step is compared with the step below it, the first with the highest of
+ * rungs 1–3 reached (and uses its closeness term iff rung 3 was reached), and is climbed only if it beats that on pooled
+ * per-Game Brier and in at least 2 of 3 test Seasons. Every step is fitted and reported even where a lower step was not
+ * climbed, as a screen; only the climbing counts toward the ladder.
+ * Missing box-score data: a Played Game lacking the numbers an input needs (no box score, a `-`, a missing period) is
+ * skipped by that input alone, adding neither a value nor a Game to the team's count, so a gap is never 0 and never
+ * dilutes. A What-If Result has no box score and so leaves box-score inputs unmoved. The report states each input's
+ * coverage per Season.
  * The highest rung reached is the Learned Model. Rung 1 is always reached. Selecting a rung makes its test score somewhat
  * optimistic, and the report says so.
  *
@@ -72,7 +83,16 @@ import {
   STARTING_RATINGS,
 } from "../src/domain/eloModel.ts";
 import type { PlayedGame } from "../src/domain/form.ts";
-import { DEFAULT_LEARNED_FEATURE_PARAMETERS, LEARNED_FEATURE_NAMES, learnedFeatures } from "../src/domain/learnedFeatures.ts";
+import {
+  DEFAULT_LEARNED_FEATURE_PARAMETERS,
+  firstTwoPeriodsMargin,
+  LEARNED_FEATURE_NAMES,
+  learnedFeatures,
+  powerPlayNetOf,
+  RICHER_FEATURE_NAMES,
+  shotShareOf,
+  type GameBoxScore,
+} from "../src/domain/learnedFeatures.ts";
 import type { LearnedWeights } from "../src/domain/learnedModel.ts";
 import {
   fitOrderedLogit,
@@ -175,6 +195,17 @@ for (let season = WARM_UP_FIRST_SEASON; season <= LAST_SEASON; season++) {
 
 /** The feature vectors of a Season's rows under feature hyperparameters, cached. */
 const featureCache = new Map<string, number[][]>();
+/** The box scores of a Season by gameId; a Season without a backfill file has none. */
+const boxScoresBySeason = new Map<number, Map<string, GameBoxScore>>();
+for (let season = WARM_UP_FIRST_SEASON; season <= LAST_SEASON; season++) {
+  try {
+    const file = JSON.parse(await readFile(`data/local/game-details/season-${season}.json`, "utf8")) as Record<string, GameBoxScore>;
+    boxScoresBySeason.set(season, new Map(Object.entries(file)));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    boxScoresBySeason.set(season, new Map());
+  }
+}
 function featuresOf(season: number, priorGames: number, backToBackDays: number): number[][] {
   const key = `${season}|${priorGames}|${backToBackDays}`;
   if (!featureCache.has(key)) {
@@ -183,7 +214,7 @@ function featuresOf(season: number, priorGames: number, backToBackDays: number):
     const parameters = { ...DEFAULT_LEARNED_FEATURE_PARAMETERS, priorGames, backToBackDays };
     featureCache.set(
       key,
-      rows.map((row) => learnedFeatures(row.game, row, played, snapshots.get(season)!.games, parameters)),
+      rows.map((row) => learnedFeatures(row.game, row, played, snapshots.get(season)!.games, parameters, boxScoresBySeason.get(season)!)),
     );
   }
   return featureCache.get(key)!;
@@ -226,11 +257,29 @@ interface Rung {
   /** Whether the OT/SO cut points move with closeness |η| (partial proportional odds). */
   closeness?: boolean;
 }
-const RUNGS: Rung[] = [
+/** The feature vector's columns: the base features, then the richer inputs (they need box scores). */
+const COLUMN_NAMES: readonly string[] = [...LEARNED_FEATURE_NAMES, ...RICHER_FEATURE_NAMES];
+const columnOf = (name: (typeof RICHER_FEATURE_NAMES)[number]) => COLUMN_NAMES.indexOf(name);
+/** Rungs 1–3 (the Season Simulation half can score these: the Learned Model's weights carry only the base features). */
+const BASE_RUNGS: Rung[] = [
   { name: "Rung 1: Rating difference", columns: [0], tunesFeatures: false },
   { name: "Rung 2: agreed features", columns: [0, 1, 2, 3], tunesFeatures: true },
   { name: "Rung 3: non-proportional OT/SO", columns: [0, 1, 2, 3], tunesFeatures: true, closeness: true },
 ];
+const RUNGS: Rung[] = [...BASE_RUNGS];
+/** The back-to-back flags, kept by every rung that has them. */
+const FLAGS = [2, 3];
+/** Rung 4's steps in nested order, built once the base rungs have run (they take rung 3's closeness term iff it was reached). */
+const richerRungs = (closeness: boolean): Rung[] => {
+  const [regulation, periods, shots, specialTeams] = RICHER_FEATURE_NAMES.map(columnOf) as [number, number, number, number];
+  const step = (name: string, columns: number[]): Rung => ({ name, columns: [0, ...columns, ...FLAGS], tunesFeatures: true, closeness });
+  return [
+    step("Rung 4a: regulation goal difference", [regulation]),
+    step("Rung 4b: goal difference over periods 1–2", [periods]),
+    step("Rung 4c: + shot share", [periods, shots]),
+    step("Rung 4d: + special-teams net", [periods, shots, specialTeams]),
+  ];
+};
 
 interface Setting {
   priorGames: number;
@@ -312,15 +361,34 @@ interface FoldRung {
   predicted: OutcomeVector[];
 }
 const foldRungs = new Map<string, FoldRung>();
-for (const test of TEST_SEASONS) {
-  const trainSeasons = Array.from({ length: test - FIRST_TRAINING_SEASON }, (_, i) => FIRST_TRAINING_SEASON + i);
-  for (const rung of RUNGS) {
-    const tuned = tune(rung, trainSeasons);
-    const fit = fitOn(rung, tuned.setting, trainSeasons);
-    foldRungs.set(`${test}|${rung.name}`, { tuned, fit, predicted: predictWith(rung, tuned.setting, fit, test) });
-    console.error(`${seasonLabel(test)} ${rung.name}: ${settingLabel(tuned.setting, rung)}`);
+function runFolds(rungs: readonly Rung[]) {
+  for (const test of TEST_SEASONS) {
+    const trainSeasons = Array.from({ length: test - FIRST_TRAINING_SEASON }, (_, i) => FIRST_TRAINING_SEASON + i);
+    for (const rung of rungs) {
+      const tuned = tune(rung, trainSeasons);
+      const fit = fitOn(rung, tuned.setting, trainSeasons);
+      foldRungs.set(`${test}|${rung.name}`, { tuned, fit, predicted: predictWith(rung, tuned.setting, fit, test) });
+      console.error(`${seasonLabel(test)} ${rung.name}: ${settingLabel(tuned.setting, rung)}`);
+    }
   }
 }
+runFolds(BASE_RUNGS);
+
+/** Whether `rung` beats `below` on pooled per-Game Brier and in at least 2 of 3 test Seasons; the Seasons it is better in. */
+function beats(rung: Rung, below: Rung) {
+  const diffs = TEST_SEASONS.map((season) => {
+    const [a, b] = [rung, below].map((r) => foldRungs.get(`${season}|${r.name}`)!.predicted);
+    return rowsBySeason.get(season)!.map((row, i) => brierOf(a![i]!, row.outcome) - brierOf(b![i]!, row.outcome));
+  });
+  const pooled = mean(diffs.flat());
+  const seasons = TEST_SEASONS.filter((_, i) => mean(diffs[i]!) < 0);
+  return { pooled, seasons, reached: pooled < 0 && seasons.length >= 2 };
+}
+/** The index of the highest of rungs 1–3 reached by climbing from rung 1. */
+let baseTop = 0;
+while (baseTop + 1 < BASE_RUNGS.length && beats(BASE_RUNGS[baseTop + 1]!, BASE_RUNGS[baseTop]!).reached) baseTop++;
+RUNGS.push(...richerRungs(BASE_RUNGS[baseTop]!.closeness === true));
+runFolds(RUNGS.slice(BASE_RUNGS.length));
 
 // ---------------------------------------------------------------------------------------------------------------------
 // The test rows, scored
@@ -352,6 +420,7 @@ function delta(challenger: string, baseline: string, metric: (typeof METRICS)[nu
     { resamples, seed },
   );
 }
+const percentText = (x: number) => `${(100 * x).toFixed(1)}%`;
 const fmt = (x: number, digits = 5) => (x >= 0 ? "+" : "") + x.toFixed(digits);
 const deltaText = (d: ReturnType<typeof delta>, baselineScore: number) =>
   `${fmt(d.mean)} (${fmt((100 * d.mean) / baselineScore, 2)}%)  95% [${fmt(d.low)}, ${fmt(d.high)}]`;
@@ -364,7 +433,7 @@ const lines: string[] = [];
 const out = (line = "") => lines.push(line);
 const seasonsText = TEST_SEASONS.map(seasonLabel).join(", ");
 
-out("Learned Model study: rungs 1–3, per-Game metrics, Season Simulation metrics and verdicts (#153, #154, #155)");
+out("Learned Model study: rungs 1–4, per-Game metrics, Season Simulation metrics and verdicts (#153, #154, #155, #156)");
 out(`Test Seasons ${seasonsText}; folds are walk-forward, each trained on every earlier Season from ${seasonLabel(FIRST_TRAINING_SEASON)}.`);
 out(`Elo chain warmed from 2017/18. Bootstrap: ${resamples} resamples of Match Days, seed ${seed}. Negative Δ favours the challenger.`);
 out();
@@ -387,7 +456,7 @@ for (const test of TEST_SEASONS) {
         `${tuned.unseparated} of ${tuned.options} settings not separated from the best`,
     );
     out(
-      `      fitted: coefficients ${fit.coefficients.map((c) => c.toPrecision(4)).join(", ")}; cut points ${fit.cutPoints.map((c) => c.toFixed(4)).join(", ")}` +
+      `      fitted: coefficients ${rung.columns.map((column, i) => `${COLUMN_NAMES[column]} ${fit.coefficients[i]!.toPrecision(4)}`).join(", ")}; cut points ${fit.cutPoints.map((c) => c.toFixed(4)).join(", ")}` +
         (fit.closeness ? `; closeness effect on the OT/SO cut points ${fit.closeness.map((c) => c.toFixed(4)).join(", ")}` : ""),
     );
   }
@@ -413,6 +482,10 @@ const comparisons: [string, string][] = [
   [RUNGS[1]!.name, RUNGS[0]!.name],
   [RUNGS[2]!.name, "Elo Model"],
   [RUNGS[2]!.name, RUNGS[1]!.name],
+  ...RUNGS.slice(BASE_RUNGS.length).flatMap((rung, i): [string, string][] => [
+    [rung.name, "Elo Model"],
+    [rung.name, i === 0 ? BASE_RUNGS[baseTop]!.name : RUNGS[BASE_RUNGS.length + i - 1]!.name],
+  ]),
 ];
 out("Paired differences, challenger − baseline, with the Match Day cluster bootstrap");
 for (const [challenger, baseline] of comparisons) {
@@ -427,21 +500,51 @@ for (const [challenger, baseline] of comparisons) {
 out();
 
 const brier = METRICS[0];
-out("Ladder verdict so far");
+out("Ladder verdict");
 out(`  Rung 1 (Rating difference only): always reached.`);
-let highest = 1;
+// Rungs 1–3 climb in order; rung 4's first step climbs from the highest of those reached, and each later step from the one before.
+let top = 0;
 for (let r = 1; r < RUNGS.length; r++) {
-  const [rung, below] = [RUNGS[r]!.name, RUNGS[r - 1]!.name];
-  const pooled = delta(rung, below, brier, indexesOf());
-  const seasons = TEST_SEASONS.filter((s) => delta(rung, below, brier, indexesOf(s)).mean < 0);
-  const reached = highest === r && pooled.mean < 0 && seasons.length >= 2;
-  if (reached) highest = r + 1;
+  const firstRicher = r === BASE_RUNGS.length;
+  const below = firstRicher ? top : r - 1;
+  const [rung, belowName] = [RUNGS[r]!.name, RUNGS[below]!.name];
+  const pooled = delta(rung, belowName, brier, indexesOf());
+  const seasons = TEST_SEASONS.filter((s) => delta(rung, belowName, brier, indexesOf(s)).mean < 0);
+  const tried = top === below;
+  const reached = tried && pooled.mean < 0 && seasons.length >= 2;
+  if (reached) top = r;
   out(
-    `  Rung ${r + 1} vs rung ${r}: pooled Brier ${fmt(pooled.mean)}, better in ${seasons.length} of ${TEST_SEASONS.length} test Seasons` +
-      `${seasons.length ? ` (${seasons.map(seasonLabel).join(", ")})` : ""} → rung ${r + 1} ${reached ? "reached" : highest < r ? "not tried (a lower rung was not reached)" : "not reached"}.`,
+    `  ${rung} vs ${shortName(belowName).toLowerCase()}: pooled Brier ${fmt(pooled.mean)}, better in ${seasons.length} of ${TEST_SEASONS.length} test Seasons` +
+      `${seasons.length ? ` (${seasons.map(seasonLabel).join(", ")})` : ""} → ${reached ? "reached" : tried ? "not reached" : "not climbed (the rung below was not reached); shown as a screen only"}.`,
   );
 }
-out(`  Highest rung reached so far: ${highest}. Rungs 4–5 are not run yet. Selecting it makes its test score somewhat optimistic.`);
+const highest = top + 1;
+out(`  Highest rung reached: ${RUNGS[top]!.name}. Rung 5 (nonlinear learners) is not run yet. Selecting it makes its test score somewhat optimistic.`);
+out();
+
+// Box-score coverage and the missing-data rule (#156).
+out("Rung 4's box-score data (data/local/game-details/, a local backfill; the Snapshot and data/games.json do not carry it)");
+out("  Missing-data rule: a Played Game lacking the numbers an input needs (no box score, a `-`, a missing period) is skipped by that input");
+out("  alone. It adds neither a value nor a Game to a team's count, so a gap is never read as 0 and never dilutes the rest. A team with no");
+out("  usable Games gets the prior (0, or ½ for shot share). A What-If Result has no box score, so it leaves box-score inputs unmoved.");
+out("  Regulation goal difference needs only the result, so its coverage is 100%. Share of Played Games with the numbers each input needs:");
+out(`    ${"".padEnd(16)}${["Played", "box score", "periods 1–2", "shot share", "special teams"].map((h) => h.padStart(14)).join("")}`);
+for (let season = WARM_UP_FIRST_SEASON; season <= LAST_SEASON; season++) {
+  const rows = rowsBySeason.get(season)!;
+  const boxes = rows.map((row) => boxScoresBySeason.get(season)!.get(row.game.id));
+  const share = (has: (box: GameBoxScore | undefined) => boolean) => percentText(boxes.filter(has).length / rows.length);
+  out(
+    `    ${(seasonLabel(season) + (TEST_SEASONS.includes(season) ? " (test)" : "")).padEnd(16)}${[
+      String(rows.length),
+      share((box) => box !== undefined),
+      share((box) => firstTwoPeriodsMargin(box, true) !== undefined),
+      share((box) => shotShareOf(box, true) !== undefined),
+      share((box) => powerPlayNetOf(box, true) !== undefined),
+    ]
+      .map((c) => c.padStart(14))
+      .join("")}`,
+  );
+}
 out();
 
 const brierElo = scoresOf("Elo Model", brier);
@@ -475,7 +578,9 @@ out(`    ${"".padEnd(24)}${["Games", "observed", ...MODELS.map(shortName)].map((
 // Season Simulation half (#155): the Learned Model is the highest rung reached
 // ---------------------------------------------------------------------------------------------------------------------
 
-const learnedRung = RUNGS[highest - 1]!;
+// The Learned Model's weights carry only the base features, so the Season Simulation half scores the highest of rungs 1–3 reached.
+// A rung-4 step reached needs the model to read box scores first; that belongs to the ship ticket.
+const learnedRung = BASE_RUNGS[baseTop]!;
 const PHASES = ["1–13", "14–26", "27–39", "40–52"];
 /** The band of a forecast by the team's Played Games; the first band is the early Season. */
 const phaseOf = (gamesPlayed: number) => Math.min(PHASES.length - 1, Math.max(0, Math.ceil(gamesPlayed / 13) - 1));
@@ -706,11 +811,13 @@ function defaultVerdict(folds: readonly VariantFold[]): Verdict {
 const mainRun = await runVariant(MAIN);
 const mainVerdict = defaultVerdict(mainRun);
 const passFail = (ok: boolean) => (ok ? "PASS" : "FAIL");
-const percentText = (x: number) => `${(100 * x).toFixed(1)}%`;
 
 out();
 out("=".repeat(110));
 out(`Season Simulation half: the Learned Model is ${learnedRung.name}`);
+if (highest > BASE_RUNGS.length) {
+  out(`Rung 4 reached (${RUNGS[top]!.name}), but the model cannot read box scores yet, so this half scores the highest of rungs 1–3 reached instead.`);
+}
 out("=".repeat(110));
 out(`Season Simulation Back-Test at ${simulationRuns} runs per forecast point (τ tuning: ${tuneRuns}), forecasting at every Projection History point of each test Season.`);
 out(`Elo Model: production values with the chain's Starting Ratings and Rating Uncertainty σ = ${ELO_RATING_UNCERTAINTY}. Points MAE: the gap between a team's projected and actual final Points.`);

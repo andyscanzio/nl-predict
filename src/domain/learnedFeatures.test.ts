@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LEARNED_FEATURE_PARAMETERS, learnedFeatures, type LearnedFeatureParameters } from "./learnedFeatures.ts";
+import {
+  DEFAULT_LEARNED_FEATURE_PARAMETERS,
+  learnedFeatures,
+  RICHER_FEATURE_NAMES,
+  type GameBoxScore,
+  type LearnedFeatureParameters,
+} from "./learnedFeatures.ts";
 import type { PlayedGame } from "./form.ts";
 import type { Game } from "./types.ts";
 
@@ -82,5 +88,81 @@ describe("learnedFeatures", () => {
   it("has a default parameter set", () => {
     expect(learnedFeatures(target, ratings, [], [])).toEqual([20, 0, 0, 0]);
     expect(DEFAULT_LEARNED_FEATURE_PARAMETERS.priorGames).toBeGreaterThan(0);
+  });
+});
+
+describe("learnedFeatures with box scores", () => {
+  const [REGULATION, FIRST_TWO, SHOTS, SPECIAL] = [4, 5, 6, 7];
+  const boxScore = (overrides: Partial<GameBoxScore> = {}): GameBoxScore => ({
+    home: { sog: 30, ppGoals: 1 },
+    away: { sog: 10, ppGoals: 0 },
+    scorePerPeriod: { home: [1, 1, 1], away: [0, 0, 0] },
+    ...overrides,
+  });
+  const withBoxScores = (playedGames: PlayedGame[], entries: [PlayedGame, GameBoxScore][], g: Game = target) =>
+    learnedFeatures(g, ratings, playedGames, [], parameters, new Map(entries.map(([played, box]) => [played.id, box])));
+  const earlier = played("2026-10-01T19:45:00+02:00", 1, 3, 3, 0);
+
+  it("appends the richer inputs only when box scores are given", () => {
+    expect(learnedFeatures(target, ratings, [], [], parameters)).toHaveLength(4);
+    expect(withBoxScores([], [])).toHaveLength(4 + RICHER_FEATURE_NAMES.length);
+  });
+
+  it("counts an OT/SO Game as 0 in regulation goal difference, shrunk by Prior Games, home minus away", () => {
+    const regulation = played("2026-10-01T19:45:00+02:00", 1, 3, 3, 0);
+    const overtime: PlayedGame = { ...played("2026-10-02T19:45:00+02:00", 4, 2, 2, 1), result: { homeGoals: 2, awayGoals: 1, decision: "SO" } };
+    // Team 1: +3 / (1 + 2); team 2: the shootout loss counts 0, so 0 / (1 + 2).
+    expect(withBoxScores([regulation, overtime], [])[REGULATION]).toBeCloseTo(1);
+    // Goal difference itself still sees the shootout's one goal.
+    expect(withBoxScores([regulation, overtime], [])[1]).toBeCloseTo(4 / 3);
+  });
+
+  it("computes goal difference over periods 1–2 from the box score, home minus away", () => {
+    const box = boxScore({ scorePerPeriod: { home: [2, 1, 0], away: [0, 0, 4] } });
+    // Team 1 was +3 after two periods (it lost the third, which does not count): 3 / (1 + 2).
+    expect(withBoxScores([earlier], [[earlier, box]])[FIRST_TWO]).toBeCloseTo(1);
+  });
+
+  it("computes shot share, shrunk toward ½, as the home side's minus the away side's", () => {
+    const other = played("2026-10-02T19:45:00+02:00", 4, 2, 1, 0);
+    const box = boxScore({ home: { sog: 30 }, away: { sog: 10 } });
+    // Team 1: (0.75 + 2 × ½) / 3; team 2 (away at the other Game, 20 for 30 against): (0.4 + 1) / 3.
+    const otherBox = boxScore({ home: { sog: 30 }, away: { sog: 20 } });
+    expect(withBoxScores([earlier, other], [[earlier, box], [other, otherBox]])[SHOTS]).toBeCloseTo((0.75 + 1) / 3 - (0.4 + 1) / 3);
+  });
+
+  it("computes special-teams net difference as power-play goals for minus against per Game", () => {
+    const box = boxScore({ home: { ppGoals: 2 }, away: { ppGoals: 0 } });
+    // Team 1: +2 / (1 + 2); team 2 has no Game.
+    expect(withBoxScores([earlier], [[earlier, box]])[SPECIAL]).toBeCloseTo(2 / 3);
+  });
+
+  it("skips a Played Game with missing box-score data for that input only, so it neither counts nor dilutes", () => {
+    const noShots = boxScore({ home: { ppGoals: 2 }, away: { ppGoals: 0 } });
+    const result = withBoxScores([earlier], [[earlier, noShots]]);
+    expect(result[SHOTS]).toBe(0);
+    expect(result[SPECIAL]).toBeCloseTo(2 / 3);
+    const noPeriods = boxScore({ scorePerPeriod: { home: [null, 1, 1], away: [0, 0, 0] } });
+    expect(withBoxScores([earlier], [[earlier, noPeriods]])[FIRST_TWO]).toBe(0);
+    // A Game with no box score at all is skipped by every box-score input but still counts for regulation goal difference.
+    const none = withBoxScores([earlier], []);
+    expect([none[FIRST_TWO], none[SHOTS], none[SPECIAL]]).toEqual([0, 0, 0]);
+    expect(none[REGULATION]).toBeCloseTo(1);
+  });
+
+  it("never lets a Game that starts at or after the target into the box-score inputs", () => {
+    const same = played("2026-10-10T19:45:00+02:00", 1, 3, 5, 0);
+    const later = played("2026-10-11T19:45:00+02:00", 1, 3, 5, 0);
+    const alone = withBoxScores([earlier], [[earlier, boxScore()]]);
+    expect(withBoxScores([earlier, same, later], [[earlier, boxScore()], [same, boxScore()], [later, boxScore()]])).toEqual(alone);
+  });
+
+  it("leaves box-score inputs unmoved by a What-If Result, which has no box score", () => {
+    const before = withBoxScores([earlier], [[earlier, boxScore()]]);
+    const whatIf = played("2026-10-05T19:45:00+02:00", 1, 3, 2, 0);
+    const after = withBoxScores([earlier, whatIf], [[earlier, boxScore()]]);
+    expect(after.slice(FIRST_TWO)).toEqual(before.slice(FIRST_TWO));
+    // A regulation win does move regulation goal difference, like any Played Game.
+    expect(after[REGULATION]).toBeGreaterThan(before[REGULATION]!);
   });
 });
