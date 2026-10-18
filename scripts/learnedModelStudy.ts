@@ -47,7 +47,7 @@
  * Elo baseline uses its production Rating Uncertainty σ = 50.
  *
  * Picker rule: the Learned Model joins the picker if it meets the inference caps (Projection History build adds at most
- * the Elo Model's ~3 s, weights ≤ ~50 KB, one prediction per Remaining Game per projection). Its score against Elo
+ * ~3 s over the Elo Model's, weights ≤ ~50 KB, one prediction per Remaining Game per projection). Its score against Elo
  * doesn't matter here.
  *
  * Default rule (ADR 0004's rule): against the Elo Model, the Learned Model must be better on pooled per-Game Brier and
@@ -847,9 +847,10 @@ const learnedSeconds = buildSeconds(liveSnapshot.games, liveModel);
 const eloSeconds = buildSeconds(liveSnapshot.games, eloModel);
 const weightsBytes = Buffer.byteLength(JSON.stringify(liveWeights, null, 2));
 const onePrediction = liveInput.remainingGames.length > 0 && predictedLive.size === liveInput.remainingGames.length;
-const pickerPasses = learnedSeconds <= BUILD_CAP_SECONDS && weightsBytes <= WEIGHTS_CAP_BYTES && onePrediction;
+const extraSeconds = learnedSeconds - eloSeconds;
+const pickerPasses = extraSeconds <= BUILD_CAP_SECONDS && weightsBytes <= WEIGHTS_CAP_BYTES && onePrediction;
 out("Picker verdict (depends only on the inference caps, not on the score against Elo)");
-out(`  ${passFail(learnedSeconds <= BUILD_CAP_SECONDS)}  Projection History build: ${learnedSeconds.toFixed(2)} s for the Learned Model on data/games.json (${liveSnapshot.games.filter((g) => g.result).length} Played Games; the Elo Model takes ${eloSeconds.toFixed(2)} s); cap ~${BUILD_CAP_SECONDS} s (read as the Learned Model's own build; read as extra time over the Elo Model it is ${(learnedSeconds - eloSeconds).toFixed(2)} s)`);
+out(`  ${passFail(extraSeconds <= BUILD_CAP_SECONDS)}  Projection History build adds ${extraSeconds.toFixed(2)} s over the Elo Model (${learnedSeconds.toFixed(2)} s for the Learned Model vs ${eloSeconds.toFixed(2)} s on data/games.json, ${liveSnapshot.games.filter((g) => g.result).length} Played Games); cap ~${BUILD_CAP_SECONDS} s`);
 out(`  ${passFail(weightsBytes <= WEIGHTS_CAP_BYTES)}  weights file: ${(weightsBytes / 1024).toFixed(1)} KB as committed JSON; cap ~${WEIGHTS_CAP_BYTES / 1024} KB`);
 out(`  ${passFail(onePrediction)}  one prediction per Remaining Game: ${predictedLive.size} predictions for ${liveInput.remainingGames.length} Remaining Games`);
 out(`  → ${pickerPasses ? "the Learned Model joins the picker" : "the Learned Model does not join the picker"}`);
