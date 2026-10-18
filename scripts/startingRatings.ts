@@ -1,7 +1,8 @@
 /**
  * Writes data/starting-ratings.json: the Elo Model's Starting Ratings for the Season in data/games.json, carried from the
  * Regular Seasons in data/local/seasons/ (ADR 0004). Run by hand once per Season, after snapshotting the Season just
- * ended into data/local/seasons/ and once data/games.json holds the new Season.
+ * ended into data/local/seasons/ and once data/games.json holds the new Season. Then run `npm run learned-weights`, which
+ * is fitted against these Ratings.
  *
  *   npm run starting-ratings                                 Ratings carried through 2022/23–2025/26
  *   npm run starting-ratings -- --seasons 2022,2023,2024,2025,2026

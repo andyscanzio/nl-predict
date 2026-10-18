@@ -158,6 +158,10 @@ _Avoid_: Flat start, reset, 1500 start
 How far an Elo Model's Ratings may be off, in Rating points: each Season Simulation run moves every team's Rating by its own random draw of that spread before playing out the Remaining Games, so the Rank Distributions allow for the Ratings being estimates.
 _Avoid_: Noise, hot simulation (Ratings updated inside each run, a different idea)
 
+**Strength Uncertainty**:
+How far a Learned Model's view of a team may be off, as a spread τ on the logit scale: each Season Simulation run gives every team its own random draw of that spread and shifts every Game's logit by the home team's draw minus the away team's, so the Rank Distributions allow for the model's per-Game predictions being estimates. τ is constant and tuned with the model's weights.
+_Avoid_: Rating Uncertainty (the Elo Model's, in Rating points)
+
 **Home Advantage**:
 The Rating bonus an Elo Model gives the home team when predicting a Game, and when judging a Played Game to update Ratings.
 
@@ -168,7 +172,7 @@ A Projection Model's prediction for one Game: the probability of each of the fou
 The league-wide share of Played Games decided in overtime or a shootout, used to split a win probability into regulation and OT/SO outcomes.
 
 **Season Simulation**:
-Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. A model may give each run its own Outcome Probabilities, as the Elo Model does with Rating Uncertainty. Its random draws are fixed by the latest Match Day with a real Played Game as of the As-Of Date and the Projection Model, one per Remaining Game per run, so projecting again with no new results gives the same numbers.
+Playing out every Remaining Game many times from a Projection Model's Outcome Probabilities, breaking final ties at random, to estimate each team's Rank Distribution. A model may give each run its own Outcome Probabilities, as the Elo Model does with Rating Uncertainty and the Learned Model with Strength Uncertainty. Its random draws are fixed by the latest Match Day with a real Played Game as of the As-Of Date and the Projection Model, one per Remaining Game per run, so projecting again with no new results gives the same numbers.
 _Avoid_: Monte Carlo Model
 
 **Rank Distribution**:
