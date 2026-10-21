@@ -1,0 +1,592 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T20:43:39.604Z",
+  "title": "Design System: NL Predict",
+  "extensions": {
+    "colorMeta": {
+      "amber": {
+        "role": "primary",
+        "displayName": "Scoreboard Amber",
+        "canonical": "light-dark(#a86a00, #ffb000)",
+        "purpose": "Brand accent: lit, picked, focused and hovered states; deeper in light mode.",
+        "light": "#a86a00",
+        "dark": "#ffb000",
+        "tonalRamp": [
+          "#1d0200",
+          "#441500",
+          "#6e2d00",
+          "#954d00",
+          "#b87100",
+          "#d1993e",
+          "#eac288",
+          "#ffebca"
+        ]
+      },
+      "amber-lit": {
+        "role": "primary",
+        "displayName": "Lit Segment Amber",
+        "canonical": "#ffb000",
+        "purpose": "Fixed #ffb000 for segments that stay amber in both themes.",
+        "tonalRamp": [
+          "#1d0200",
+          "#441500",
+          "#6e2d00",
+          "#954d00",
+          "#b87100",
+          "#d1993e",
+          "#eac288",
+          "#ffebca"
+        ]
+      },
+      "led-red": {
+        "role": "secondary",
+        "displayName": "Goal-Light Red",
+        "canonical": "light-dark(#d61f1f, #ff4545)",
+        "purpose": "The wordmark dot; identity, not data.",
+        "light": "#d61f1f",
+        "dark": "#ff4545",
+        "tonalRamp": [
+          "#2b0000",
+          "#5c0000",
+          "#910000",
+          "#c00006",
+          "#e63538",
+          "#fb776e",
+          "#ffaca2",
+          "#ffded8"
+        ]
+      },
+      "playoffs-cyan": {
+        "role": "tertiary",
+        "displayName": "Rink Cyan",
+        "canonical": "light-dark(#0079a8, #29d3ff)",
+        "purpose": "Playoff zone only.",
+        "light": "#0079a8",
+        "dark": "#29d3ff",
+        "tonalRamp": [
+          "#000f1f",
+          "#002d46",
+          "#004e72",
+          "#007099",
+          "#0093bb",
+          "#4eb4d3",
+          "#93d5eb",
+          "#d1f6ff"
+        ]
+      },
+      "play-in-amber": {
+        "role": "tertiary",
+        "displayName": "Play-In Amber",
+        "canonical": "light-dark(#a86a00, #ffb000)",
+        "purpose": "Play-in zone only.",
+        "light": "#a86a00",
+        "dark": "#ffb000",
+        "tonalRamp": [
+          "#1d0200",
+          "#441500",
+          "#6e2d00",
+          "#954d00",
+          "#b87100",
+          "#d1993e",
+          "#eac288",
+          "#ffebca"
+        ]
+      },
+      "eliminated-slate": {
+        "role": "tertiary",
+        "displayName": "Eliminated Slate",
+        "canonical": "light-dark(#9aa6b2, #56616d)",
+        "purpose": "Eliminated zone and empty win-split sides.",
+        "light": "#9aa6b2",
+        "dark": "#56616d",
+        "tonalRamp": [
+          "#080c10",
+          "#1f262d",
+          "#39434d",
+          "#57626f",
+          "#798490",
+          "#9da6b0",
+          "#c3cad1",
+          "#ebeff3"
+        ]
+      },
+      "up-green": {
+        "role": "tertiary",
+        "displayName": "Climb Green",
+        "canonical": "light-dark(#0c8a41, #32e07a)",
+        "purpose": "Movement up and favourable What-If Changes.",
+        "light": "#0c8a41",
+        "dark": "#32e07a",
+        "tonalRamp": [
+          "#001400",
+          "#003500",
+          "#005900",
+          "#007d17",
+          "#00a043",
+          "#53be76",
+          "#96dda8",
+          "#d3fadb"
+        ]
+      },
+      "down-red": {
+        "role": "tertiary",
+        "displayName": "Drop Red",
+        "canonical": "light-dark(#d61f1f, #ff4545)",
+        "purpose": "Movement down and unfavourable What-If Changes.",
+        "light": "#d61f1f",
+        "dark": "#ff4545",
+        "tonalRamp": [
+          "#2b0000",
+          "#5c0000",
+          "#910000",
+          "#c00006",
+          "#e63538",
+          "#fb776e",
+          "#ffaca2",
+          "#ffded8"
+        ]
+      },
+      "win-green": {
+        "role": "tertiary",
+        "displayName": "Win Green",
+        "canonical": "light-dark(#0f9a4a, #32e07a)",
+        "purpose": "Form chips: wins.",
+        "light": "#0f9a4a",
+        "dark": "#32e07a",
+        "tonalRamp": [
+          "#001400",
+          "#003500",
+          "#005900",
+          "#007d17",
+          "#00a043",
+          "#53be76",
+          "#96dda8",
+          "#d3fadb"
+        ]
+      },
+      "loss-red": {
+        "role": "tertiary",
+        "displayName": "Loss Red",
+        "canonical": "light-dark(#d61f1f, #ff4545)",
+        "purpose": "Form chips: losses.",
+        "light": "#d61f1f",
+        "dark": "#ff4545",
+        "tonalRamp": [
+          "#2b0000",
+          "#5c0000",
+          "#910000",
+          "#c00006",
+          "#e63538",
+          "#fb776e",
+          "#ffaca2",
+          "#ffded8"
+        ]
+      },
+      "arena-floor": {
+        "role": "neutral",
+        "displayName": "Arena Floor",
+        "canonical": "light-dark(#e9edf2, #07090c)",
+        "purpose": "Page background.",
+        "light": "#e9edf2",
+        "dark": "#07090c",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4246",
+          "#5e6166",
+          "#7f8387",
+          "#a3a5a9",
+          "#c7c9cc",
+          "#edeef0"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "light-dark(#ffffff, #10151c)",
+        "purpose": "Module surfaces.",
+        "light": "#ffffff",
+        "dark": "#10151c",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252b",
+          "#3d424a",
+          "#5b626b",
+          "#7d838c",
+          "#a0a5ad",
+          "#c6c9cf",
+          "#eceff2"
+        ]
+      },
+      "panel-strip": {
+        "role": "neutral",
+        "displayName": "Panel Strip",
+        "canonical": "light-dark(#f3f6f9, #151c25)",
+        "purpose": "Heading strips, day headings, row hover.",
+        "light": "#f3f6f9",
+        "dark": "#151c25",
+        "tonalRamp": [
+          "#080b0f",
+          "#20262c",
+          "#3b434c",
+          "#5a626d",
+          "#7b838e",
+          "#9fa6af",
+          "#c5cad0",
+          "#eceff3"
+        ]
+      },
+      "inset": {
+        "role": "neutral",
+        "displayName": "Inset",
+        "canonical": "light-dark(#f6f8fa, #0b0f14)",
+        "purpose": "Nested boxes inside panels.",
+        "light": "#f6f8fa",
+        "dark": "#0b0f14",
+        "tonalRamp": [
+          "#090b0e",
+          "#222529",
+          "#3e4248",
+          "#5d6268",
+          "#7e8389",
+          "#a1a5ab",
+          "#c6c9cd",
+          "#edeff1"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "light-dark(#0c1117, #eef3f8)",
+        "purpose": "Primary text and pressed toggle fill.",
+        "light": "#0c1117",
+        "dark": "#eef3f8",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4246",
+          "#5d6266",
+          "#7f8387",
+          "#a2a5a9",
+          "#c7c9cc",
+          "#edeff0"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "light-dark(#56636f, #8593a2)",
+        "purpose": "Labels, secondary numbers, away side.",
+        "light": "#56636f",
+        "dark": "#8593a2",
+        "tonalRamp": [
+          "#070c11",
+          "#1e262e",
+          "#38434f",
+          "#566371",
+          "#778492",
+          "#9ca6b2",
+          "#c2cad2",
+          "#eaeff4"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "light-dark(#d6dde5, #1f2833)",
+        "purpose": "All 1px borders and dividers.",
+        "light": "#d6dde5",
+        "dark": "#1f2833",
+        "tonalRamp": [
+          "#080b10",
+          "#1f262d",
+          "#3a434e",
+          "#58626f",
+          "#798390",
+          "#9ea6b0",
+          "#c4cad1",
+          "#ebeff3"
+        ]
+      },
+      "led-screen": {
+        "role": "neutral",
+        "displayName": "LED Screen",
+        "canonical": "light-dark(#ffffff, #000000)",
+        "purpose": "Clock, Headline and Champion surface.",
+        "light": "#ffffff",
+        "dark": "#000000",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "led-text": {
+        "role": "neutral",
+        "displayName": "LED Text",
+        "canonical": "light-dark(#8f5a00, #ffb000)",
+        "purpose": "Amber digits on LED screens.",
+        "light": "#8f5a00",
+        "dark": "#ffb000",
+        "tonalRamp": [
+          "#1d0200",
+          "#441500",
+          "#6e2d00",
+          "#954d00",
+          "#b87100",
+          "#d1993e",
+          "#eac288",
+          "#ffebca"
+        ]
+      },
+      "led-bright": {
+        "role": "neutral",
+        "displayName": "LED Bright",
+        "canonical": "light-dark(#0c1117, #ffffff)",
+        "purpose": "Emphasis on LED screens.",
+        "light": "#0c1117",
+        "dark": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "warning-bg": {
+        "role": "neutral",
+        "displayName": "Warning Wash",
+        "canonical": "light-dark(#fff4d6, #2a1f05)",
+        "purpose": "Warning and What-If banners.",
+        "light": "#fff4d6",
+        "dark": "#2a1f05",
+        "tonalRamp": [
+          "#0f0a03",
+          "#2c2413",
+          "#4c4129",
+          "#6c6045",
+          "#8e8166",
+          "#aea48f",
+          "#d0c8b9",
+          "#f2eee5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The NL ● Predict wordmark only; uppercase."
+      },
+      "numeral-lg": {
+        "displayName": "Numeral Large",
+        "purpose": "Projected Points; the clock at 1.5rem."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Rank and Points cells."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Team names, uppercase."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Explanatory prose only."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Panel headings, uppercase, muted."
+      },
+      "label-sm": {
+        "displayName": "Label Small",
+        "purpose": "Table headers, toggles, tags, chart labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "led-text-glow",
+        "value": "0 0 10px rgb(255 176 0 / 0.55)",
+        "purpose": "Clock digits (text-shadow), dark only."
+      },
+      {
+        "name": "lit-segment-glow",
+        "value": "0 0 10px rgb(255 176 0 / 0.45)",
+        "purpose": "Picked Projection Model."
+      },
+      {
+        "name": "champion-glow",
+        "value": "0 0 18px rgb(255 176 0 / 0.55)",
+        "purpose": "Champion card, dark only."
+      },
+      {
+        "name": "zone-bar",
+        "value": "inset 3px 0 0 <zone colour>",
+        "purpose": "Cut Line bar on a rank cell."
+      }
+    ],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "30rem"
+      },
+      {
+        "name": "narrow",
+        "value": "36rem"
+      },
+      {
+        "name": "round-chances-4up",
+        "value": "40rem"
+      },
+      {
+        "name": "no-form",
+        "value": "50rem"
+      },
+      {
+        "name": "acronyms",
+        "value": "62rem"
+      },
+      {
+        "name": "container",
+        "value": "60rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The scoreboard module everything sits in, with a muted label strip.",
+      "html": "<section class=\"ds-panel\"><h2>Projected Table</h2><div class=\"ds-panel-body\">Expected final Regular Season standings.</div></section>",
+      "css": ".ds-panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;color:var(--fg);font-family:system-ui,sans-serif;max-width:22rem}.ds-panel h2{margin:0;padding:.65rem 1rem;font:600 .8rem var(--display);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);background:var(--panel-strip);border-bottom:1px solid var(--line)}.ds-panel-body{padding:.75rem 1rem;font-size:.9rem}"
+    },
+    {
+      "name": "Model Picker",
+      "kind": "custom",
+      "refersTo": "model-option-picked",
+      "description": "Scoreboard switch; the picked segment lights amber and glows.",
+      "html": "<div class=\"ds-picker\" role=\"radiogroup\"><button class=\"ds-seg on\" role=\"radio\" aria-checked=\"true\"><b>Elo Model</b><i>Default</i></button><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\"><b>Season Rate</b></button><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\"><b>Matchup</b></button></div>",
+      "css": ".ds-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;background:light-dark(var(--panel-strip),#000);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:5px;max-width:24rem}.ds-seg{display:block;text-align:left;padding:.35rem .7rem;border:0;border-radius:3px;background:none;color:var(--muted);cursor:pointer}.ds-seg b{font:600 .72rem var(--display);letter-spacing:.12em;text-transform:uppercase}.ds-seg i{display:block;font:700 .58rem var(--display);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}.ds-seg:hover:not(.on) b{color:var(--amber)}.ds-seg.on{background:#ffb000;color:#000;box-shadow:0 0 10px rgb(255 176 0/.45)}.ds-seg.on i{color:#000}.ds-seg:focus-visible{outline:2px solid #ffb000;outline-offset:1px}"
+    },
+    {
+      "name": "Segmented Toggle",
+      "kind": "button",
+      "refersTo": "segmented-toggle",
+      "description": "Theme and chart-metric toggle; the pressed segment fills with ink.",
+      "html": "<div class=\"ds-toggle\" role=\"group\"><button aria-pressed=\"false\">System</button><button aria-pressed=\"true\">Light</button><button aria-pressed=\"false\">Dark</button></div>",
+      "css": ".ds-toggle{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}.ds-toggle button{padding:.2rem .55rem;border:0;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}.ds-toggle button+button{border-left:1px solid var(--line)}.ds-toggle button:hover{color:var(--fg)}.ds-toggle button[aria-pressed=true]{background:var(--fg);color:var(--panel)}.ds-toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}"
+    },
+    {
+      "name": "What-If Toggle",
+      "kind": "button",
+      "refersTo": "what-if-button",
+      "description": "Small outlined result buttons under each Upcoming Game.",
+      "html": "<div class=\"ds-whatif\"><button>Home win</button><button aria-pressed=\"true\">OT/SO</button><button>Away win</button></div>",
+      "css": ".ds-whatif{display:flex;gap:.3rem;flex-wrap:wrap}.ds-whatif button{padding:.3rem .6rem;border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.ds-whatif button:hover{border-color:var(--muted);color:var(--fg)}.ds-whatif button[aria-pressed=true]{border-color:var(--fg);background:var(--fg);color:var(--panel)}.ds-whatif button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}"
+    },
+    {
+      "name": "Banner Button",
+      "kind": "button",
+      "refersTo": "banner-button",
+      "description": "Amber-outlined action in the What-If banner; fills amber on hover.",
+      "html": "<button class=\"ds-banner-btn\">Clear all</button>",
+      "css": ".ds-banner-btn{padding:.25rem .75rem;border:1px solid var(--amber);border-radius:6px;background:none;color:var(--fg);font:600 .7rem var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.ds-banner-btn:hover{background:var(--amber);color:var(--bg)}.ds-banner-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}"
+    },
+    {
+      "name": "LED Headline",
+      "kind": "custom",
+      "refersTo": "headline",
+      "description": "One-sentence summary on an LED screen with a lit amber tag.",
+      "html": "<div class=\"ds-headline\"><span class=\"ds-tag\">Headline</span><p><strong>HC Davos</strong> finish first</p></div>",
+      "css": ".ds-headline{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;background:light-dark(var(--panel),#000);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:8px;font-family:var(--display)}.ds-tag{font-weight:700;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:#000;background:#ffb000;padding:.15rem .45rem;border-radius:2px}.ds-headline p{margin:0;font-weight:600;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;color:light-dark(#8f5a00,#ffb000)}.ds-headline strong{color:light-dark(var(--fg),#fff)}"
+    },
+    {
+      "name": "Form Chips",
+      "kind": "chip",
+      "refersTo": "form-chip",
+      "description": "Win/loss by colour, regulation/OT by fill.",
+      "html": "<span class=\"ds-chips\"><i class=\"w3\"></i><i class=\"w2\"></i><i class=\"l1\"></i><i class=\"l0\"></i></span>",
+      "css": ".ds-chips{display:inline-flex;gap:3px}.ds-chips i{width:10px;height:10px;border-radius:1px}.ds-chips .w3{background:var(--win)}.ds-chips .w2{background:linear-gradient(to top,var(--win) 50%,transparent 50%);box-shadow:inset 0 0 0 1px var(--win)}.ds-chips .l1{background:linear-gradient(to top,var(--loss) 50%,transparent 50%);box-shadow:inset 0 0 0 1px var(--loss)}.ds-chips .l0{box-shadow:inset 0 0 0 1px var(--loss)}"
+    },
+    {
+      "name": "Zone Rank Row",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Projected Table rank cell carrying its Cut Line colour as an inset bar.",
+      "html": "<table class=\"ds-rows\"><tr class=\"po\"><td class=\"r\">1</td><td class=\"t\">HC Davos</td><td class=\"p\">98</td></tr><tr class=\"pi\"><td class=\"r\">7</td><td class=\"t\">SC Bern</td><td class=\"p\">74</td></tr><tr class=\"out\"><td class=\"r\">12</td><td class=\"t\">HC Ajoie</td><td class=\"p\">51</td></tr></table>",
+      "css": ".ds-rows{border-collapse:collapse;font-variant-numeric:tabular-nums;color:var(--fg)}.ds-rows td{padding:.45rem .4rem;border-top:1px solid var(--line)}.ds-rows .r{width:2.6rem;text-align:center;font:700 1.05rem var(--display)}.ds-rows .t{font:600 .95rem var(--display);letter-spacing:.03em;text-transform:uppercase}.ds-rows .p{font:700 1.45rem/1 var(--display);text-align:right}.ds-rows .po .r{color:var(--playoffs);box-shadow:inset 3px 0 0 var(--playoffs)}.ds-rows .pi .r{color:var(--play-in);box-shadow:inset 3px 0 0 var(--play-in)}.ds-rows .out .r{color:var(--eliminated);box-shadow:inset 3px 0 0 var(--eliminated)}.ds-rows .out td:not(.r){opacity:.72}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Arena Scoreboard",
+    "overview": "NL Predict is the scoreboard hanging over the rink, rebuilt for the stats-minded fan. Panels are scoreboard modules, set against a dark arena floor. Labels are stencilled in wide, spaced capitals. Numbers are shown in a square-shouldered display face. The few things that matter right now light up: the snapshot clock, the Headline, the picked Projection Model and the Champion glow like LED segments. Everything else stays quiet so the numbers can be read.\n\nThe system is dense on purpose. A phone has to hold a full Projected Table with Season Simulation percentages, so rows stay tight, the type is small but heavy, and columns give way in a fixed order rather than wrapping. Hierarchy comes from typeface (Oxanium for labels and numbers, system-ui for prose), from weight and from colour that carries meaning, not from size jumps or decoration.\n\nLight and dark are equal partners. Each colour is a `light-dark()` pair designed in both directions. In dark the LED screens are true black with an amber glow. In light the same elements become plain bordered panels with deeper amber text, so the light theme never pretends to be lit.",
+    "keyCharacteristics": [
+      "Flat panels on a tonal arena floor. Depth comes from surface steps and hairlines, not from shadows.",
+      "Oxanium in uppercase with wide tracking for every label, team name and number; system-ui for running prose.",
+      "Amber is the brand accent and the colour of \"lit\": picked states, LED screens, focus rings, hover.",
+      "Cut Line colours (cyan playoffs, amber play-in, slate eliminated) mean only those zones.",
+      "Tabular numerals everywhere numbers line up.",
+      "Every colour has a light and a dark value."
+    ],
+    "rules": [
+      {
+        "name": "The Zone Colour Rule",
+        "body": "Cyan, play-in amber and slate mean playoffs, play-in and eliminated, and nothing else. Home and away are told apart with `ink` and `muted`, never with zone colours.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Colour-Alone Rule",
+        "body": "Every meaning colour comes with a second cue: an arrow (▲▼), a fill pattern (solid, half or empty Form chips; striped OT/SO slices), position, or a legend label. This is how the system meets WCAG 2.2 AA for colour-blind readers.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paired Value Rule",
+        "body": "Every new colour is added as a `light-dark(light, dark)` custom property on `:root` and checked for contrast in both themes. No colour exists in only one theme.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "If it is a label, a team, a number or a control, it is Oxanium in uppercase. If it is a sentence of explanation, it is system-ui in sentence case. Never set prose in Oxanium capitals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any column, clock or percentage that can change sits on `font-variant-numeric: tabular-nums`, so digits never jitter between updates or what-ifs.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glow Means Lit Rule",
+        "body": "A shadow is light coming from an LED, never a drop shadow showing height. Nothing floats; things only light up. The glow is transparent in the light theme.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** add every colour as a `light-dark()` pair on `:root` and check it in both themes.",
+      "**Do** use amber as the brand accent for lit, picked, focused and hovered states, deepening it in light mode (#a86a00) wherever it carries text.",
+      "**Do** set labels, team names and numbers in Oxanium, uppercase and tracked; prose in system-ui.",
+      "**Do** use tabular numerals for any figure that can change.",
+      "**Do** pair every meaning colour with a shape, fill, arrow or label.",
+      "**Do** keep surfaces flat: arena floor → panel → inset, separated by 1px `line` hairlines.",
+      "**Do** decide what gives way at each breakpoint instead of letting tables scroll sideways on phones.",
+      "**Do** use a 2px amber focus outline on every interactive element."
+    ],
+    "donts": [
+      "**Don't** use cyan, play-in amber or slate for anything except Cut Line zones. When amber is used as a brand accent next to zone data, make sure the zone still reads through its bar, legend or position.",
+      "**Don't** use drop shadows to show height. A glow is LED light and appears only in dark mode.",
+      "**Don't** add club logos, club colours or league marks. Teams appear by name in Oxanium.",
+      "**Don't** set prose in uppercase Oxanium, or numbers in the system font.",
+      "**Don't** add a colour, glow or effect that exists only in one theme.",
+      "**Don't** fill a pressed small-text toggle with amber in light mode. Use `ink`."
+    ]
+  }
+}
