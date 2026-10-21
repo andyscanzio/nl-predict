@@ -4,6 +4,7 @@ description: An arena scoreboard for the Swiss National League's projected final
 colors:
   amber: "light-dark(#966000, #ffb000)"
   amber-lit: "#ffb000"
+  on-amber: "#000000"
   led-red: "light-dark(#d61f1f, #ff4545)"
   playoffs-cyan: "light-dark(#0079a8, #29d3ff)"
   play-in-amber: "light-dark(#966000, #ffb000)"
@@ -20,6 +21,7 @@ colors:
   muted: "light-dark(#56636f, #8593a2)"
   line: "light-dark(#d6dde5, #1f2833)"
   rule: "light-dark(#85919e, #5a6673)"
+  switch-track: "light-dark(#f3f6f9, #000000)"
   led-screen: "light-dark(#ffffff, #000000)"
   led-text: "light-dark(#8f5a00, #ffb000)"
   led-bright: "light-dark(#0c1117, #ffffff)"
@@ -125,9 +127,13 @@ components:
     textColor: "{colors.muted}"
     rounded: "{rounded.segment}"
     padding: "0.35rem 0.7rem"
+  model-picker-track:
+    backgroundColor: "{colors.switch-track}"
+    rounded: "{rounded.track}"
+    padding: "2px"
   model-option-picked:
     backgroundColor: "{colors.amber-lit}"
-    textColor: "#000000"
+    textColor: "{colors.on-amber}"
     rounded: "{rounded.segment}"
   segmented-toggle:
     textColor: "{colors.muted}"
@@ -164,9 +170,12 @@ components:
     padding: "0.6rem 0.8rem"
   headline-tag:
     backgroundColor: "{colors.amber-lit}"
-    textColor: "#000000"
+    textColor: "{colors.on-amber}"
     rounded: "{rounded.tag}"
     padding: "0.15rem 0.45rem"
+  win-split-overtime:
+    textColor: "{colors.muted}"
+    typography: "{typography.label-sm}"
   form-chip:
     backgroundColor: "{colors.win-green}"
     rounded: "{rounded.chip}"
@@ -213,7 +222,7 @@ Light and dark are equal partners. Each colour is a `light-dark()` pair designed
 A cool, near-neutral arena of blue-greys, lit by one warm amber and a small set of colours that carry meaning.
 
 ### Primary
-- **Scoreboard Amber** (`amber`; `amber-lit` is the fixed dark value, used on segments that stay amber in both themes): The brand accent. Use it for picked and lit states, LED clock and Headline text (through `led-text`), focus outlines (2px), hover text on links and expandable rows, the warning border, and the outline on the What-If banner's buttons and pills. It is deeper in light (#966000) so even 9px text keeps 4.5:1 on every light surface it sits on, the warning wash and the arena floor included.
+- **Scoreboard Amber** (`amber`; `amber-lit` is the fixed dark value, used on segments that stay amber in both themes, always inked in **On-Amber** black, `on-amber`, with 11.5:1 contrast): The brand accent. Use it for picked and lit states, LED clock and Headline text (through `led-text`), focus outlines (2px), hover text on links and expandable rows, the warning border, and the outline on the What-If banner's buttons and pills. It is deeper in light (#966000) so even 9px text keeps 4.5:1 on every light surface it sits on, the warning wash and the arena floor included.
 
 ### Secondary
 - **Goal-Light Red** (`led-red`): The red dot in the "NL ● Predict" wordmark. Reserved for the brand mark. It shares its value with `down-red` and `loss-red`, but its role is identity, not data.
@@ -233,6 +242,7 @@ A cool, near-neutral arena of blue-greys, lit by one warm amber and a small set 
 - **Ink** (`ink`): Primary text, the home side of the win split, the filled state of pressed toggles, chart lines.
 - **Muted** (`muted`): Labels, headings, secondary numbers, the away side of the win split.
 - **Hairline** (`line`): All 1px borders and row dividers.
+- **Switch Track** (`switch-track`): The model picker's recessed track: `panel-strip` in light, the LED screen's black in dark.
 - **Rule** (`rule`): Lines that carry structure rather than separate, such as the Projected Bracket's 2px connectors; 3:1 on a panel in both themes.
 - **LED Screen / LED Text / LED Bright** (`led-screen`, `led-text`, `led-bright`): The clock, Headline and Champion: a black screen with amber digits and white emphasis in dark mode, a white bordered panel with deep amber and ink in light mode.
 - **Warning Wash** (`warning-bg`): The background of warning and What-If banners.
@@ -242,7 +252,7 @@ A cool, near-neutral arena of blue-greys, lit by one warm amber and a small set 
 
 **The Never-Colour-Alone Rule.** Every meaning colour comes with a second cue: an arrow (▲▼), a fill pattern (solid, half or empty Form chips; striped OT/SO slices), position, or a legend label. This is how the system meets WCAG 2.2 AA for colour-blind readers.
 
-**The Paired Value Rule.** Every new colour is added as a `light-dark(light, dark)` custom property on `:root` and checked for contrast in both themes. No colour exists in only one theme.
+**The Paired Value Rule.** Every new colour is added as a `light-dark(light, dark)` custom property on `:root` and checked for contrast in both themes. No colour exists in only one theme. The two fixed values, `amber-lit` and `on-amber`, are tokens too: lit segments look the same in both themes on purpose. Translucent variants (the Start switch's 40% and 65% black, the glows) are mixed from them with `color-mix()`, never written as literals.
 
 **The Fill Is Not Text Rule.** A colour that passes as a bar or a bar's edge may still fail as type. Zone and accent colours that carry text must reach 4.5:1 on the surface they sit on; otherwise the shape carries the colour and the text goes `muted` or `ink`.
 
@@ -350,13 +360,16 @@ The Season Simulation runs in a Web Worker and takes a moment on a phone, so nei
 - An expanded row opens a detail area of inset boxes: Round Chances, Rank Distribution, Projection History, and Home and Away Form Windows.
 
 ### Win Split
-A single 0.6rem bar per Game: the home share in `ink` from the left and the away share in `muted` from the right, each with a striped, lighter OT/SO slice next to a 2px panel-coloured seam, and percentages either side.
+A single 0.6rem bar per Game: the home share in `ink` from the left and the away share in `muted` from the right, each with a striped, lighter OT/SO slice next to a 2px panel-coloured seam, and percentages either side. Under each side, a muted Label Small figure gives the part of its chance won in OT/SO ("14% in OT/SO"), so all four Outcome Probabilities read without hovering. Screen readers get them as one sentence instead of the bar.
 
 ### Projected Bracket
 A left-to-right tree of inset tie cards (6px). Connectors are 2px `rule` borders reaching halfway across each gap. The winner's row is ink at weight 600 with its percentage in `led-text`. The Champion is an LED screen at the end, or a banner below at phone width.
 
 ### Warning & What-If Banner
-A `warning-bg` wash with a 1px amber border, a 4px amber left edge and an 8px radius. The strong lead-in is Oxanium in uppercase amber.
+A `warning-bg` wash with a 1px amber border, a 4px amber left edge and an 8px radius. The strong lead-in is Oxanium in uppercase amber. The same panel, with a Reload banner button and a link to report it, replaces the page when a projection fails, so an error never leaves a blank page. Without JavaScript, a plain panel says the page needs it.
+
+### Forced Colours
+In Windows High Contrast, the win split, Form chips, rank-distribution bars and legend swatches keep their own colours (`forced-color-adjust: none`). Picked and pressed controls fill with the system `Highlight`. The rank cell's zone bar becomes a `CanvasText` edge, with the Cut Line rules and legend carrying the zones.
 
 ## Do's and Don'ts
 

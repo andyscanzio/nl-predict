@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-21T21:08:27.841612Z",
+  "generatedAt": "2026-10-21T21:23:43.836869Z",
   "title": "Design System: NL Predict",
   "extensions": {
     "colorMeta": {
@@ -37,6 +37,22 @@
           "#eac288",
           "#ffebca"
         ]
+      },
+      "on-amber": {
+        "role": "primary",
+        "displayName": "On-Amber Black",
+        "purpose": "Ink on lit amber in both themes: picked model text, Headline tag, the Start switch (40%/65% mixes).",
+        "tonalRamp": [
+          "#000000",
+          "#111111",
+          "#222222",
+          "#333333",
+          "#555555",
+          "#777777",
+          "#999999",
+          "#bbbbbb"
+        ],
+        "canonical": "#000000"
       },
       "led-red": {
         "role": "secondary",
@@ -308,6 +324,42 @@
           "#ebeff3"
         ]
       },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "light-dark(#85919e, #5a6673)",
+        "purpose": "Lines that carry structure, such as the bracket's connectors; 3:1 on a panel.",
+        "light": "#85919e",
+        "dark": "#5a6673",
+        "tonalRamp": [
+          "#080b10",
+          "#1f262d",
+          "#3a434e",
+          "#58626f",
+          "#798390",
+          "#9ea6b0",
+          "#c4cad1",
+          "#ebeff3"
+        ]
+      },
+      "switch-track": {
+        "role": "neutral",
+        "displayName": "Switch Track",
+        "purpose": "The model picker's recessed track: panel-strip in light, LED black in dark.",
+        "tonalRamp": [
+          "#080b0f",
+          "#20262c",
+          "#3b434c",
+          "#5a626d",
+          "#7b838e",
+          "#9fa6af",
+          "#c5cad0",
+          "#eceff3"
+        ],
+        "canonical": "light-dark(#f3f6f9, #000000)",
+        "light": "#f3f6f9",
+        "dark": "#000000"
+      },
       "led-screen": {
         "role": "neutral",
         "displayName": "LED Screen",
@@ -379,24 +431,6 @@
           "#d0c8b9",
           "#f2eee5"
         ]
-      },
-      "rule": {
-        "role": "neutral",
-        "displayName": "Rule",
-        "canonical": "light-dark(#85919e, #5a6673)",
-        "purpose": "Lines that carry structure, such as the bracket's connectors; 3:1 on a panel.",
-        "light": "#85919e",
-        "dark": "#5a6673",
-        "tonalRamp": [
-          "#080b10",
-          "#1f262d",
-          "#3a434e",
-          "#58626f",
-          "#798390",
-          "#9ea6b0",
-          "#c4cad1",
-          "#ebeff3"
-        ]
       }
     },
     "typographyMeta": {
@@ -456,23 +490,23 @@
     "shadows": [
       {
         "name": "led-text-glow",
-        "value": "0 0 10px rgb(255 176 0 / 0.55)",
-        "purpose": "Clock digits (text-shadow), dark only."
+        "value": "0 0 10px color-mix(in srgb, var(--amber-lit) 55%, transparent)",
+        "purpose": "Clock digits (text-shadow, via --led-glow), dark only."
       },
       {
         "name": "lit-segment-glow",
-        "value": "0 0 10px rgb(255 176 0 / 0.45)",
-        "purpose": "Picked Projection Model."
+        "value": "0 0 10px color-mix(in srgb, var(--amber-lit) 45%, transparent)",
+        "purpose": "Picked Projection Model, both themes."
       },
       {
         "name": "champion-glow",
-        "value": "0 0 18px rgb(255 176 0 / 0.55)",
-        "purpose": "Champion card, dark only."
+        "value": "0 0 18px var(--led-glow)",
+        "purpose": "Champion card, dark only (--led-glow is transparent in light)."
       },
       {
         "name": "zone-bar",
         "value": "inset 3px 0 0 <zone colour>",
-        "purpose": "Cut Line bar on a rank cell."
+        "purpose": "Cut Line bar on a rank cell; a CanvasText left border under forced colours."
       }
     ],
     "motion": [],
@@ -526,7 +560,7 @@
       "refersTo": "model-option-picked",
       "description": "Scoreboard switch; the picked segment lights amber and glows.",
       "html": "<div class=\"ds-picker\" role=\"radiogroup\"><button class=\"ds-seg on\" role=\"radio\" aria-checked=\"true\"><b>Elo Model</b><i>Default</i></button><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\"><b>Season Rate</b></button><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\"><b>Matchup</b></button></div>",
-      "css": ".ds-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;background:light-dark(var(--panel-strip),#000);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:5px;max-width:24rem}.ds-seg{display:block;text-align:left;padding:.35rem .7rem;border:0;border-radius:3px;background:none;color:var(--muted);cursor:pointer}.ds-seg b{font:600 .72rem var(--display);letter-spacing:.12em;text-transform:uppercase}.ds-seg i{display:block;font:700 .58rem var(--display);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}.ds-seg:hover:not(.on) b{color:var(--amber)}.ds-seg.on{background:#ffb000;color:#000;box-shadow:0 0 10px rgb(255 176 0/.45)}.ds-seg.on i{color:#000}.ds-seg:focus-visible{outline:2px solid #ffb000;outline-offset:1px}"
+      "css": ".ds-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;background:var(--switch-track);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:5px;max-width:24rem}.ds-seg{display:block;text-align:left;padding:.35rem .7rem;border:0;border-radius:3px;background:none;color:var(--muted);cursor:pointer}.ds-seg b{font:600 .72rem var(--display);letter-spacing:.12em;text-transform:uppercase}.ds-seg i{display:block;font:700 .58rem var(--display);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}.ds-seg:hover:not(.on) b{color:var(--amber)}.ds-seg.on{background:var(--amber-lit);color:var(--on-amber);box-shadow:0 0 10px color-mix(in srgb,var(--amber-lit) 45%,transparent)}.ds-seg.on i{color:var(--on-amber)}.ds-seg:focus-visible{outline:2px solid var(--amber-lit);outline-offset:1px}"
     },
     {
       "name": "Segmented Toggle",
@@ -542,7 +576,7 @@
       "refersTo": "what-if-button",
       "description": "Small outlined result buttons under each Upcoming Game.",
       "html": "<div class=\"ds-whatif\"><button>Home win</button><button aria-pressed=\"true\">OT/SO</button><button>Away win</button></div>",
-      "css": ".ds-whatif{display:flex;gap:.3rem;flex-wrap:wrap}.ds-whatif button{padding:.3rem .6rem;border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.ds-whatif button:hover{border-color:var(--muted);color:var(--fg)}.ds-whatif button[aria-pressed=true]{border-color:var(--fg);background:var(--fg);color:var(--panel)}.ds-whatif button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}"
+      "css": ".ds-whatif{display:flex;gap:.3rem;flex-wrap:wrap}.ds-whatif button{min-height:24px;padding:.3rem .6rem;border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.ds-whatif button:hover{border-color:var(--muted);color:var(--fg)}.ds-whatif button[aria-pressed=true]{border-color:var(--fg);background:var(--fg);color:var(--panel)}.ds-whatif button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}"
     },
     {
       "name": "Banner Button",
@@ -550,7 +584,7 @@
       "refersTo": "banner-button",
       "description": "Amber-outlined action in the What-If banner; fills amber on hover.",
       "html": "<button class=\"ds-banner-btn\">Clear all</button>",
-      "css": ".ds-banner-btn{padding:.25rem .75rem;border:1px solid var(--amber);border-radius:6px;background:none;color:var(--fg);font:600 .7rem var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.ds-banner-btn:hover{background:var(--amber);color:var(--bg)}.ds-banner-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}"
+      "css": ".ds-banner-btn{padding:.25rem .75rem;border:1px solid var(--amber);border-radius:6px;background:none;color:var(--fg);font:600 .7rem var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.ds-banner-btn:hover{background:var(--amber);color:var(--panel)}.ds-banner-btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}"
     },
     {
       "name": "LED Headline",
@@ -558,7 +592,7 @@
       "refersTo": "headline",
       "description": "One-sentence summary on an LED screen with a lit amber tag.",
       "html": "<div class=\"ds-headline\"><span class=\"ds-tag\">Headline</span><p><strong>HC Davos</strong> finish first</p></div>",
-      "css": ".ds-headline{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;background:light-dark(var(--panel),#000);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:8px;font-family:var(--display)}.ds-tag{font-weight:700;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:#000;background:#ffb000;padding:.15rem .45rem;border-radius:2px}.ds-headline p{margin:0;font-weight:600;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;color:light-dark(#8f5a00,#ffb000)}.ds-headline strong{color:light-dark(var(--fg),#fff)}"
+      "css": ".ds-headline{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;background:var(--led-screen);box-shadow:inset 0 0 0 1px light-dark(var(--line),transparent);border-radius:8px;font-family:var(--display)}.ds-tag{font-weight:700;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--on-amber);background:var(--amber-lit);padding:.15rem .45rem;border-radius:2px}.ds-headline p{margin:0;font-weight:600;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;color:var(--led-text)}.ds-headline strong{color:var(--led-bright)}"
     },
     {
       "name": "Form Chips",
@@ -575,6 +609,14 @@
       "description": "Projected Table rank cell carrying its Cut Line colour as an inset bar.",
       "html": "<table class=\"ds-rows\"><tr class=\"po\"><td class=\"r\">1</td><td class=\"t\">HC Davos</td><td class=\"p\">98</td></tr><tr class=\"pi\"><td class=\"r\">7</td><td class=\"t\">SC Bern</td><td class=\"p\">74</td></tr><tr class=\"out\"><td class=\"r\">12</td><td class=\"t\">HC Ajoie</td><td class=\"p\">51</td></tr></table>",
       "css": ".ds-rows{border-collapse:collapse;font-variant-numeric:tabular-nums;color:var(--fg)}.ds-rows td{padding:.45rem .4rem;border-top:1px solid var(--line)}.ds-rows .r{width:2.6rem;text-align:center;font:700 1.05rem var(--display)}.ds-rows .t{font:600 .95rem var(--display);letter-spacing:.03em;text-transform:uppercase}.ds-rows .p{font:700 1.45rem/1 var(--display);text-align:right}.ds-rows .po .r{color:var(--playoffs);box-shadow:inset 3px 0 0 var(--playoffs)}.ds-rows .pi .r{color:var(--play-in);box-shadow:inset 3px 0 0 var(--play-in)}.ds-rows .out .r{color:var(--muted);box-shadow:inset 3px 0 0 var(--eliminated)}.ds-rows .out td:not(.r){color:var(--muted)}"
+    },
+    {
+      "name": "Win Split",
+      "kind": "custom",
+      "refersTo": "win-split-overtime",
+      "description": "An Upcoming Game's home and away win chances as one bar, with each side's OT/SO slice striped and its OT/SO chance printed underneath.",
+      "html": "<div class=\"ds-ws\"><div class=\"ds-ws-row\"><b>62</b><span class=\"ds-ws-bar\"><i class=\"h\" style=\"flex-grow:.62\"><s style=\"width:16%\"></s></i><i class=\"a\" style=\"flex-grow:.38\"><s style=\"width:26%\"></s></i></span><b>38</b></div><p class=\"ds-ws-ot\"><span>10% in OT/SO</span><span>10% in OT/SO</span></p></div>",
+      "css": ".ds-ws{max-width:22rem;font-family:var(--display);font-variant-numeric:tabular-nums}.ds-ws-row{display:flex;align-items:center;gap:.4rem;font:700 .8rem var(--display);color:var(--fg)}.ds-ws-row b{flex:0 0 2.1rem}.ds-ws-row b:first-child{text-align:right}.ds-ws-bar{display:flex;flex:1;gap:2px;height:.6rem}.ds-ws-bar i{display:flex;min-width:2px}.ds-ws-bar .h{--c:var(--fg);background:var(--c);justify-content:flex-end}.ds-ws-bar .a{--c:var(--muted);background:var(--c)}.ds-ws-bar s{height:100%;background:repeating-linear-gradient(-45deg,var(--c) 0 1.5px,color-mix(in srgb,var(--c) 45%,var(--panel)) 1.5px 4px)}.ds-ws-bar .h s{box-shadow:-2px 0 0 var(--panel)}.ds-ws-bar .a s{box-shadow:2px 0 0 var(--panel)}.ds-ws-ot{display:flex;justify-content:space-between;margin:.15rem 0 0;font:600 .62rem var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}"
     }
   ],
   "narrative": {
@@ -601,7 +643,7 @@
       },
       {
         "name": "The Paired Value Rule",
-        "body": "Every new colour is added as a `light-dark(light, dark)` custom property on `:root` and checked for contrast in both themes. No colour exists in only one theme.",
+        "body": "Every new colour is added as a `light-dark(light, dark)` custom property on `:root` and checked for contrast in both themes. No colour exists in only one theme. The two fixed values, `amber-lit` and `on-amber`, are tokens too: lit segments look the same in both themes on purpose. Translucent variants (the Start switch's 40% and 65% black, the glows) are mixed from them with `color-mix()`, never written as literals.",
         "section": "colors"
       },
       {

@@ -13,13 +13,16 @@
   --muted: light-dark(#56636f, #8593a2);
   --line: light-dark(#d6dde5, #1f2833);
   --amber: light-dark(#966000, #ffb000);
+  /* Lit segments (the picked model, the Headline tag) stay this amber in both themes, inked in --on-amber. */
+  --amber-lit: #ffb000;
+  --on-amber: #000;
   --led: light-dark(#d61f1f, #ff4545);
   /* The clock and Headline: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
   --led-screen: light-dark(var(--panel), #000);
   --led-edge: light-dark(var(--line), transparent);
   --led-text: light-dark(#8f5a00, #ffb000);
   --led-bright: light-dark(var(--fg), #fff);
-  --led-glow: light-dark(transparent, rgb(255 176 0 / 0.55));
+  --led-glow: light-dark(transparent, color-mix(in srgb, var(--amber-lit) 55%, transparent));
   --up: light-dark(#0a7d3a, #32e07a);
   --down: light-dark(#d61f1f, #ff4545);
   --win: light-dark(#0f9a4a, #32e07a);
@@ -30,6 +33,8 @@
   --warning-bg: light-dark(#fff4d6, #2a1f05);
   /* Lines that carry structure, such as the bracket's connectors: 3:1 on a panel, where --line is only a hairline. */
   --rule: light-dark(#85919e, #5a6673);
+  /* The model picker's recessed track: a light strip in light mode, the LED screen's black in dark. */
+  --switch-track: light-dark(var(--panel-strip), #000);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--fg);
@@ -288,6 +293,19 @@ body {
   box-shadow: 2px 0 0 var(--panel);
 }
 
+/* Under each side of the win split, the part of its chance won in OT/SO, from the side's outer edge. */
+.win-split-overtime {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0;
+  padding-left: calc(2.9rem + 0.6rem); /* lines up under the teams, past the start time column */
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .upcoming-note {
   border-top: 1px solid var(--line);
 }
@@ -320,7 +338,7 @@ body {
   gap: 2px;
   padding: 2px;
   /* Follows the theme, unlike the clock and Headline: a light track in light mode, the LED screen in dark. */
-  background: light-dark(var(--panel-strip), #000);
+  background: var(--switch-track);
   box-shadow: inset 0 0 0 1px light-dark(var(--line), transparent);
   border-radius: 5px;
 }
@@ -379,13 +397,13 @@ body {
 
 /* The whole option lights up, so the Elo Model's start switch sits inside the lit segment. */
 .model-option:has(input:checked) {
-  background: #ffb000;
-  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+  background: var(--amber-lit);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--amber-lit) 45%, transparent);
 }
 
 .model-options input:checked + span,
 .model-options input:checked + span .model-default {
-  color: #000;
+  color: var(--on-amber);
 }
 
 .elo-start {
@@ -400,37 +418,37 @@ body {
   font: 700 0.58rem var(--display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #000;
+  color: var(--on-amber);
 }
 
 /* The chart metric toggle, inked black on the amber segment. */
 .history-toggle.start-toggle {
-  border-color: rgb(0 0 0 / 0.4);
+  border-color: color-mix(in srgb, var(--on-amber) 40%, transparent);
 }
 
 .history-toggle.start-toggle button {
-  color: rgb(0 0 0 / 0.65);
+  color: color-mix(in srgb, var(--on-amber) 65%, transparent);
 }
 
 .history-toggle.start-toggle button + button {
-  border-left-color: rgb(0 0 0 / 0.4);
+  border-left-color: color-mix(in srgb, var(--on-amber) 40%, transparent);
 }
 
 .history-toggle.start-toggle button:hover {
-  color: #000;
+  color: var(--on-amber);
 }
 
 .history-toggle.start-toggle button[aria-pressed="true"] {
-  background: #000;
-  color: #ffb000;
+  background: var(--on-amber);
+  color: var(--amber-lit);
 }
 
 .history-toggle.start-toggle button:focus-visible {
-  outline-color: #000;
+  outline-color: var(--on-amber);
 }
 
 .model-options input:focus-visible + span {
-  outline: 2px solid #ffb000;
+  outline: 2px solid var(--amber-lit);
   outline-offset: 1px;
 }
 
@@ -568,8 +586,8 @@ h1 .dot {
   font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #000;
-  background: #ffb000;
+  color: var(--on-amber);
+  background: var(--amber-lit);
   padding: 0.15rem 0.45rem;
   border-radius: 2px;
 }
@@ -1373,7 +1391,8 @@ footer {
   line-height: 1.4;
 }
 
-.what-if-banner button {
+.what-if-banner button,
+.warning-button {
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--amber);
   border-radius: 6px;
@@ -1385,14 +1404,25 @@ footer {
   cursor: pointer;
 }
 
-.what-if-banner button:hover {
+.what-if-banner button:hover,
+.warning-button:hover {
   background: var(--amber);
   color: var(--panel);
 }
 
-.what-if-banner button:focus-visible {
+.what-if-banner button:focus-visible,
+.warning-button:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
+}
+
+/* Without JavaScript nothing can be projected; the note says so in the scoreboard's own panel. */
+.noscript {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 footer {
@@ -1882,5 +1912,37 @@ footer a {
   .what-if-toggles button {
     flex: 1 1 0;
     padding-block: 0.45rem;
+  }
+}
+
+/*
+ * Forced colours (Windows High Contrast) drop backgrounds and box-shadows, which would empty the charts and hide what is
+ * picked. The charts keep their own colours; picked and pressed controls take the system highlight.
+ */
+@media (forced-colors: active) {
+  .win-split-bar,
+  .chip,
+  .rank-bars,
+  .legend-swatch {
+    forced-color-adjust: none;
+  }
+
+  .projected .rank {
+    border-left: 3px solid CanvasText;
+  }
+
+  .model-option:has(input:checked),
+  .theme-toggle input:checked + span,
+  .history-toggle button[aria-pressed="true"],
+  .what-if-toggles button[aria-pressed="true"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .model-options input:checked + span,
+  .model-options input:checked + span .model-default {
+    forced-color-adjust: none;
+    color: HighlightText;
   }
 }

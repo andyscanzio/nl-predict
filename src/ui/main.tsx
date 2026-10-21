@@ -1,6 +1,7 @@
 import { render } from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { App } from "./App.tsx";
+import { ErrorBoundary } from "./ErrorBoundary.tsx";
 import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
 import { urlWithWhatIf, whatIfFromUrl } from "./whatIfUrl.ts";
 import { projectionClient, type Picks } from "./projectionRequests.ts";
@@ -41,12 +42,15 @@ function Root() {
     [],
   );
   useEffect(() => {
+    // A worker that fails to start, throws or sends something unreadable: project in place instead.
     const onError = () => setInPlace(true);
     worker?.addEventListener("error", onError);
+    worker?.addEventListener("messageerror", onError);
     const onPopState = () => setRequested(picksFromUrl());
     addEventListener("popstate", onPopState);
     return () => {
       worker?.removeEventListener("error", onError);
+      worker?.removeEventListener("messageerror", onError);
       removeEventListener("popstate", onPopState);
     };
   }, []);
@@ -79,4 +83,9 @@ function Root() {
   );
 }
 
-render(<Root />, document.getElementById("app")!);
+render(
+  <ErrorBoundary>
+    <Root />
+  </ErrorBoundary>,
+  document.getElementById("app")!,
+);
