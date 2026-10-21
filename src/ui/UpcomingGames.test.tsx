@@ -59,7 +59,7 @@ describe("UpcomingGames", () => {
     const html = panel([day("2026-10-06", upcomingGame())]);
     expect(html).toContain('<time class="upcoming-time" datetime="2026-10-06T17:45:00Z">19:45</time>');
     expect(html).toContain('<span class="team-name">HC Davos</span>');
-    expect(html).toContain('<span class="team-acronym">SCB</span>');
+    expect(html).toContain('<span class="team-acronym"><span aria-hidden="true">SCB</span>');
   });
 
   describe("with Outcome Probabilities", () => {

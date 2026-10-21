@@ -99,10 +99,12 @@ describe("ProjectedTable", () => {
       expect(text(html)).not.toContain("No % columns");
     });
 
-    it("print a % in the visible headers", () => {
-      const headers = [...panel([row()]).matchAll(/<th class="num pct"[^>]*><span aria-hidden="true">(.*?)<\/span>/g)].map((m) => m[1]);
+    it("print a % in the visible headers, in a span small phones hide", () => {
+      const headers = [
+        ...panel([row()]).matchAll(/<th class="num pct"[^>]*><span aria-hidden="true">(.*?)<span class="pct-sign">%<\/span><\/span>/g),
+      ].map((m) => m[1]);
       // thead th is uppercased in CSS, so these read PO%, PI%, OUT%, 1ST%.
-      expect(headers).toEqual(["PO%", "PI%", "Out%", "1st%"]);
+      expect(headers).toEqual(["PO", "PI", "Out", "1st"]);
     });
 
     it('print remote chances as "<1" and ">99"', () => {

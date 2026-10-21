@@ -1,4 +1,4 @@
-import type { NextRoundDay, WhatIfOutcome } from "../domain/project.ts";
+import type { NextRoundDay, WhatIf, WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
 import { lowSampleSentence, type LowSampleShare } from "./lowSample.ts";
 import { formatExpectedPoints, formatGameTime, formatMatchDayHeading } from "./format.ts";
@@ -89,11 +89,14 @@ function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
 export function UpcomingGames({
   nextRound,
   lowSample,
+  pendingWhatIf,
   teams,
   onWhatIfPick,
 }: {
   nextRound: NextRoundDay[];
   lowSample: LowSampleShare;
+  /** A newer What-If than the one `nextRound` was projected with, still being simulated: its toggles show as pressed. */
+  pendingWhatIf?: WhatIf;
   teams: Teams;
   /** Called with a Game's new What-If Result, or undefined when the visitor clears it. */
   onWhatIfPick: (gameId: string, outcome: WhatIfOutcome | undefined) => void;
@@ -149,7 +152,7 @@ export function UpcomingGames({
                   gameId={game.id}
                   home={fullTeamName(teams, game.homeTeamId)}
                   away={fullTeamName(teams, game.awayTeamId)}
-                  whatIf={whatIf}
+                  whatIf={pendingWhatIf ? pendingWhatIf.get(game.id) : whatIf}
                   onPick={onWhatIfPick}
                 />
               </li>

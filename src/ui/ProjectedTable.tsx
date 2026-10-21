@@ -210,6 +210,7 @@ function ModelPicker({
 export function ProjectedTable({
   rows,
   model,
+  pickedModel,
   history,
   whatIfActive,
   teams,
@@ -217,6 +218,8 @@ export function ProjectedTable({
 }: {
   rows: ProjectedTableRow[];
   model: ProjectionModel<ProjectionModelId>;
+  /** A newer pick than `model`, still being simulated: the picker shows it as picked. */
+  pickedModel?: ProjectionModel<ProjectionModelId>;
   /** The picked model's Projection History, computed while the site was built. */
   history: ProjectionHistory;
   /** A What-If is applied to `rows`; the Projection History in each team's detail ignores it and says so. */
@@ -228,11 +231,7 @@ export function ProjectedTable({
   const showChanges = rows.some((row) => row.realProjection);
   const movementComparison = showChanges ? "the real projected rank" : "current rank";
   const showProbabilities = model.kind === "outcomes";
-  const expandTarget = showProbabilities
-    ? "round chances, finishing ranks and form window games"
-    : showProbabilities
-      ? "finishing ranks and form window games"
-      : "form window games";
+  const expandTarget = showProbabilities ? "round chances, finishing ranks and form window games" : "form window games";
   const columns = PROJECTED_COLUMNS + (showProbabilities ? PROBABILITY_COLUMNS.length : 0);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   // When every team is Low Sample, one legend line says so instead of a badge on every row.
@@ -252,7 +251,7 @@ export function ProjectedTable({
   return (
     <section class="panel">
       <h2>Projected table</h2>
-      <ModelPicker model={model} onChange={onModelChange} />
+      <ModelPicker model={pickedModel ?? model} onChange={onModelChange} />
       <div class="table-scroll">
         <table class="projected">
           <thead>
@@ -274,7 +273,10 @@ export function ProjectedTable({
               {showProbabilities &&
                 PROBABILITY_COLUMNS.map((column) => (
                   <th key={column.key} class="num pct" scope="col" title={column.title}>
-                    <span aria-hidden="true">{column.short}%</span>
+                    <span aria-hidden="true">
+                      {column.short}
+                      <span class="pct-sign">%</span>
+                    </span>
                     <span class="visually-hidden">{column.label} %</span>
                   </th>
                 ))}

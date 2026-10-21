@@ -178,4 +178,76 @@ describe("App", () => {
       expect(html).toBe(page(asOf));
     });
   });
+
+  describe("with a pick still being simulated", () => {
+    const asOf = new Date(snapshot.snapshotAt);
+    const nextRoundIds = project(snapshot.games, asOf, DEFAULT_MODEL).nextRound.flatMap((day) => day.games.map((g) => g.game.id));
+    const pendingPage = (pending: { model: ProjectionModel<ProjectionModelId>; whatIf: WhatIf }) =>
+      render(
+        <App
+          snapshot={snapshot}
+          now={asOf}
+          model={DEFAULT_MODEL}
+          history={[]}
+          whatIf={new Map()}
+          pending={pending}
+          onModelChange={() => {}}
+          onWhatIfChange={() => {}}
+        />,
+      );
+
+    it("presses the pending What-If Result's button before it is projected", () => {
+      const html = pendingPage({ model: DEFAULT_MODEL, whatIf: new Map([[nextRoundIds[0]!, "regulationWin"]]) });
+      const upcoming = html.slice(html.indexOf("<h2>Upcoming games</h2>"), html.indexOf("<h2>Current table"));
+      const pressed = [...upcoming.matchAll(/<button[^>]*aria-pressed="true"[^>]*>(.*?)<\/button>/g)].map((match) => match[1]);
+      expect(pressed).toEqual(["Home"]);
+      // Not projected yet: no banner.
+      expect(html).not.toContain("what-if-banner");
+    });
+
+    it("lights the pending model in the picker", () => {
+      const html = pendingPage({ model: splitFormRate, whatIf: new Map() });
+      expect(html).toMatch(/<input type="radio" name="model" value="split-form-rate" checked/);
+      expect(html).not.toMatch(new RegExp(`<input type="radio" name="model" value="${DEFAULT_MODEL.id}" checked`));
+    });
+
+    it("marks the page busy and tags the Headline 'Simulating'", () => {
+      const html = pendingPage({ model: DEFAULT_MODEL, whatIf: new Map([[nextRoundIds[0]!, "regulationWin"]]) });
+      expect(html).toContain('<main aria-busy="true">');
+      expect(html).toMatch(/<span class="headline-tag"[^>]*>\s*Simulating\s*<\/span>/);
+      expect(page(asOf)).toContain("<main>");
+    });
+  });
+
+  describe("with its projection made off the main thread", () => {
+    const asOf = new Date(snapshot.snapshotAt);
+    const offThread = (projection: ReturnType<typeof project> | null) =>
+      render(
+        <App
+          snapshot={snapshot}
+          now={asOf}
+          model={DEFAULT_MODEL}
+          history={[]}
+          whatIf={new Map()}
+          projection={projection}
+          onModelChange={() => {}}
+          onWhatIfChange={() => {}}
+        />,
+      );
+
+    it("renders the projection it is given exactly as one made in place", () => {
+      const projection = project(snapshot.games, asOf, DEFAULT_MODEL, undefined, undefined, { postSeason: true });
+      expect(offThread(projection)).toBe(page(asOf));
+    });
+
+    it("shows the scoreboard and a simulating Headline, busy, until the first projection arrives", () => {
+      const html = offThread(null);
+      expect(html).toContain("<h1>");
+      expect(html).toContain('<main aria-busy="true">');
+      expect(html).toMatch(/<span class="headline-tag"[^>]*>\s*Simulating\s*<\/span>/);
+      expect(html).toContain("Playing out the remaining games 10,000 times");
+      expect(headings(html)).toEqual([]);
+      expect(html).toContain("<footer>");
+    });
+  });
 });

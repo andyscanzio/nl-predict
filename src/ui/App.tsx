@@ -5,6 +5,7 @@ import {
   REGULAR_SEASON_GAMES,
   type IntegrityIssue,
   type NextRoundDay,
+  type Projection,
   type ProjectionModel,
   type WhatIf,
   type WhatIfOutcome,
@@ -15,7 +16,7 @@ import { seasonLabel } from "../domain/season.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import type { ProjectionHistory } from "../domain/projectionHistory.ts";
 import { applyTheme, readTheme, storeTheme, THEMES, type Theme } from "./theme.ts";
-import { formatScoreboardTime, formatSnapshotTime, ordinal } from "./format.ts";
+import { formatScoreboardTime, formatSnapshotTime, ordinal, SIMULATION_RUNS_LABEL } from "./format.ts";
 import { CurrentTable } from "./CurrentTable.tsx";
 import { ModelExplanation } from "./ModelExplanation.tsx";
 import { ProjectedBracket } from "./ProjectedBracket.tsx";
@@ -51,12 +52,23 @@ function HeadlineSentence({
   );
 }
 
-/** The Headline on the LED screen, tagged with whether it shows the Real Projection or a What-If; wraps on narrow screens. */
-function HeadlineScreen({ whatIfActive, children }: { whatIfActive: boolean; children: ComponentChildren }) {
+/**
+ * The Headline on the LED screen, tagged with whether it shows the Real Projection or a What-If, or that a new pick is
+ * being simulated; wraps on narrow screens.
+ */
+function HeadlineScreen({
+  whatIfActive,
+  simulating,
+  children,
+}: {
+  whatIfActive: boolean;
+  simulating: boolean;
+  children: ComponentChildren;
+}) {
   return (
     <section class="headline" aria-label="Projection headline">
       <span class="headline-tag" aria-hidden="true">
-        {whatIfActive ? "What-if" : "Projection"}
+        {simulating ? "Simulating" : whatIfActive ? "What-if" : "Projection"}
       </span>
       <p>{children}</p>
     </section>
@@ -178,6 +190,8 @@ export function App({
   model,
   history,
   whatIf,
+  projection,
+  pending,
   onModelChange,
   onWhatIfChange,
 }: {
@@ -188,6 +202,13 @@ export function App({
   history: ProjectionHistory;
   /** The What-If asked for, e.g. by the URL; only its Results for the real Next Round's Games are applied. */
   whatIf: WhatIf;
+  /**
+   * The projection of `model` and `whatIf`, made off the main thread; null while the first one is still being made.
+   * Without it, the page projects in place.
+   */
+  projection?: Projection | null;
+  /** A newer pick than `model` and `whatIf`, not projected yet: its controls show as picked while the page says it is simulating. */
+  pending?: { model: ProjectionModel<ProjectionModelId>; whatIf: WhatIf };
   onModelChange: (model: ProjectionModel<ProjectionModelId>) => void;
   /**
    * Called to `replace` the What-If asked for with the one applied, when stale entries were dropped, or to `push` a new
@@ -195,12 +216,63 @@ export function App({
    */
   onWhatIfChange: (whatIf: WhatIf, mode: "push" | "replace") => void;
 }) {
+  const inPlace = projection === undefined;
   // Kept per snapshot, As-Of Date and model, so picking a What-If Result reruns only the What-If projection.
   const realProjection = useMemo(
-    () => project(snapshot.games, now, model, undefined, undefined, { postSeason: true }),
-    [snapshot, now, model],
+    () => (inPlace ? project(snapshot.games, now, model, undefined, undefined, { postSeason: true }) : undefined),
+    [snapshot, now, model, inPlace],
   );
   // The Season Simulation is too slow to rerun on every render, such as expanding a team.
+  const shown = useMemo(
+    () => (inPlace ? project(snapshot.games, now, model, whatIf, realProjection, { postSeason: true }) : projection),
+    [snapshot, now, model, whatIf, realProjection, inPlace, projection],
+  );
+  // Entries that did not apply (Played, out of the Next Round, unknown) must not linger in the URL.
+  const stale = shown !== null && !sameWhatIf(whatIf, shown.whatIf);
+  useEffect(() => {
+    if (stale) onWhatIfChange(shown.whatIf, "replace");
+  }, [stale, shown]);
+  const season = seasonLabel(snapshot.season);
+  const snapshotAt = new Date(snapshot.snapshotAt);
+  const header = (
+    <header class="scoreboard panel">
+      <div>
+        <h1>
+          NL <span class="dot" aria-hidden="true">●</span> Predict
+        </h1>
+        <p class="subtitle">National League {season} · Regular season</p>
+      </div>
+      <div class="scoreboard-side">
+        <ThemeToggle />
+        <p class="as-of">
+          <span class="as-of-label">Data as of</span>
+          <time dateTime={snapshot.snapshotAt} title={`${formatSnapshotTime(snapshotAt)} (Swiss time)`}>
+            {formatScoreboardTime(snapshotAt)}
+          </time>
+        </p>
+      </div>
+    </header>
+  );
+  const footer = (
+    <footer>
+      Game data from the Swiss Ice Hockey Federation (SIHF), used for personal, non-commercial purposes under
+      their <a href={SIHF_TERMS}>terms of use</a>. Not affiliated with SIHF or the National League.
+    </footer>
+  );
+  // The first projection is still being made: the scoreboard and the Headline screen say so.
+  if (shown === null) {
+    return (
+      <>
+        {header}
+        <main aria-busy="true">
+          <HeadlineScreen whatIfActive={false} simulating>
+            Playing out the remaining games {SIMULATION_RUNS_LABEL} times
+          </HeadlineScreen>
+        </main>
+        {footer}
+      </>
+    );
+  }
   const {
     currentTable,
     projectedTable,
@@ -209,24 +281,15 @@ export function App({
     nextRound,
     whatIf: appliedWhatIf,
     projectedBracket,
-  } = useMemo(
-    () => project(snapshot.games, now, model, whatIf, realProjection, { postSeason: true }),
-    [snapshot, now, model, whatIf, realProjection],
-  );
-  // Entries that did not apply (Played, out of the Next Round, unknown) must not linger in the URL.
-  const stale = !sameWhatIf(whatIf, appliedWhatIf);
-  useEffect(() => {
-    if (stale) onWhatIfChange(appliedWhatIf, "replace");
-  }, [stale, appliedWhatIf]);
+  } = shown;
   const teams = new Map(snapshot.teams.map((team) => [team.id, team]));
-  const season = seasonLabel(snapshot.season);
-  const snapshotAt = new Date(snapshot.snapshotAt);
   const teamName = (teamId: TeamId) => fullTeamName(teams, teamId);
   const headline = headlineOf(projectedTable);
   // While active, the Projected Table and Headline follow the What-If; the Current Table and Projection History stay real.
   const whatIfActive = appliedWhatIf.size > 0;
   const pickWhatIfResult = (gameId: string, outcome: WhatIfOutcome | undefined) => {
-    const next = new Map(appliedWhatIf);
+    // On top of a pick still being simulated, so quick taps on two Games keep both.
+    const next = new Map(pending?.whatIf ?? appliedWhatIf);
     if (outcome) next.set(gameId, outcome);
     else next.delete(gameId);
     onWhatIfChange(next, "push");
@@ -234,29 +297,13 @@ export function App({
 
   return (
     <>
-      <header class="scoreboard panel">
-        <div>
-          <h1>
-            NL <span class="dot" aria-hidden="true">●</span> Predict
-          </h1>
-          <p class="subtitle">National League {season} · Regular season</p>
-        </div>
-        <div class="scoreboard-side">
-          <ThemeToggle />
-          <p class="as-of">
-            <span class="as-of-label">Data as of</span>
-            <time dateTime={snapshot.snapshotAt} title={`${formatSnapshotTime(snapshotAt)} (Swiss time)`}>
-              {formatScoreboardTime(snapshotAt)}
-            </time>
-          </p>
-        </div>
-      </header>
-      <main>
+      {header}
+      <main aria-busy={pending ? "true" : undefined}>
         {integrityIssues.length > 0 && <IntegrityWarning issues={integrityIssues} teamName={teamName} />}
         {anyGamesPlayed ? (
           <>
             {headline && (
-              <HeadlineScreen whatIfActive={whatIfActive}>
+              <HeadlineScreen whatIfActive={whatIfActive} simulating={pending !== undefined}>
                 <HeadlineSentence headline={headline} modelName={model.name} teamName={teamName} />
               </HeadlineScreen>
             )}
@@ -271,6 +318,7 @@ export function App({
             <ProjectedTable
               rows={projectedTable}
               model={model}
+              pickedModel={pending?.model}
               history={history}
               whatIfActive={whatIfActive}
               teams={teams}
@@ -288,6 +336,7 @@ export function App({
             <UpcomingGames
               nextRound={nextRound}
               lowSample={lowSampleShare(projectedTable)}
+              pendingWhatIf={pending?.whatIf}
               teams={teams}
               onWhatIfPick={pickWhatIfResult}
             />
@@ -306,10 +355,7 @@ export function App({
           </section>
         )}
       </main>
-      <footer>
-        Game data from the Swiss Ice Hockey Federation (SIHF), used for personal, non-commercial purposes under
-        their <a href={SIHF_TERMS}>terms of use</a>. Not affiliated with SIHF or the National League.
-      </footer>
+      {footer}
     </>
   );
 }

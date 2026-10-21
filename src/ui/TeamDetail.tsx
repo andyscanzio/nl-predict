@@ -7,11 +7,11 @@ import { PLAYOFF_ROUNDS, type RoundChances } from "../domain/postSeason.ts";
 import type { Decision, TeamId } from "../domain/types.ts";
 import { AXIS_LABEL, CHART, lowSampleBox, matchDayAtPointer, plotX, plotY, polylinePoints, tooltipBox } from "./chartLayout.ts";
 import { formatForm, formatGameDate, ordinal, SIMULATION_RUNS_LABEL } from "./format.ts";
-import { chartMetrics, projectionChart, shownMetric, tooltipAt, type ChartMetric } from "./projectionChart.ts";
+import { chartMetrics, matchDayAfterKey, projectionChart, shownMetric, tooltipAt, type ChartMetric } from "./projectionChart.ts";
 import { rankBars } from "./rankHistogram.ts";
 import { rankSummary } from "./rankSummary.ts";
 import { SIDES } from "./formSides.ts";
-import { fullTeamName, type Teams } from "./TeamName.tsx";
+import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
 import { formatPercent } from "./winSplit.ts";
 import { WhatIfChance } from "./WhatIfChance.tsx";
 
@@ -32,7 +32,7 @@ function FormWindowDetail({
   otherForm,
   remaining,
   games,
-  teamName,
+  teams,
   showProjectedRate,
 }: {
   side: "home" | "away";
@@ -40,7 +40,7 @@ function FormWindowDetail({
   otherForm: number | null;
   remaining: number;
   games: FormWindowGame[];
-  teamName: (teamId: TeamId) => string;
+  teams: Teams;
   /** Show the Form as the rate a Points-only model (Split Form Rate) projects each Remaining Game at. */
   showProjectedRate: boolean;
 }) {
@@ -84,9 +84,10 @@ function FormWindowDetail({
               <td>
                 <time dateTime={game.startsAt}>{formatGameDate(new Date(game.startsAt))}</time>
               </td>
+              {/* The opponent's acronym on a phone, so the table fits its box. */}
               <td>
                 {side === "home" ? "vs " : "@ "}
-                {teamName(game.opponentId)}
+                <TeamName teams={teams} teamId={game.opponentId} />
               </td>
               {/* A What-If Result's one-goal score is made up, so it shows only how it was won. */}
               <td class="num">
@@ -225,6 +226,7 @@ function ProjectionHistoryChart({
   const tip = active === null ? null : chart.tooltips[tooltipAt(chart, active)];
   const tipBox = tip && tooltipBox(tip);
   const lowSample = lowSampleBox(chart.lowSample);
+  const hintId = `history-hint-${teamId}`;
   return (
     <section class="history-chart">
       <div class="history-head">
@@ -239,14 +241,25 @@ function ProjectionHistoryChart({
           </div>
         )}
       </div>
+      {/* Focusable so the keyboard can step the tooltip along the line, as the mouse and a fingertip do. Lowercase
+          tabindex: Preact sets SVG attributes as written, and SVG ignores a camel-cased tabIndex. */}
       <svg
         viewBox={`0 0 ${CHART.width} ${CHART.height}`}
         role="img"
         aria-label={`${teamName}: ${chart.summary}`}
+        aria-describedby={hintId}
+        tabindex={0}
         onPointerDown={(event) => {
           // A tap anywhere but the chosen line dismisses the tooltip.
           if (!(event.target as Element).classList.contains("history-hit")) setActive(null);
         }}
+        onKeyDown={(event) => {
+          const next = matchDayAfterKey(chart, active, event.key);
+          if (next === undefined) return;
+          event.preventDefault();
+          setActive(next);
+        }}
+        onBlur={() => setActive(null)}
       >
         {lowSample && (
           <g class="history-low-sample">
@@ -308,6 +321,12 @@ function ProjectionHistoryChart({
           onPointerLeave={(event) => event.pointerType === "mouse" && setActive(null)}
         />
       </svg>
+      <p id={hintId} class="visually-hidden">
+        Arrow keys step through the season.
+      </p>
+      <p class="visually-hidden" aria-live="polite">
+        {tip ? tip.lines.join(", ") : ""}
+      </p>
       {whatIfActive && <p class="meta history-note">Projection history ignores the what-if.</p>}
     </section>
   );
@@ -355,7 +374,7 @@ export function TeamDetail({
         otherForm={row.awayForm}
         remaining={row.remainingHomeGames}
         games={row.homeFormWindow}
-        teamName={teamName}
+        teams={teams}
         showProjectedRate={!showProbabilities}
       />
       <FormWindowDetail
@@ -364,7 +383,7 @@ export function TeamDetail({
         otherForm={row.homeForm}
         remaining={row.remainingAwayGames}
         games={row.awayFormWindow}
-        teamName={teamName}
+        teams={teams}
         showProjectedRate={!showProbabilities}
       />
     </div>

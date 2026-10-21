@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-21T20:43:39.604Z",
+  "generatedAt": "2026-10-21T21:08:27.841612Z",
   "title": "Design System: NL Predict",
   "extensions": {
     "colorMeta": {
       "amber": {
         "role": "primary",
         "displayName": "Scoreboard Amber",
-        "canonical": "light-dark(#a86a00, #ffb000)",
+        "canonical": "light-dark(#966000, #ffb000)",
         "purpose": "Brand accent: lit, picked, focused and hovered states; deeper in light mode.",
-        "light": "#a86a00",
+        "light": "#966000",
         "dark": "#ffb000",
         "tonalRamp": [
           "#1d0200",
@@ -77,9 +77,9 @@
       "play-in-amber": {
         "role": "tertiary",
         "displayName": "Play-In Amber",
-        "canonical": "light-dark(#a86a00, #ffb000)",
+        "canonical": "light-dark(#966000, #ffb000)",
         "purpose": "Play-in zone only.",
-        "light": "#a86a00",
+        "light": "#966000",
         "dark": "#ffb000",
         "tonalRamp": [
           "#1d0200",
@@ -96,7 +96,7 @@
         "role": "tertiary",
         "displayName": "Eliminated Slate",
         "canonical": "light-dark(#9aa6b2, #56616d)",
-        "purpose": "Eliminated zone and empty win-split sides.",
+        "purpose": "Eliminated zone fills only (bars, legend, rank-distribution bars, empty win-split sides); never text.",
         "light": "#9aa6b2",
         "dark": "#56616d",
         "tonalRamp": [
@@ -113,9 +113,9 @@
       "up-green": {
         "role": "tertiary",
         "displayName": "Climb Green",
-        "canonical": "light-dark(#0c8a41, #32e07a)",
+        "canonical": "light-dark(#0a7d3a, #32e07a)",
         "purpose": "Movement up and favourable What-If Changes.",
-        "light": "#0c8a41",
+        "light": "#0a7d3a",
         "dark": "#32e07a",
         "tonalRamp": [
           "#001400",
@@ -379,6 +379,24 @@
           "#d0c8b9",
           "#f2eee5"
         ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "light-dark(#85919e, #5a6673)",
+        "purpose": "Lines that carry structure, such as the bracket's connectors; 3:1 on a panel.",
+        "light": "#85919e",
+        "dark": "#5a6673",
+        "tonalRamp": [
+          "#080b10",
+          "#1f262d",
+          "#3a434e",
+          "#58626f",
+          "#798390",
+          "#9ea6b0",
+          "#c4cad1",
+          "#ebeff3"
+        ]
       }
     },
     "typographyMeta": {
@@ -409,6 +427,30 @@
       "label-sm": {
         "displayName": "Label Small",
         "purpose": "Table headers, toggles, tags, chart labels."
+      },
+      "display-compact": {
+        "displayName": "Display Compact",
+        "purpose": "The wordmark at phone width."
+      },
+      "numeral-md": {
+        "displayName": "Numeral Medium",
+        "purpose": "Round Chances; Projected Points and the clock below 36rem."
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Upcoming Games teams, bracket ties, table cells below 36rem."
+      },
+      "body-sm": {
+        "displayName": "Body Small",
+        "purpose": "Notes, rank summary, Form Window tables, footer."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Model picker summaries."
+      },
+      "legend": {
+        "displayName": "Legend",
+        "purpose": "Legend keys under tables and the bracket."
       }
     },
     "shadows": [
@@ -436,6 +478,10 @@
     "motion": [],
     "breakpoints": [
       {
+        "name": "small-phone",
+        "value": "24rem"
+      },
+      {
         "name": "phone",
         "value": "30rem"
       },
@@ -446,6 +492,10 @@
       {
         "name": "round-chances-4up",
         "value": "40rem"
+      },
+      {
+        "name": "form-windows-stack",
+        "value": "44rem"
       },
       {
         "name": "no-form",
@@ -484,7 +534,7 @@
       "refersTo": "segmented-toggle",
       "description": "Theme and chart-metric toggle; the pressed segment fills with ink.",
       "html": "<div class=\"ds-toggle\" role=\"group\"><button aria-pressed=\"false\">System</button><button aria-pressed=\"true\">Light</button><button aria-pressed=\"false\">Dark</button></div>",
-      "css": ".ds-toggle{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}.ds-toggle button{padding:.2rem .55rem;border:0;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}.ds-toggle button+button{border-left:1px solid var(--line)}.ds-toggle button:hover{color:var(--fg)}.ds-toggle button[aria-pressed=true]{background:var(--fg);color:var(--panel)}.ds-toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}"
+      "css": ".ds-toggle{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}.ds-toggle button{min-height:24px;padding:.2rem .55rem;border:0;background:none;color:var(--muted);font:600 .62rem var(--display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}.ds-toggle button+button{border-left:1px solid var(--line)}.ds-toggle button:hover{color:var(--fg)}.ds-toggle button[aria-pressed=true]{background:var(--fg);color:var(--panel)}.ds-toggle button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}"
     },
     {
       "name": "What-If Toggle",
@@ -524,7 +574,7 @@
       "refersTo": "panel",
       "description": "Projected Table rank cell carrying its Cut Line colour as an inset bar.",
       "html": "<table class=\"ds-rows\"><tr class=\"po\"><td class=\"r\">1</td><td class=\"t\">HC Davos</td><td class=\"p\">98</td></tr><tr class=\"pi\"><td class=\"r\">7</td><td class=\"t\">SC Bern</td><td class=\"p\">74</td></tr><tr class=\"out\"><td class=\"r\">12</td><td class=\"t\">HC Ajoie</td><td class=\"p\">51</td></tr></table>",
-      "css": ".ds-rows{border-collapse:collapse;font-variant-numeric:tabular-nums;color:var(--fg)}.ds-rows td{padding:.45rem .4rem;border-top:1px solid var(--line)}.ds-rows .r{width:2.6rem;text-align:center;font:700 1.05rem var(--display)}.ds-rows .t{font:600 .95rem var(--display);letter-spacing:.03em;text-transform:uppercase}.ds-rows .p{font:700 1.45rem/1 var(--display);text-align:right}.ds-rows .po .r{color:var(--playoffs);box-shadow:inset 3px 0 0 var(--playoffs)}.ds-rows .pi .r{color:var(--play-in);box-shadow:inset 3px 0 0 var(--play-in)}.ds-rows .out .r{color:var(--eliminated);box-shadow:inset 3px 0 0 var(--eliminated)}.ds-rows .out td:not(.r){opacity:.72}"
+      "css": ".ds-rows{border-collapse:collapse;font-variant-numeric:tabular-nums;color:var(--fg)}.ds-rows td{padding:.45rem .4rem;border-top:1px solid var(--line)}.ds-rows .r{width:2.6rem;text-align:center;font:700 1.05rem var(--display)}.ds-rows .t{font:600 .95rem var(--display);letter-spacing:.03em;text-transform:uppercase}.ds-rows .p{font:700 1.45rem/1 var(--display);text-align:right}.ds-rows .po .r{color:var(--playoffs);box-shadow:inset 3px 0 0 var(--playoffs)}.ds-rows .pi .r{color:var(--play-in);box-shadow:inset 3px 0 0 var(--play-in)}.ds-rows .out .r{color:var(--muted);box-shadow:inset 3px 0 0 var(--eliminated)}.ds-rows .out td:not(.r){color:var(--muted)}"
     }
   ],
   "narrative": {
@@ -555,6 +605,11 @@
         "section": "colors"
       },
       {
+        "name": "The Fill Is Not Text Rule",
+        "body": "A colour that passes as a bar or a bar's edge may still fail as type. Zone and accent colours that carry text must reach 4.5:1 on the surface they sit on; otherwise the shape carries the colour and the text goes `muted` or `ink`.",
+        "section": "colors"
+      },
+      {
         "name": "The Two Voices Rule",
         "body": "If it is a label, a team, a number or a control, it is Oxanium in uppercase. If it is a sentence of explanation, it is system-ui in sentence case. Never set prose in Oxanium capitals.",
         "section": "typography"
@@ -578,7 +633,8 @@
       "**Do** pair every meaning colour with a shape, fill, arrow or label.",
       "**Do** keep surfaces flat: arena floor → panel → inset, separated by 1px `line` hairlines.",
       "**Do** decide what gives way at each breakpoint instead of letting tables scroll sideways on phones.",
-      "**Do** use a 2px amber focus outline on every interactive element."
+      "**Do** use a 2px amber focus outline on every interactive element, the Projection History chart included (its arrow keys step through the season).",
+      "**Do** keep every tap target at least 24px in both directions."
     ],
     "donts": [
       "**Don't** use cyan, play-in amber or slate for anything except Cut Line zones. When amber is used as a brand accent next to zone data, make sure the zone still reads through its bar, legend or position.",
@@ -586,7 +642,8 @@
       "**Don't** add club logos, club colours or league marks. Teams appear by name in Oxanium.",
       "**Don't** set prose in uppercase Oxanium, or numbers in the system font.",
       "**Don't** add a colour, glow or effect that exists only in one theme.",
-      "**Don't** fill a pressed small-text toggle with amber in light mode. Use `ink`."
+      "**Don't** fill a pressed small-text toggle with amber in light mode. Use `ink`.",
+      "**Don't** set text in `eliminated-slate`, or fade text at rest with opacity; step it down to `muted` instead. Only the brief pending state dims."
     ]
   }
 }
