@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SEASON_START } from "../domain/project.ts";
 import type { HistoryPoint, ProjectionHistory } from "../domain/projectionHistory.ts";
 import { LOW_SAMPLE_GAMES } from "../domain/project.ts";
-import { chartMetrics, nearestMatchDay, projectionChart, shownMetric, tooltipAt } from "./projectionChart.ts";
+import { chartMetrics, matchDayAfterKey, nearestMatchDay, projectionChart, shownMetric, tooltipAt } from "./projectionChart.ts";
 
 function point(
   matchDay: string,
@@ -385,5 +385,31 @@ describe("tooltipAt", () => {
     expect([0, 1, 2].map((matchDay) => tooltipAt(chart, matchDay))).toEqual([0, 0, 1]);
     const points = projectionChart(level, 1, "points")!;
     expect([0, 1, 2].map((matchDay) => tooltipAt(points, matchDay))).toEqual([0, 1, 2]);
+  });
+});
+
+describe("matchDayAfterKey", () => {
+  // The rank line starts on the second Match Day, so its drawn points are Match Days 1 and 2.
+  const level = [SEASON_START, "2026-09-15", "2026-09-18"].map((day, index) => point(day, { 1: null, 2: null }, { 1: 60 + index, 2: 60 - index }));
+  const chart = projectionChart(level, 1, "rank")!;
+
+  it("starts at the latest point on the first arrow press", () => {
+    expect(matchDayAfterKey(chart, null, "ArrowLeft")).toBe(2);
+    expect(matchDayAfterKey(chart, null, "ArrowRight")).toBe(2);
+  });
+
+  it("steps along the drawn line and stops at its ends", () => {
+    expect(matchDayAfterKey(chart, 2, "ArrowLeft")).toBe(1);
+    expect(matchDayAfterKey(chart, 1, "ArrowLeft")).toBe(1);
+    expect(matchDayAfterKey(chart, 2, "ArrowRight")).toBe(2);
+    // A pointer can leave it before the line starts; the next step counts from the line's first point.
+    expect(matchDayAfterKey(chart, 0, "ArrowRight")).toBe(2);
+  });
+
+  it("jumps to the ends with Home and End, hides with Escape, and ignores other keys", () => {
+    expect(matchDayAfterKey(chart, 2, "Home")).toBe(1);
+    expect(matchDayAfterKey(chart, null, "End")).toBe(2);
+    expect(matchDayAfterKey(chart, 2, "Escape")).toBeNull();
+    expect(matchDayAfterKey(chart, 2, "Tab")).toBeUndefined();
   });
 });

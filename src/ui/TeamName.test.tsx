@@ -8,13 +8,18 @@ describe("TeamName", () => {
   it("shows the full name and the acronym, each in its own span for the responsive styles", () => {
     const html = render(<TeamName teams={teams} teamId={7} />);
     expect(html).toContain('<span class="team-name">HC Davos</span>');
-    expect(html).toContain('<span class="team-acronym">HCD</span>');
+    expect(html).toContain('<span class="team-acronym"><span aria-hidden="true">HCD</span>');
+  });
+
+  it("gives screen readers the full name where only the acronym shows", () => {
+    const html = render(<TeamName teams={teams} teamId={7} />);
+    expect(html).toContain('<span aria-hidden="true">HCD</span><span class="visually-hidden">HC Davos</span></span>');
   });
 
   it("falls back to the team id for a team it does not know", () => {
     const html = render(<TeamName teams={teams} teamId={99} />);
     expect(html).toContain('<span class="team-name">99</span>');
-    expect(html).toContain('<span class="team-acronym">99</span>');
+    expect(html).toContain('<span class="team-acronym"><span aria-hidden="true">99</span><span class="visually-hidden">99</span></span>');
   });
 });
 

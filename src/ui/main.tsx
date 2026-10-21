@@ -1,9 +1,11 @@
 import { render } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { App } from "./App.tsx";
+import { ErrorBoundary } from "./ErrorBoundary.tsx";
 import { modelFromUrl, urlWithModel } from "./modelUrl.ts";
 import { urlWithWhatIf, whatIfFromUrl } from "./whatIfUrl.ts";
-import type { ProjectionModel, WhatIf } from "../domain/project.ts";
+import { projectionClient, type Picks } from "./projectionRequests.ts";
+import type { Projection, ProjectionModel, WhatIf } from "../domain/project.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import histories from "virtual:projection-history";
 import snapshot from "../../data/games.json";
@@ -13,38 +15,77 @@ import "./styles.css";
 
 const now = new Date();
 
-/** Keeps the picked Projection Model and the What-If in the URL, so links are shareable and Back/Forward step through picks. */
+const picksFromUrl = (): Picks => ({ model: modelFromUrl(location.href), whatIf: whatIfFromUrl(location.href) });
+
+/** The Season Simulation's own thread; without one (or once it fails), the page projects in place. */
+function startWorker(): Worker | undefined {
+  try {
+    return new Worker(new URL("./projectionWorker.ts", import.meta.url), { type: "module" });
+  } catch {
+    return undefined;
+  }
+}
+
+const worker = startWorker();
+
+/**
+ * Keeps the picked Projection Model and the What-If in the URL, so links are shareable and Back/Forward step through picks.
+ * The Season Simulation runs in a worker: a pick paints as pending at once (the pressed control lit, the Headline saying
+ * so) and the page stays responsive until its projection arrives.
+ */
 function Root() {
-  const [model, setModel] = useState(() => modelFromUrl(location.href));
-  const [whatIf, setWhatIf] = useState(() => whatIfFromUrl(location.href));
+  const [requested, setRequested] = useState(picksFromUrl);
+  const [projected, setProjected] = useState<{ picks: Picks; projection: Projection } | null>(null);
+  const [inPlace, setInPlace] = useState(worker === undefined);
+  const client = useMemo(
+    () => worker && projectionClient(worker, now, (picks, projection) => setProjected({ picks, projection })),
+    [],
+  );
   useEffect(() => {
-    const onPopState = () => {
-      setModel(modelFromUrl(location.href));
-      setWhatIf(whatIfFromUrl(location.href));
-    };
+    // A worker that fails to start, throws or sends something unreadable: project in place instead.
+    const onError = () => setInPlace(true);
+    worker?.addEventListener("error", onError);
+    worker?.addEventListener("messageerror", onError);
+    const onPopState = () => setRequested(picksFromUrl());
     addEventListener("popstate", onPopState);
-    return () => removeEventListener("popstate", onPopState);
+    return () => {
+      worker?.removeEventListener("error", onError);
+      worker?.removeEventListener("messageerror", onError);
+      removeEventListener("popstate", onPopState);
+    };
   }, []);
+  useEffect(() => {
+    if (!inPlace) client?.request(requested);
+  }, [requested, inPlace]);
   const pick = (next: ProjectionModel<ProjectionModelId>) => {
     history.pushState(null, "", urlWithModel(location.href, next));
-    setModel(next);
+    setRequested((picks) => ({ ...picks, model: next }));
   };
   const changeWhatIf = (next: WhatIf, mode: "push" | "replace") => {
     if (mode === "push") history.pushState(null, "", urlWithWhatIf(location.href, next));
     else history.replaceState(null, "", urlWithWhatIf(location.href, next));
-    setWhatIf(next);
+    setRequested((picks) => ({ ...picks, whatIf: next }));
   };
+  // Shown: the last projected picks, or the asked-for ones while the first projection is made or when projecting in place.
+  const shown = inPlace || !projected ? requested : projected.picks;
   return (
     <App
       snapshot={snapshot as Snapshot}
       now={now}
-      model={model}
-      history={histories[model.id]}
-      whatIf={whatIf}
+      model={shown.model}
+      history={histories[shown.model.id]}
+      whatIf={shown.whatIf}
+      projection={inPlace ? undefined : (projected?.projection ?? null)}
+      pending={shown === requested ? undefined : requested}
       onModelChange={pick}
       onWhatIfChange={changeWhatIf}
     />
   );
 }
 
-render(<Root />, document.getElementById("app")!);
+render(
+  <ErrorBoundary>
+    <Root />
+  </ErrorBoundary>,
+  document.getElementById("app")!,
+);

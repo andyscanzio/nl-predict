@@ -83,6 +83,11 @@ function text(html: string) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** The text on screen: without screen-reader-only text, so a team reads as its full name then its acronym. */
+function shown(html: string) {
+  return text(html.replace(/<span class="visually-hidden">.*?<\/span>/g, ""));
+}
+
 /** The Form Window headings, home first. */
 function formWindowHeadings(html: string) {
   return [...html.matchAll(/<section class="form-window[^"]*"><h3>(.*?)<\/h3>/g)].map((match) => text(match[1]!));
@@ -254,11 +259,12 @@ describe("TeamDetail", () => {
       const [home] = formWindows(html);
       const body = home!.slice(home!.indexOf("<tbody>"), home!.indexOf("</tbody>"));
       const rows = [...body.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) =>
-        [...match[1]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((cell) => text(cell[1]!)),
+        [...match[1]!.matchAll(/<td[^>]*>(.*?)<\/td>/g)].map((cell) => shown(cell[1]!)),
       );
+      // Full name and acronym: CSS shows the acronym on a phone, so the table fits its box.
       expect(rows).toEqual([
-        [formatGameDate(new Date("2026-09-26T17:45:00Z")), "vs SC Bern", "3:1", "", "3"],
-        [formatGameDate(new Date("2026-09-20T17:45:00Z")), "vs ZSC Lions", "2:3", "OT", "1"],
+        [formatGameDate(new Date("2026-09-26T17:45:00Z")), "vs SC Bern SCB", "3:1", "", "3"],
+        [formatGameDate(new Date("2026-09-20T17:45:00Z")), "vs ZSC Lions ZSC", "2:3", "OT", "1"],
       ]);
     });
 
@@ -287,7 +293,7 @@ describe("TeamDetail", () => {
     it("prefix away Games with @ and label the columns", () => {
       const html = panel({ row: row({ awayFormWindow: [game({ decision: "SO", opponentId: 3, goalsFor: 2, goalsAgainst: 1, points: 2 })] }) });
       const [, away] = formWindows(html);
-      expect(text(away!)).toContain("@ ZSC Lions 2:1 SO 2");
+      expect(shown(away!)).toContain("@ ZSC Lions ZSC 2:1 SO 2");
       const headers = [...away!.matchAll(/<th[^>]*scope="col"[^>]*>(.*?)<\/th>/g)].map((match) => text(match[1]!));
       expect(headers).toEqual(["Date", "Opponent", "Score", "Decision", "Pts"]);
     });

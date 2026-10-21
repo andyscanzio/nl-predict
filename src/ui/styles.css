@@ -12,22 +12,29 @@
   --fg: light-dark(#0c1117, #eef3f8);
   --muted: light-dark(#56636f, #8593a2);
   --line: light-dark(#d6dde5, #1f2833);
-  --amber: light-dark(#a86a00, #ffb000);
+  --amber: light-dark(#966000, #ffb000);
+  /* Lit segments (the picked model, the Headline tag) stay this amber in both themes, inked in --on-amber. */
+  --amber-lit: #ffb000;
+  --on-amber: #000;
   --led: light-dark(#d61f1f, #ff4545);
   /* The clock and Headline: a black LED screen in dark mode, a plain bordered panel with deeper amber in light. */
   --led-screen: light-dark(var(--panel), #000);
   --led-edge: light-dark(var(--line), transparent);
   --led-text: light-dark(#8f5a00, #ffb000);
   --led-bright: light-dark(var(--fg), #fff);
-  --led-glow: light-dark(transparent, rgb(255 176 0 / 0.55));
-  --up: light-dark(#0c8a41, #32e07a);
+  --led-glow: light-dark(transparent, color-mix(in srgb, var(--amber-lit) 55%, transparent));
+  --up: light-dark(#0a7d3a, #32e07a);
   --down: light-dark(#d61f1f, #ff4545);
   --win: light-dark(#0f9a4a, #32e07a);
   --loss: light-dark(#d61f1f, #ff4545);
   --playoffs: light-dark(#0079a8, #29d3ff);
-  --play-in: light-dark(#a86a00, #ffb000);
+  --play-in: light-dark(#966000, #ffb000);
   --eliminated: light-dark(#9aa6b2, #56616d);
   --warning-bg: light-dark(#fff4d6, #2a1f05);
+  /* Lines that carry structure, such as the bracket's connectors: 3:1 on a panel, where --line is only a hairline. */
+  --rule: light-dark(#85919e, #5a6673);
+  /* The model picker's recessed track: a light strip in light mode, the LED screen's black in dark. */
+  --switch-track: light-dark(var(--panel-strip), #000);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--fg);
@@ -44,6 +51,16 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* The lit amber ring on anything focusable; components that sit on amber or clip their edge set their own. */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--amber) 30%, transparent);
 }
 
 body {
@@ -276,6 +293,19 @@ body {
   box-shadow: 2px 0 0 var(--panel);
 }
 
+/* Under each side of the win split, the part of its chance won in OT/SO, from the side's outer edge. */
+.win-split-overtime {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0;
+  padding-left: calc(2.9rem + 0.6rem); /* lines up under the teams, past the start time column */
+  font: 600 0.62rem var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .upcoming-note {
   border-top: 1px solid var(--line);
 }
@@ -308,7 +338,7 @@ body {
   gap: 2px;
   padding: 2px;
   /* Follows the theme, unlike the clock and Headline: a light track in light mode, the LED screen in dark. */
-  background: light-dark(var(--panel-strip), #000);
+  background: var(--switch-track);
   box-shadow: inset 0 0 0 1px light-dark(var(--line), transparent);
   border-radius: 5px;
 }
@@ -367,13 +397,13 @@ body {
 
 /* The whole option lights up, so the Elo Model's start switch sits inside the lit segment. */
 .model-option:has(input:checked) {
-  background: #ffb000;
-  box-shadow: 0 0 10px rgb(255 176 0 / 0.45);
+  background: var(--amber-lit);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--amber-lit) 45%, transparent);
 }
 
 .model-options input:checked + span,
 .model-options input:checked + span .model-default {
-  color: #000;
+  color: var(--on-amber);
 }
 
 .elo-start {
@@ -388,37 +418,37 @@ body {
   font: 700 0.58rem var(--display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #000;
+  color: var(--on-amber);
 }
 
 /* The chart metric toggle, inked black on the amber segment. */
 .history-toggle.start-toggle {
-  border-color: rgb(0 0 0 / 0.4);
+  border-color: color-mix(in srgb, var(--on-amber) 40%, transparent);
 }
 
 .history-toggle.start-toggle button {
-  color: rgb(0 0 0 / 0.65);
+  color: color-mix(in srgb, var(--on-amber) 65%, transparent);
 }
 
 .history-toggle.start-toggle button + button {
-  border-left-color: rgb(0 0 0 / 0.4);
+  border-left-color: color-mix(in srgb, var(--on-amber) 40%, transparent);
 }
 
 .history-toggle.start-toggle button:hover {
-  color: #000;
+  color: var(--on-amber);
 }
 
 .history-toggle.start-toggle button[aria-pressed="true"] {
-  background: #000;
-  color: #ffb000;
+  background: var(--on-amber);
+  color: var(--amber-lit);
 }
 
 .history-toggle.start-toggle button:focus-visible {
-  outline-color: #000;
+  outline-color: var(--on-amber);
 }
 
 .model-options input:focus-visible + span {
-  outline: 2px solid #ffb000;
+  outline: 2px solid var(--amber-lit);
   outline-offset: 1px;
 }
 
@@ -488,7 +518,8 @@ h1 .dot {
 
 .theme-toggle span {
   display: block;
-  padding: 0.2rem 0.55rem;
+  min-height: 24px; /* WCAG 2.2 target size */
+  padding: 0.3rem 0.55rem;
   font: 600 0.62rem var(--display);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -555,8 +586,8 @@ h1 .dot {
   font-size: 0.65rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #000;
-  background: #ffb000;
+  color: var(--on-amber);
+  background: var(--amber-lit);
   padding: 0.15rem 0.45rem;
   border-radius: 2px;
 }
@@ -573,6 +604,11 @@ h1 .dot {
 
 .headline strong {
   color: var(--led-bright);
+}
+
+/* A new pick is being simulated: its control is already lit, and the figures it will change step back until they arrive. */
+main[aria-busy="true"] :is(.headline p, .projected tbody, .bracket-play-in, .bracket-tree, .win-split) {
+  opacity: 0.5;
 }
 
 /* ───────── Tables ───────── */
@@ -694,13 +730,16 @@ tbody th {
   box-shadow: inset 3px 0 0 var(--play-in);
 }
 
+/* Slate is too faint for text, so the numeral is muted and the bar alone carries the zone. */
 .projected .cut-eliminated .rank {
-  color: var(--eliminated);
+  color: var(--muted);
   box-shadow: inset 3px 0 0 var(--eliminated);
 }
 
-.projected .cut-eliminated > tr:first-child > :not(.rank) {
-  opacity: 0.72;
+/* Eliminated rows step back to muted text rather than fading, which would take muted figures below AA. */
+.projected .cut-eliminated > tr:first-child > :not(.rank),
+.projected .cut-eliminated .projected-points {
+  color: var(--muted);
 }
 
 .projected tr.cut-line > * {
@@ -852,9 +891,11 @@ tbody th {
   gap: 0.35rem;
 }
 
+/* Width and style only: a shorthand here would outrank the zone colours below and paint the bar transparent. */
 .legend li[class^="cut-"] {
   padding-left: 0.4rem;
-  border-left: 4px solid transparent;
+  border-left-width: 4px;
+  border-left-style: solid;
 }
 
 .legend .cut-playoffs {
@@ -888,10 +929,13 @@ tbody th {
   white-space: normal;
 }
 
-/* Home and Away Form Window boxes always share a row, wide enough for their tables; the Rank Distribution gets its own row above. */
+/*
+ * Home and Away Form Window boxes share a row in equal halves, never wider than the detail, and stack below 44rem; the
+ * Rank Distribution gets its own row above.
+ */
 .form-windows {
   display: grid;
-  grid-template-columns: repeat(2, minmax(min-content, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem 1rem;
 }
 
@@ -906,7 +950,9 @@ tbody th {
   border-radius: 6px;
 }
 
+/* Positioned, so its visually hidden header labels scroll with it instead of widening the Projected Table. */
 .form-window {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -999,6 +1045,7 @@ tbody th {
 }
 
 .history-toggle button {
+  min-height: 24px; /* WCAG 2.2 target size */
   padding: 0.2rem 0.55rem;
   border: 0;
   background: none;
@@ -1032,6 +1079,11 @@ tbody th {
   width: 100%;
   height: auto;
   overflow: visible;
+}
+
+.history-chart svg:focus-visible {
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 .history-edge {
@@ -1331,13 +1383,16 @@ footer {
 }
 
 .what-if-banner .what-if-result button {
+  min-width: 24px; /* WCAG 2.2 target size */
+  min-height: 24px;
   padding: 0 0.4rem;
   border: 0;
   border-radius: 999px;
   line-height: 1.4;
 }
 
-.what-if-banner button {
+.what-if-banner button,
+.warning-button {
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--amber);
   border-radius: 6px;
@@ -1349,14 +1404,25 @@ footer {
   cursor: pointer;
 }
 
-.what-if-banner button:hover {
+.what-if-banner button:hover,
+.warning-button:hover {
   background: var(--amber);
-  color: var(--bg);
+  color: var(--panel);
 }
 
-.what-if-banner button:focus-visible {
+.what-if-banner button:focus-visible,
+.warning-button:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
+}
+
+/* Without JavaScript nothing can be projected; the note says so in the scoreboard's own panel. */
+.noscript {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 footer {
@@ -1370,12 +1436,19 @@ footer a {
   color: inherit;
 }
 
+/*
+ * Read by screen readers, never seen. Absolute, so it takes no room in flex rows and table cells; any scroll container
+ * that holds one must be positioned, or the label counts towards the width of a scroll box further out.
+ */
 .visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -1491,7 +1564,7 @@ footer a {
 }
 
 .bracket-exit.out {
-  color: var(--eliminated);
+  color: var(--muted);
 }
 
 .panel-body .bracket-key {
@@ -1544,19 +1617,19 @@ footer a {
   position: absolute;
   left: 100%;
   width: calc(var(--gap) / 2);
-  border-right: 2px solid var(--line);
+  border-right: 2px solid var(--rule);
 }
 
 .bracket-round:nth-child(-n + 2) .bracket-slot:nth-child(odd)::after {
   top: 50%;
   bottom: 0;
-  border-top: 2px solid var(--line);
+  border-top: 2px solid var(--rule);
 }
 
 .bracket-round:nth-child(-n + 2) .bracket-slot:nth-child(even)::after {
   top: 0;
   height: 50%;
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid var(--rule);
 }
 
 /* Into a tie, from the pair's midpoint; the final runs straight on into the Champion. */
@@ -1566,7 +1639,7 @@ footer a {
   right: 100%;
   top: 50%;
   width: calc(var(--gap) / 2);
-  border-top: 2px solid var(--line);
+  border-top: 2px solid var(--rule);
 }
 
 .bracket-round:nth-child(3) .bracket-slot::after {
@@ -1575,7 +1648,7 @@ footer a {
   left: 100%;
   top: 50%;
   width: calc(var(--gap) / 2);
-  border-top: 2px solid var(--line);
+  border-top: 2px solid var(--rule);
 }
 
 .panel-body .bracket-champion,
@@ -1689,12 +1762,21 @@ footer a {
 
 /* Below the full 60rem layout, acronyms leave room for the percentages; then Form gives way. */
 @media (max-width: 62rem) {
-  .projected .team-name {
+  .projected th.team .team-name,
+  .form-window .team-name {
     display: none;
   }
 
-  .projected .team-acronym {
+  .projected th.team .team-acronym,
+  .form-window .team-acronym {
     display: inline;
+  }
+}
+
+/* Too narrow for two Form Window tables side by side, even with acronyms: one above the other. */
+@media (max-width: 44rem) {
+  .form-windows {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1702,10 +1784,6 @@ footer a {
   .wide,
   .legend .wide {
     display: none;
-  }
-
-  .form-windows {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1775,15 +1853,52 @@ footer a {
   .projected tr.detail > td {
     padding-left: 0.5rem;
   }
-
-  .form-windows {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* Phones: Now, Left and Pts (also in the Current Table) give way so the Season Simulation percentages fit without scrolling. */
 @media (max-width: 30rem) {
   .roomy {
+    display: none;
+  }
+}
+
+/* Small phones: tighter cells and header tracking, so the Projected Table fits 320px without scrolling sideways. */
+@media (max-width: 24rem) {
+  th,
+  td {
+    padding-inline: 0.15rem;
+  }
+
+  .table-scroll > table > * > tr > :first-child {
+    padding-left: 0;
+  }
+
+  .table-scroll > table > * > tr > :last-child {
+    padding-right: 0.4rem;
+  }
+
+  thead th {
+    letter-spacing: 0.04em;
+  }
+
+  .rank {
+    width: 1.8rem;
+  }
+
+  .expand {
+    gap: 0.2rem;
+  }
+
+  .low-sample {
+    margin-left: 0.2rem;
+  }
+
+  .projected-points {
+    font-size: 1.05rem;
+  }
+
+  /* The headers lose their % sign, which is wider than the figures under it; the legend says they are percentages. */
+  .pct-sign {
     display: none;
   }
 }
@@ -1797,5 +1912,37 @@ footer a {
   .what-if-toggles button {
     flex: 1 1 0;
     padding-block: 0.45rem;
+  }
+}
+
+/*
+ * Forced colours (Windows High Contrast) drop backgrounds and box-shadows, which would empty the charts and hide what is
+ * picked. The charts keep their own colours; picked and pressed controls take the system highlight.
+ */
+@media (forced-colors: active) {
+  .win-split-bar,
+  .chip,
+  .rank-bars,
+  .legend-swatch {
+    forced-color-adjust: none;
+  }
+
+  .projected .rank {
+    border-left: 3px solid CanvasText;
+  }
+
+  .model-option:has(input:checked),
+  .theme-toggle input:checked + span,
+  .history-toggle button[aria-pressed="true"],
+  .what-if-toggles button[aria-pressed="true"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .model-options input:checked + span,
+  .model-options input:checked + span .model-default {
+    forced-color-adjust: none;
+    color: HighlightText;
   }
 }

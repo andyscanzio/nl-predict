@@ -35,9 +35,13 @@ function bodyRows(html: string) {
   return [...body.matchAll(/<tr>(.*?)<\/tr>/g)].map((match) => match[1]!);
 }
 
-/** The text a visitor reads, without markup. */
+/** The text a visitor reads, without markup or screen-reader-only text. */
 function text(html: string) {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<span class="visually-hidden">.*?<\/span>/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 describe("CurrentTable", () => {

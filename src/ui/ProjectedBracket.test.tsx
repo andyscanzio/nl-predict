@@ -16,10 +16,14 @@ const bracket = projectedBracket(ranking, homeWin);
 
 const html = render(<ProjectedBracket bracket={bracket} ranks={ranks} teams={teams} />);
 
-/** The text of each element with `cls` (holding no element of the same tag), each tag read as a space. */
+/** The shown text of each element with `cls` (holding no element of the same tag), each tag read as a space. */
 function texts(markup: string, tag: string, cls: string) {
   return [...markup.matchAll(new RegExp(`<${tag} class="${cls}[^"]*"[^>]*>(.*?)</${tag}>`, "gs"))].map((match) =>
-    match[1]!.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+    match[1]!
+      .replace(/<span class="visually-hidden">.*?<\/span>/g, "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
   );
 }
 

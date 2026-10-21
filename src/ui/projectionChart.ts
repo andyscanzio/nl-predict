@@ -147,6 +147,30 @@ export function tooltipAt(chart: ProjectionChart, matchDay: number): number {
   return Math.max(0, matchDay - (chart.steps - chart.tooltips.length));
 }
 
+/**
+ * Where a key moves the tooltip, as a Match Day on the x scale: ← and → step along the chosen line (the first press
+ * starts at its latest point), Home and End jump to its ends, and Escape hides it (null). Undefined for any other key.
+ */
+export function matchDayAfterKey(chart: ProjectionChart, matchDay: number | null, key: string): number | null | undefined {
+  const first = chart.steps - chart.tooltips.length;
+  const last = chart.steps - 1;
+  const from = matchDay === null ? null : Math.min(last, Math.max(first, matchDay));
+  switch (key) {
+    case "ArrowLeft":
+      return from === null ? last : Math.max(first, from - 1);
+    case "ArrowRight":
+      return from === null ? last : Math.min(last, from + 1);
+    case "Home":
+      return first;
+    case "End":
+      return last;
+    case "Escape":
+      return null;
+    default:
+      return undefined;
+  }
+}
+
 /** The metric to draw: the visitor's choice where the model supports it, otherwise the first it does. */
 export function shownMetric(chosen: ChartMetric, available: ChartMetric[]): ChartMetric | null {
   return available.includes(chosen) ? chosen : (available[0] ?? null);

@@ -59,14 +59,14 @@ describe("UpcomingGames", () => {
     const html = panel([day("2026-10-06", upcomingGame())]);
     expect(html).toContain('<time class="upcoming-time" datetime="2026-10-06T17:45:00Z">19:45</time>');
     expect(html).toContain('<span class="team-name">HC Davos</span>');
-    expect(html).toContain('<span class="team-acronym">SCB</span>');
+    expect(html).toContain('<span class="team-acronym"><span aria-hidden="true">SCB</span>');
   });
 
   describe("with Outcome Probabilities", () => {
     const html = panel([day("2026-10-06", upcomingGame())]);
 
     it("shows a win-split bar with each side's win percentage", () => {
-      expect(html).toContain('<div class="win-split">');
+      expect(html).toContain('<div class="win-split" aria-hidden="true">');
       expect(html).toContain('<span class="win-split-pct">50</span>');
       expect(html).not.toContain("upcoming-points");
     });
@@ -86,10 +86,23 @@ describe("UpcomingGames", () => {
       );
     });
 
+    it("prints each side's OT/SO chance under the bar, so all four outcomes read without hovering", () => {
+      expect(html).toContain('<p class="win-split-overtime" aria-hidden="true"><span>20% in OT/SO</span><span>20% in OT/SO</span></p>');
+      // A side that cannot win in OT/SO gets no figure, and the other keeps its place on its own edge.
+      const noOvertime = panel([day("2026-10-06", upcomingGame({ outcomes: { regulationWin: 0.6, overtimeOrShootoutWin: 0, overtimeOrShootoutLoss: 0.1, regulationLoss: 0.3 } }))]);
+      expect(noOvertime).toContain('<p class="win-split-overtime" aria-hidden="true"><span></span><span>10% in OT/SO</span></p>');
+    });
+
+    it("gives screen readers all four Outcome Probabilities as one sentence instead of the bar", () => {
+      expect(html).toContain(
+        '<p class="visually-hidden">HC Davos win in regulation 30.0% · HC Davos win in OT/SO 20.0% · SC Bern win in OT/SO 20.0% · SC Bern win in regulation 30.0%</p>',
+      );
+    });
+
     it("shows the win-split legend", () => {
       const legend = text(html.slice(html.indexOf('<ul class="legend">')));
       expect(legend).toBe(
-        "Home win Home win in OT/SO Away win in OT/SO Away win Percentages are the chance of winning, in regulation or OT/SO",
+        "Home win Home win in OT/SO Away win in OT/SO Away win Percentages are the chance of winning, in regulation or OT/SO; the small figures under them, in OT/SO alone",
       );
     });
   });

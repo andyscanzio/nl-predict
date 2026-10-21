@@ -1,9 +1,9 @@
-import type { NextRoundDay, WhatIfOutcome } from "../domain/project.ts";
+import type { NextRoundDay, WhatIf, WhatIfOutcome } from "../domain/project.ts";
 import type { OutcomeProbabilities } from "../domain/outcomes.ts";
 import { lowSampleSentence, type LowSampleShare } from "./lowSample.ts";
 import { formatExpectedPoints, formatGameTime, formatMatchDayHeading } from "./format.ts";
 import { fullTeamName, TeamName, type Teams } from "./TeamName.tsx";
-import { winSplit } from "./winSplit.ts";
+import { formatPercent, winSplit } from "./winSplit.ts";
 
 const oneDecimalPercent = (probability: number) => `${(probability * 100).toFixed(1)}%`;
 
@@ -65,8 +65,17 @@ function WhatIfToggles({
   );
 }
 
-/** Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins. */
-function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
+/** A side's chance of winning in OT/SO, as printed under the win split; empty when it has none. */
+function overtimeOrShootoutLabel(probability: number) {
+  return probability > 0 ? `${formatPercent(probability)}% in OT/SO` : "";
+}
+
+/**
+ * Home win against away win (each including its OT/SO wins), with a lighter slice in each side for its OT/SO wins and,
+ * under each side, the part of its chance won in OT/SO: all four Outcome Probabilities, readable without hovering.
+ * Screen readers get them as one sentence.
+ */
+function WinSplitBar({ outcomes, home, away }: { outcomes: OutcomeProbabilities; home: string; away: string }) {
   const split = winSplit(outcomes);
   const segment = (side: "home" | "away") => (
     <span class={`win-split-side ${side}${split[side].exact ? " none" : ""}`} style={{ flexGrow: split[side].win }}>
@@ -74,14 +83,21 @@ function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
     </span>
   );
   return (
-    <div class="win-split">
-      <span class={split.home.exact ? "win-split-pct none" : "win-split-pct"}>{split.home.label}</span>
-      <span class="win-split-bar" aria-hidden="true">
-        {segment("home")}
-        {segment("away")}
-      </span>
-      <span class={split.away.exact ? "win-split-pct none" : "win-split-pct"}>{split.away.label}</span>
-    </div>
+    <>
+      <div class="win-split" aria-hidden="true">
+        <span class={split.home.exact ? "win-split-pct none" : "win-split-pct"}>{split.home.label}</span>
+        <span class="win-split-bar">
+          {segment("home")}
+          {segment("away")}
+        </span>
+        <span class={split.away.exact ? "win-split-pct none" : "win-split-pct"}>{split.away.label}</span>
+      </div>
+      <p class="win-split-overtime" aria-hidden="true">
+        <span>{overtimeOrShootoutLabel(outcomes.overtimeOrShootoutWin)}</span>
+        <span>{overtimeOrShootoutLabel(outcomes.overtimeOrShootoutLoss)}</span>
+      </p>
+      <p class="visually-hidden">{outcomesTitle(outcomes, home, away)}</p>
+    </>
   );
 }
 
@@ -89,11 +105,14 @@ function WinSplitBar({ outcomes }: { outcomes: OutcomeProbabilities }) {
 export function UpcomingGames({
   nextRound,
   lowSample,
+  pendingWhatIf,
   teams,
   onWhatIfPick,
 }: {
   nextRound: NextRoundDay[];
   lowSample: LowSampleShare;
+  /** A newer What-If than the one `nextRound` was projected with, still being simulated: its toggles show as pressed. */
+  pendingWhatIf?: WhatIf;
   teams: Teams;
   /** Called with a Game's new What-If Result, or undefined when the visitor clears it. */
   onWhatIfPick: (gameId: string, outcome: WhatIfOutcome | undefined) => void;
@@ -139,7 +158,11 @@ export function UpcomingGames({
                     {whatIfLabel(whatIf, fullTeamName(teams, game.homeTeamId), fullTeamName(teams, game.awayTeamId))}
                   </p>
                 ) : prediction.outcomes ? (
-                  <WinSplitBar outcomes={prediction.outcomes} />
+                  <WinSplitBar
+                    outcomes={prediction.outcomes}
+                    home={fullTeamName(teams, game.homeTeamId)}
+                    away={fullTeamName(teams, game.awayTeamId)}
+                  />
                 ) : (
                   <p class="upcoming-points">
                     {formatExpectedPoints(prediction.points.home)} Pts – {formatExpectedPoints(prediction.points.away)} Pts
@@ -149,7 +172,7 @@ export function UpcomingGames({
                   gameId={game.id}
                   home={fullTeamName(teams, game.homeTeamId)}
                   away={fullTeamName(teams, game.awayTeamId)}
-                  whatIf={whatIf}
+                  whatIf={pendingWhatIf ? pendingWhatIf.get(game.id) : whatIf}
                   onPick={onWhatIfPick}
                 />
               </li>
@@ -184,7 +207,7 @@ export function UpcomingGames({
               <span class="legend-swatch win-split-side away"></span>{" "}
               Away win
             </li>
-            <li>Percentages are the chance of winning, in regulation or OT/SO</li>
+            <li>Percentages are the chance of winning, in regulation or OT/SO; the small figures under them, in OT/SO alone</li>
           </>
         ) : (
           <li>Pts – Pts: expected points for the home – away team</li>
