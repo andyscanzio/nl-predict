@@ -27,29 +27,33 @@ export interface EloParameters {
 }
 
 /** A standard normal draw (Box–Muller) from two uniform draws. */
-function standardNormal(random: () => number): number {
+export function standardNormal(random: () => number): number {
   return Math.sqrt(-2 * Math.log(1 - random())) * Math.cos(2 * Math.PI * random());
 }
 
 /**
  * The Season's Starting Ratings from each team's Rating at the end of the previous Season: the carry-over share of its
  * distance from INITIAL_RATING (0 starts everyone level, 1 keeps the Ratings as they were). A promoted team takes the
- * Starting Rating of a relegated team, lowest Rating first; a team added by an expansion starts at INITIAL_RATING.
+ * Starting Rating of a relegated team, lowest Rating first; a team added by an expansion starts at INITIAL_RATING, or at
+ * the lowest Starting Rating of the others with `expansionTeamsStartLowest`.
  */
 export function startingRatingsFrom(
   previousRatings: ReadonlyMap<TeamId, number>,
   teamIds: readonly TeamId[],
   carryOver: number,
+  { expansionTeamsStartLowest = false }: { expansionTeamsStartLowest?: boolean } = {},
 ): Map<TeamId, number> {
   const carried = (rating: number) => INITIAL_RATING + carryOver * (rating - INITIAL_RATING);
   const relegated = [...previousRatings]
     .filter(([teamId]) => !teamIds.includes(teamId))
     .map(([, rating]) => carried(rating))
     .sort((a, b) => a - b);
+  const lowest = Math.min(...teamIds.flatMap((teamId) => (previousRatings.has(teamId) ? [carried(previousRatings.get(teamId)!)] : [])));
+  const expansionRating = expansionTeamsStartLowest && Number.isFinite(lowest) ? lowest : INITIAL_RATING;
   return new Map(
     teamIds.map((teamId) => {
       const previous = previousRatings.get(teamId);
-      return [teamId, previous === undefined ? (relegated.shift() ?? INITIAL_RATING) : carried(previous)];
+      return [teamId, previous === undefined ? (relegated.shift() ?? expansionRating) : carried(previous)];
     }),
   );
 }

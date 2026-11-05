@@ -88,6 +88,14 @@ describe("seasonSimulationBackTest", () => {
     }
   });
 
+  it("scores the gap between a team's forecast and actual final Points", () => {
+    // Before the Season's only Game each team is forecast 1.5 Points; team 1 in fact finishes with 3, team 2 with 0.
+    const [result] = seasonSimulationBackTest(twoTeamSeason, [coinFlip], 10);
+    expect(result!.rows.map((row) => row.pointsError)).toEqual([1.5, 1.5]);
+    const [exact] = seasonSimulationBackTest(threeTeamSeason, [oracle(threeTeamSeason)], 10);
+    for (const row of exact!.rows) expect(row.pointsError).toBe(0);
+  });
+
   it("scores a forecast that has the final order exactly reversed", () => {
     // Seven teams, one Match Day; team i beats every team above it, wherever it plays. The model has the higher-numbered
     // team win every Game, so it is certain team k finishes (8 − k)th where team k in fact finishes kth.

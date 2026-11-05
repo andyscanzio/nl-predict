@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { project, type Projection, type ProjectionModel, type WhatIfOutcome } from "./project.ts";
 import { createEloModel } from "./eloModel.ts";
+import { learnedModel } from "./learnedModel.ts";
 import { PROJECTION_MODELS } from "./projectionModels.ts";
 import type { Decision, Game, Snapshot } from "./types.ts";
 import recordedSnapshot from "./__fixtures__/snapshot-2026-09-27.json";
@@ -40,7 +41,8 @@ const withoutMovement = (projection: Projection) =>
   );
 
 describe("project with a What-If", () => {
-  for (const model of PROJECTION_MODELS) {
+  // The Learned Model is not in the picker yet.
+  for (const model of [...PROJECTION_MODELS, learnedModel]) {
     describe(model.name, () => {
       for (const outcome of Object.keys(RESULTS) as WhatIfOutcome[]) {
         it(`treats a ${outcome} What-If Result as a Played Game`, () => {
