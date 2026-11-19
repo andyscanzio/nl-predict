@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "snapshotAt": "2026-11-17T15:27:50.679Z",
+ "snapshotAt": "2026-11-19T02:56:46.687Z",
  "teams": [
   {
    "id": 102128,
@@ -1635,7 +1635,12 @@
    "id": "20271105000098",
    "startsAt": "2026-11-18T19:45:00+01:00",
    "homeTeamId": 101144,
-   "awayTeamId": 103144
+   "awayTeamId": 103144,
+   "result": {
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "decision": "regulation"
+   }
   },
   {
    "id": "20271105000151",
