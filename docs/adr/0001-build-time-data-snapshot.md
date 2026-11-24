@@ -1,6 +1,6 @@
 # Game data is snapshotted at build time, not fetched by the browser
 
-The only usable source for National League results is the unofficial SIHF data API (`data.sihf.ch`), which sends no CORS headers and returns a single match day per request (~93 requests for a full Season). A scheduled GitHub Action therefore fetches the Season into a `games.json` snapshot committed to the repo, and the static page reads only that file; all projection logic still runs in the browser.
+The only usable source for National League results is the unofficial SIHF data API (`data.sihf.ch`), which sends no CORS headers and returns a single match day per request (~93 requests for a full Season). A scheduled GitHub Action therefore fetches the Season into a `games.json` snapshot committed to the repo, and the static page reads only that file (plus the small hand-kept Abandoned Game list in `data/abandoned-games.json`, applied as it reads); all projection logic still runs in the browser.
 
 ## Considered Options
 

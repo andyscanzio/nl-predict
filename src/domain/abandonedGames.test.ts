@@ -31,7 +31,7 @@ describe("dropAbandonedGames", () => {
   });
 
   it("throws, naming the Game id, when a listed Game has a result", () => {
-    expect(() => dropAbandonedGames(games, [entry("b")])).toThrow(/\bb\b/);
+    expect(() => dropAbandonedGames(games, [entry("b")])).toThrow("Game b ");
   });
 });
 
@@ -56,7 +56,7 @@ describe("an Abandoned Game and its replay", () => {
     const nextRoundIds = projection.nextRound.flatMap((day) => day.games.map((upcoming) => ("game" in upcoming ? upcoming.game.id : "")));
     expect(nextRoundIds).not.toContain("old");
     expect(nextRoundIds).toContain("replay");
-    expect(projection.projectedTable.flatMap((row) => row.remainingHomeGames + row.remainingAwayGames)).toEqual([52, 52]);
+    expect(projection.projectedTable.map((row) => row.remainingHomeGames + row.remainingAwayGames)).toEqual([52, 52]);
   });
 });
 
