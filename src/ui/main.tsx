@@ -8,12 +8,17 @@ import { projectionClient, type Picks } from "./projectionRequests.ts";
 import type { Projection, ProjectionModel, WhatIf } from "../domain/project.ts";
 import type { ProjectionModelId } from "../domain/projectionModels.ts";
 import histories from "virtual:projection-history";
-import snapshot from "../../data/games.json";
+import snapshotFile from "../../data/games.json";
+import abandonedGames from "../../data/abandoned-games.json";
+import { dropAbandonedGames } from "../domain/abandonedGames.ts";
 import type { Snapshot } from "../domain/types.ts";
 import "@fontsource-variable/oxanium";
 import "./styles.css";
 
 const now = new Date();
+
+const fileSnapshot = snapshotFile as Snapshot;
+const snapshot: Snapshot = { ...fileSnapshot, games: dropAbandonedGames(fileSnapshot.games, abandonedGames) };
 
 const picksFromUrl = (): Picks => ({ model: modelFromUrl(location.href), whatIf: whatIfFromUrl(location.href) });
 
@@ -70,7 +75,7 @@ function Root() {
   const shown = inPlace || !projected ? requested : projected.picks;
   return (
     <App
-      snapshot={snapshot as Snapshot}
+      snapshot={snapshot}
       now={now}
       model={shown.model}
       history={histories[shown.model.id]}

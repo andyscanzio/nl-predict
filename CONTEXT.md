@@ -22,7 +22,11 @@ _Avoid_: Match, fixture
 A Game with a final score, including results still awaiting official confirmation.
 
 **Remaining Game**:
-Any Regular Season Game that is not a Played Game, regardless of its scheduled date (postponed Games stay Remaining). Played + Remaining always equals 52 per team.
+Any Regular Season Game that is neither a Played Game nor an Abandoned Game, regardless of its scheduled date (postponed Games stay Remaining). Played + Remaining always equals 52 per team.
+
+**Abandoned Game**:
+A Game that started but was stopped without a final score and is replayed in full as a new Game. It is neither Played nor Remaining: whatever happened in it counts for nothing, and it drops out of the Season. A postponed Game, moved to a new date before it was played, is still the same Game and stays Remaining.
+_Avoid_: Interrupted, cancelled, voided game
 
 **Upcoming Game**:
 A Remaining Game scheduled to start after the As-Of Date. Remaining Games whose start has passed (in progress, awaiting a result, or postponed without a new date) are not Upcoming.
