@@ -9,6 +9,7 @@ import { parseArgs } from "node:util";
 import { backTest } from "../src/domain/backTest.ts";
 import { eloLevelStartModel, eloModelFor, STARTING_RATINGS } from "../src/domain/eloModel.ts";
 import { PROJECTION_MODELS } from "../src/domain/projectionModels.ts";
+import { dropAbandonedGames, type AbandonedGame } from "../src/domain/abandonedGames.ts";
 import type { Snapshot } from "../src/domain/types.ts";
 import { seasonLabel } from "../src/domain/season.ts";
 
@@ -22,7 +23,8 @@ const models = [
   ...PROJECTION_MODELS.map((model) => (model.id === "elo" ? eloModelFor(snapshot.season) : model)),
   ...(withLevelStart ? [eloLevelStartModel] : []),
 ];
-const scores = backTest(snapshot.games, new Date(snapshot.snapshotAt), models);
+const abandonedGames = JSON.parse(await readFile("data/abandoned-games.json", "utf8")) as AbandonedGame[];
+const scores = backTest(dropAbandonedGames(snapshot.games, abandonedGames), new Date(snapshot.snapshotAt), models);
 if (scores[0]?.games === 0) {
   console.log(`No Played Games in ${values.in} yet; nothing to Back-Test.`);
   process.exit(0);
