@@ -83,3 +83,47 @@ export function pairedUncertainty(
     seasonP: seasonExtreme / 2 ** seasons.length,
   };
 }
+
+export interface ClusterInterval {
+  /** Pooled mean of the values: the sum over every value divided by their count. */
+  mean: number;
+  /** 95% percentile interval of the cluster bootstrap. */
+  low: number;
+  high: number;
+}
+
+/**
+ * A cluster bootstrap of the pooled mean of per-Game values: whole clusters (the Games of one Match Day) are resampled,
+ * since Games played on the same day share rest, news and the Elo chain's moves. Clusters differ in size, so each
+ * resample's mean is its total over its Games, not the mean of cluster means.
+ */
+export function clusterBootstrap(
+  values: readonly number[],
+  clusterOf: readonly string[],
+  { resamples, seed }: { resamples: number; seed: number },
+): ClusterInterval {
+  const totals = new Map<string, { sum: number; count: number }>();
+  values.forEach((value, i) => {
+    const total = totals.get(clusterOf[i]!) ?? { sum: 0, count: 0 };
+    total.sum += value;
+    total.count++;
+    totals.set(clusterOf[i]!, total);
+  });
+  const clusters = [...totals.values()];
+  const next = seededRandom(seed);
+  const boot = Array.from({ length: resamples }, () => {
+    let sum = 0;
+    let count = 0;
+    for (let i = 0; i < clusters.length; i++) {
+      const cluster = clusters[Math.floor(next() * clusters.length)]!;
+      sum += cluster.sum;
+      count += cluster.count;
+    }
+    return sum / count;
+  }).sort((a, b) => a - b);
+  return {
+    mean: mean(values),
+    low: boot[Math.floor(0.025 * resamples)]!,
+    high: boot[Math.ceil(0.975 * resamples) - 1]!,
+  };
+}

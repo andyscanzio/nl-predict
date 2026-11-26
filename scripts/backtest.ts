@@ -8,6 +8,7 @@ import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { backTest } from "../src/domain/backTest.ts";
 import { eloLevelStartModel, eloModelFor, STARTING_RATINGS } from "../src/domain/eloModel.ts";
+import { learnedModel, LEARNED_WEIGHTS } from "../src/domain/learnedModel.ts";
 import { PROJECTION_MODELS } from "../src/domain/projectionModels.ts";
 import { dropAbandonedGames, type AbandonedGame } from "../src/domain/abandonedGames.ts";
 import type { Snapshot } from "../src/domain/types.ts";
@@ -22,6 +23,8 @@ const withLevelStart = snapshot.season === STARTING_RATINGS.season;
 const models = [
   ...PROJECTION_MODELS.map((model) => (model.id === "elo" ? eloModelFor(snapshot.season) : model)),
   ...(withLevelStart ? [eloLevelStartModel] : []),
+  // Not in the picker yet. Its weights belong to one Season, like the Starting Ratings, so any other Season has no row.
+  ...(snapshot.season === LEARNED_WEIGHTS.season ? [learnedModel] : []),
 ];
 const abandonedGames = JSON.parse(await readFile("data/abandoned-games.json", "utf8")) as AbandonedGame[];
 const scores = backTest(dropAbandonedGames(snapshot.games, abandonedGames), new Date(snapshot.snapshotAt), models);
